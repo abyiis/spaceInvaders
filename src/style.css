@@ -1,0 +1,48 @@
+:root {
+  --bg: #0b0e1a;
+  --game-ratio: 360 / 640;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* El canvas conserva la proporción 9:16 y se ajusta a la pantalla. */
+#game {
+  display: block;
+  width: min(100%, calc(100dvh * 360 / 640));
+  height: auto;
+  aspect-ratio: var(--game-ratio);
+  touch-action: none;
+  background: var(--bg);
+}
+
+/* Capa para las pantallas HTML/CSS de la Fase 2. No bloquea el juego mientras está vacía. */
+#ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}

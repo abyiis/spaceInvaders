@@ -1,0 +1,71 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$roomId": {
+        ".read": "auth != null",
+
+        "meta": {
+          ".write": "auth != null && (!data.exists() || data.child('hostUid').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['hostUid', 'seed', 'status', 'createdAt'])",
+          "hostUid": { ".validate": "newData.isString()" },
+          "seed": { ".validate": "newData.isNumber()" },
+          "status": {
+            ".validate": "newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'finished'"
+          },
+          "createdAt": { ".validate": "newData.isNumber()" },
+          "startAt": { ".validate": "newData.isNumber()" },
+          "maxPlayers": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 4" },
+          "$other": { ".validate": false }
+        },
+
+        "players": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            "name": { ".validate": "newData.isString() && newData.val().length <= 16" },
+            "x": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
+            "ts": { ".validate": "newData.isNumber()" },
+            "ready": { ".validate": "newData.isBoolean()" },
+            "connected": { ".validate": "newData.isBoolean()" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "state": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('meta/hostUid').val() === auth.uid",
+          "wave": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+          "score": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+          "status": {
+            ".validate": "newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'finished'"
+          },
+          "lives": {
+            "$uid": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3" }
+          },
+          "killed": {
+            "$wave": {
+              "$enemyId": { ".validate": "newData.val() === true" }
+            }
+          },
+          "$other": { ".validate": false }
+        },
+
+        "events": {
+          "$eventId": {
+            ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
+            ".validate": "newData.hasChildren(['type', 'uid', 't'])",
+            "type": {
+              ".validate": "newData.val() === 'shot' || newData.val() === 'kill' || newData.val() === 'hit'"
+            },
+            "uid": { ".validate": "newData.isString()" },
+            "t": { ".validate": "newData.isNumber()" },
+            "x": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
+            "wave": { ".validate": "newData.isNumber()" },
+            "enemyId": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        }
+      }
+    }
+  }
+}

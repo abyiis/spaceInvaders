@@ -1,0 +1,35 @@
+// Valores de balance del juego. Deben coincidir con `.spec/game_loop.md`.
+
+export const C = Object.freeze({
+  // Lienzo lógico
+  WIDTH: 360,
+  HEIGHT: 640,
+
+  // Jugador
+  PLAYER_WIDTH: 36,
+  PLAYER_HEIGHT: 28,
+  PLAYER_FIRE_INTERVAL: 0.35,
+  PLAYER_INVULNERABLE_SECONDS: 1.5,
+  PLAYER_BOTTOM_MARGIN: 60,
+  PLAYER_KEYBOARD_SPEED: 260,
+  STARTING_LIVES: 3,
+
+  // Enemigos
+  ENEMY_WIDTH: 28,
+  ENEMY_HEIGHT: 20,
+  ENEMY_SPACING_X: 40,
+  ENEMY_SPACING_Y: 32,
+  FORMATION_TOP: 70,
+  FORMATION_SIDE_MARGIN: 12,
+  FORMATION_STEP_DOWN: 14,
+
+  // Balas
+  BULLET_WIDTH: 4,
+  BULLET_HEIGHT: 12,
+  PLAYER_BULLET_SPEED: 420,
+  ENEMY_BULLET_SPEED: 180,
+
+  // Puntuación
+  SCORE_PER_ENEMY: 10,
+  WAVE_BONUS_MULTIPLIER: 50,
+});

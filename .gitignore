@@ -1,0 +1,26 @@
+# Node
+node_modules/
+dist/
+*.log
+
+# Capacitor (se regeneran con `npx cap add`; versiona android/ e ios/ solo si los modificas)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/capacitor-cordova-android-plugins/
+ios/App/Pods/
+ios/App/build/
+
+# IDE
+.idea/
+.vscode/
+
+# Firebase / secretos
+.firebase/
+firebase-debug.log
+.env
+.env.local
+src/net/firebaseConfig.js
+android/app/google-services.json
+ios/App/App/GoogleService-Info.plist
