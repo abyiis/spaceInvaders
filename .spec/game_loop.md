@@ -1,6 +1,6 @@
 # game_loop.md — Lógica del arcade infinito
 
-> Estado: **v1.1**. Valores numéricos viven en `src/core/constants.js` y deben coincidir con las tablas de este documento.
+> Estado: **v1.2**. Valores numéricos viven en `src/core/constants.js` y deben coincidir con las tablas de este documento.
 
 ## 0. Resolución lógica
 
@@ -18,17 +18,34 @@ Sin niveles. El juego encadena **oleadas** (waves) indefinidamente. Cada oleada 
 | `Enemy` | 28 × 20 | Forma parte de una `Formation`. 1 punto de vida en las oleadas 1-4; 2 puntos desde la oleada 5 (en filas pares). |
 | `Bullet` | 4 × 12 | Del jugador (sube) o enemiga (baja). Se elimina al salir de pantalla o al colisionar. |
 | `Formation` | — | Controlador (no visible) que mueve el grupo de enemigos, gestiona disparos enemigos y detecta fin de oleada. |
+| `Starfield` | pantalla completa | Fondo decorativo de estrellas en parallax (ver §3.1). No participa en colisiones ni en la red. |
 | `input` (`src/game/input.js`) | pantalla completa | Captura arrastre/toques (Pointer Events) y teclado; los reenvía al juego. |
 
 ## 3. Ciclo por frame (`update(dt)`)
 
 1. Si `isGameOver` o `paused`, no se actualiza la simulación (en Game Over se espera un toque para reiniciar; en pausa, un toque para continuar).
-2. `Player`: aplica cooldown de disparo y de invulnerabilidad.
-3. `Formation`: mueve enemigos; si algún enemigo toca el borde lateral, invierte dirección y baja un escalón.
-4. `Formation`: temporizador de disparo enemigo.
-5. Colisiones AABB (`src/core/collision.js`): resuelve bala↔enemigo y bala↔jugador.
-6. Fin de oleada: si no quedan enemigos vivos → `onWaveCleared()`.
-7. Fin de partida: vidas ≤ 0 o enemigo con `y ≥ playerLineY`.
+2. `Starfield`: desplaza las estrellas hacia abajo (§3.1).
+3. `Player`: aplica cooldown de disparo y de invulnerabilidad.
+4. `Formation`: mueve enemigos; si algún enemigo toca el borde lateral, invierte dirección y baja un escalón.
+5. `Formation`: temporizador de disparo enemigo.
+6. Colisiones AABB (`src/core/collision.js`): resuelve bala↔enemigo y bala↔jugador.
+7. Fin de oleada: si no quedan enemigos vivos → `onWaveCleared()`.
+8. Fin de partida: vidas ≤ 0 o enemigo con `y ≥ playerLineY`.
+
+### 3.1 Fondo de estrellas en parallax (v1.2)
+
+- Tres capas de estrellas que caen en vertical a distinta velocidad: las lejanas son pequeñas, tenues y lentas; las cercanas, más grandes, brillantes y rápidas. La diferencia de velocidad produce la sensación de profundidad.
+
+| Capa | Estrellas | Velocidad (px/s) | Tamaño (px) | Opacidad |
+|---|---|---|---|---|
+| Lejana | 30 | 12 | 1 | 0,35 |
+| Media | 18 | 28 | 1,5 | 0,6 |
+| Cercana | 8 | 60 | 2 | 0,9 |
+
+- Cada estrella nace en una posición aleatoria del lienzo. Al salir por abajo reaparece arriba con una `x` nueva, así el campo es continuo.
+- Es solo decoración y **no usa `Game.random`**: tiene su propio generador (`starsRandom`, por defecto `Math.random`), de modo que no altera la secuencia de azar de la partida ni, en coop, la sincronización entre dispositivos. Cada cliente puede ver un fondo distinto.
+- Se mueve únicamente cuando la simulación avanza: en pausa y en Game Over queda quieto. Se dibuja primero, detrás de enemigos, balas y nave, y debajo del HUD.
+- Los valores viven en `src/core/constants.js` (`STAR_LAYERS`).
 
 ## 4. Fórmulas de dificultad (oleada `w`, empieza en 1)
 

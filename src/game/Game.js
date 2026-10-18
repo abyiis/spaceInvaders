@@ -2,6 +2,7 @@ import { C } from '../core/constants.js';
 import { boxesOverlap } from '../core/collision.js';
 import { Formation } from './Formation.js';
 import { Player } from './Player.js';
+import { Starfield } from './Starfield.js';
 import { NoopEffects } from './Effects.js';
 import { NoopSyncGateway } from './SyncGateway.js';
 
@@ -17,10 +18,13 @@ export class Game {
    *   random?: () => number,
    *   sync?: import('./SyncGateway.js').SyncGateway,
    *   effects?: import('./Effects.js').Effects,
+   *   starsRandom?: () => number,
    * }} [opts]
    *   `random` debe devolver un número en [0, 1). Se inyecta para poder probar.
    *   `sync` es el puerto de red; por defecto no hace nada (modo individual).
    *   `effects` es el puerto de sonido y vibración; por defecto es silencioso.
+   *   `starsRandom` alimenta solo el fondo de estrellas; es independiente de `random`
+   *   para que la decoración no altere la secuencia de azar de la partida.
    */
   constructor({
     width = C.WIDTH,
@@ -28,12 +32,14 @@ export class Game {
     random = Math.random,
     sync = new NoopSyncGateway(),
     effects = new NoopEffects(),
+    starsRandom = Math.random,
   } = {}) {
     this.width = width;
     this.height = height;
     this.random = random;
     this.sync = sync;
     this.effects = effects;
+    this.starfield = new Starfield({ width, height, random: starsRandom });
     this.startNewGame();
   }
 
@@ -101,6 +107,7 @@ export class Game {
     if (this.isGameOver || this.paused) return;
 
     this.elapsed += dt;
+    this.starfield.update(dt);
     this.player.update(dt);
     this.sync.publishPlayerX(this.player.x / this.width);
     this.formation.update(dt);
@@ -153,6 +160,7 @@ export class Game {
     ctx.fillStyle = '#0b0e1a';
     ctx.fillRect(0, 0, this.width, this.height);
 
+    this.starfield.render(ctx);
     for (const enemy of this.formation.alive) enemy.render(ctx);
     for (const bullet of this.bullets) bullet.render(ctx);
     this.player.render(ctx);

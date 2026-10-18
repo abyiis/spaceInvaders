@@ -32,4 +32,11 @@ export const C = Object.freeze({
   // Puntuación
   SCORE_PER_ENEMY: 10,
   WAVE_BONUS_MULTIPLIER: 50,
+
+  // Fondo de estrellas en parallax (de la más lejana a la más cercana)
+  STAR_LAYERS: Object.freeze([
+    Object.freeze({ count: 30, speed: 12, size: 1, alpha: 0.35 }),
+    Object.freeze({ count: 18, speed: 28, size: 1.5, alpha: 0.6 }),
+    Object.freeze({ count: 8, speed: 60, size: 2, alpha: 0.9 }),
+  ]),
 });

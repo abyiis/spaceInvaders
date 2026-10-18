@@ -1,6 +1,6 @@
 # architecture.md — Arquitectura general
 
-> Estado: **v1.3 (fuente de verdad)**. Si el código y este documento difieren, se corrige primero el documento y luego el código (SDD).
+> Estado: **v1.4 (fuente de verdad)**. Si el código y este documento difieren, se corrige primero el documento y luego el código (SDD).
 
 ## 1. Objetivo
 
@@ -42,6 +42,7 @@ src/
 │   ├── Game.js               # estado, oleadas, colisiones, render(ctx)
 │   ├── SyncGateway.js        # puerto de red (typedef) + NoopSyncGateway
 │   ├── Effects.js            # puerto de sonido/vibración (typedef) + NoopEffects
+│   ├── Starfield.js          # fondo de estrellas en parallax (decorativo, v1.4)
 │   ├── Player.js  Enemy.js  Bullet.js  Formation.js
 │   └── input.js              # Pointer Events + teclado (único módulo game/ que toca el DOM)
 ├── net/        (Fase 2-3)    # acceso a Firebase tras interfaces
@@ -109,6 +110,10 @@ Igual que la red, el audio y la vibración son un puerto: `game/` avisa de lo qu
 - Los WebViews bloquean el audio hasta que hay un gesto del usuario (§7): el `AudioContext` se crea o reanuda en `unlock()`. Los eventos anteriores al primer gesto no suenan.
 - `createEffects({ AudioContextClass, haptics })` recibe el constructor de audio y el plugin de vibración inyectados (en `main.js`, `Haptics` de `@capacitor/haptics`). Si el entorno no tiene Web Audio o la vibración falla (p. ej. un navegador de escritorio), el efecto se omite en silencio: nunca debe interrumpir la partida.
 - En pausa no hay eventos, así que no suena nada; en coop los eventos del compañero no generan efectos hasta que la Fase 3 lo decida.
+
+### 3.4 Fondo decorativo (v1.4)
+
+`Game` crea un `Starfield` (`src/game/Starfield.js`) y lo actualiza y dibuja como parte de su simulación. Es puramente cosmético: `update(dt)` no toca el DOM y `render(ctx)` recibe el contexto como parámetro (regla 2 de §3). Usa su propio generador de azar (`new Game({ starsRandom })`, por defecto `Math.random`) y **nunca** `Game.random`, para no alterar la secuencia determinista de la partida. No se sincroniza por red. El detalle visual está en `game_loop.md` §3.1.
 
 ## 4. Modos de juego
 
