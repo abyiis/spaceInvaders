@@ -1,6 +1,8 @@
 import './style.css';
 import { C } from './core/constants.js';
 import { App } from '@capacitor/app';
+import { Haptics } from '@capacitor/haptics';
+import { createEffects } from './effects.js';
 import { Game } from './game/Game.js';
 import { attachInput } from './game/input.js';
 import { attachLifecycle } from './lifecycle.js';
@@ -14,7 +16,15 @@ canvas.width = C.WIDTH * dpr;
 canvas.height = C.HEIGHT * dpr;
 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-const game = new Game();
+const effects = createEffects({ haptics: Haptics });
+const game = new Game({ effects });
+
+// Los WebViews bloquean el audio hasta un gesto del usuario. Se prueba en varios eventos porque
+// en pantallas táctiles solo `pointerup` cuenta como activación; `unlock()` es idempotente.
+for (const type of ['pointerdown', 'pointerup', 'keydown']) {
+  window.addEventListener(type, () => effects.unlock(), { passive: true });
+}
+
 attachInput(canvas, game);
 attachLifecycle(game, { app: App });
 

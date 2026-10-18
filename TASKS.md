@@ -37,7 +37,7 @@ Estimación total orientativa: 6-7 semanas a media jornada.
 - [x] 1.9 `P1 D3` Invulnerabilidad tras daño (1,5 s) con parpadeo y pruebas `[loop]`
 - [x] 1.10 `P1 D2` Definir la interfaz `SyncGateway` y `NoopSyncGateway`; inyectarla en `Game` `[arch]`
 - [x] 1.11 `P1 D2` Pausar el juego cuando la app pasa a segundo plano (`visibilitychange` y evento `appStateChange` de Capacitor) `[arch]`
-- [ ] 1.12 `P2 D2` Sonidos básicos (WebAudio) y vibración al recibir daño `[arch]`
+- [x] 1.12 `P2 D2` Sonidos básicos (WebAudio) y vibración al recibir daño `[arch]`
 - [ ] 1.13 `P2 D3` Fondo con estrellas en parallax
 
 ## Fase 2 — Integración Firebase & Lobby (≈ 1,5 semanas)
@@ -99,3 +99,4 @@ Matchmaking aleatorio, chat, compras, anti-trampas, más de 4 jugadores, reconex
 | 2026-10-18 | architecture | v1.1: §3.1 puerto `SyncGateway` (salida: posición, `shot`, `kill`, `hit`, `dispose`); archivo `src/game/SyncGateway.js` | Tarea 1.10 |
 | 2026-10-18 | architecture | v1.2: §3.2 pausa y ciclo de vida (`src/lifecycle.js`, reanudación manual, sin pausa en coop); nueva dependencia `@capacitor/app`; ADR-9 | Tarea 1.11 |
 | 2026-10-18 | game_loop | v1.1: estado `PAUSED` (§7) y condición `paused` en el ciclo por frame (§3) | Tarea 1.11 |
+| 2026-10-18 | architecture | v1.3: §3.3 puerto `Effects` (`shot`, `kill`, `hit`, `gameOver`, `unlock`), `src/effects.js` con Web Audio y vibración; nueva dependencia `@capacitor/haptics`; ADR-10 | Tarea 1.12 |

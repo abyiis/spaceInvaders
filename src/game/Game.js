@@ -2,6 +2,7 @@ import { C } from '../core/constants.js';
 import { boxesOverlap } from '../core/collision.js';
 import { Formation } from './Formation.js';
 import { Player } from './Player.js';
+import { NoopEffects } from './Effects.js';
 import { NoopSyncGateway } from './SyncGateway.js';
 
 /**
@@ -15,20 +16,24 @@ export class Game {
    *   height?: number,
    *   random?: () => number,
    *   sync?: import('./SyncGateway.js').SyncGateway,
+   *   effects?: import('./Effects.js').Effects,
    * }} [opts]
    *   `random` debe devolver un número en [0, 1). Se inyecta para poder probar.
    *   `sync` es el puerto de red; por defecto no hace nada (modo individual).
+   *   `effects` es el puerto de sonido y vibración; por defecto es silencioso.
    */
   constructor({
     width = C.WIDTH,
     height = C.HEIGHT,
     random = Math.random,
     sync = new NoopSyncGateway(),
+    effects = new NoopEffects(),
   } = {}) {
     this.width = width;
     this.height = height;
     this.random = random;
     this.sync = sync;
+    this.effects = effects;
     this.startNewGame();
   }
 
@@ -67,7 +72,9 @@ export class Game {
   }
 
   triggerGameOver() {
+    if (this.isGameOver) return;
     this.isGameOver = true;
+    this.effects.gameOver();
   }
 
   /**
@@ -129,6 +136,7 @@ export class Game {
           if (enemy.hit()) {
             this.score += C.SCORE_PER_ENEMY;
             this.sync.emitKill(this.wave, enemy.id, this.elapsed);
+            this.effects.kill();
           }
           bullet.dead = true;
           break;

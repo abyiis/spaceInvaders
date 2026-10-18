@@ -1,6 +1,6 @@
 # architecture.md — Arquitectura general
 
-> Estado: **v1.2 (fuente de verdad)**. Si el código y este documento difieren, se corrige primero el documento y luego el código (SDD).
+> Estado: **v1.3 (fuente de verdad)**. Si el código y este documento difieren, se corrige primero el documento y luego el código (SDD).
 
 ## 1. Objetivo
 
@@ -14,6 +14,8 @@ Juego móvil estilo Space Invaders, arcade infinito por puntuación, con modo co
 | Interfaz (menú, lobby, ranking, resultados) | HTML + CSS sobre el canvas | Pantallas estándar con CSS; aprovecha el carácter híbrido. |
 | Empaquetado híbrido | **Capacitor** (WebView nativo) | Genera proyectos Android Studio / Xcode con el mismo código web. |
 | Ciclo de vida de la app | `@capacitor/app` (evento `appStateChange`) | Plugin oficial de Capacitor para saber cuándo la app pasa a segundo plano en Android/iOS. En el navegador se usa además `visibilitychange`. Añadido en v1.2 (tarea 1.11). |
+| Sonido | Web Audio API (sintetizado, sin archivos) | Sin assets ni dependencias; funciona igual en navegador y WebView. Añadido en v1.3 (tarea 1.12). |
+| Vibración | `@capacitor/haptics` (cae a `navigator.vibrate` en navegador) | `navigator.vibrate` no existe en iOS; el plugin cubre Android e iOS y declara por sí mismo el permiso `VIBRATE`. Añadido en v1.3 (tarea 1.12). |
 | Build y servidor de desarrollo | Vite | Recarga en vivo y bundle para `dist/`. |
 | Estado de partida en vivo | Firebase Realtime Database (RTDB) | Baja latencia y facturación por ancho de banda, no por operación. |
 | Datos de baja frecuencia | Cloud Firestore | Ranking global y perfiles. |
@@ -30,6 +32,7 @@ index.html                    # contenedor: <canvas> + capas de UI
 src/
 ├── main.js                   # arranque, bucle requestAnimationFrame, enlace con el DOM
 ├── lifecycle.js              # pausa al pasar a segundo plano (visibilitychange + appStateChange)
+├── effects.js                # sonido (Web Audio) y vibración: implementa el puerto Effects
 ├── style.css                 # estilos globales y de pantallas
 ├── core/                     # lógica pura, sin DOM ni Firebase
 │   ├── constants.js
@@ -38,6 +41,7 @@ src/
 ├── game/                     # simulación del juego
 │   ├── Game.js               # estado, oleadas, colisiones, render(ctx)
 │   ├── SyncGateway.js        # puerto de red (typedef) + NoopSyncGateway
+│   ├── Effects.js            # puerto de sonido/vibración (typedef) + NoopEffects
 │   ├── Player.js  Enemy.js  Bullet.js  Formation.js
 │   └── input.js              # Pointer Events + teclado (único módulo game/ que toca el DOM)
 ├── net/        (Fase 2-3)    # acceso a Firebase tras interfaces
@@ -89,6 +93,23 @@ Notas:
 - **Reanudar es siempre manual**: al volver a la app el juego sigue en pausa hasta que el jugador toca la pantalla o pulsa Espacio/Enter (`input.js`). Así la partida no continúa antes de que el jugador esté listo.
 - `input.js` suelta las teclas y el puntero activos cuando la ventana pierde el foco (`blur`), porque el `keyup` no llega en segundo plano y la nave quedaría moviéndose sola al volver.
 
+### 3.3 Efectos: sonido y vibración (v1.3)
+
+Igual que la red, el audio y la vibración son un puerto: `game/` avisa de lo que ocurre y no sabe cómo se reproduce. `Game` recibe `effects` por el constructor (`new Game({ effects })`); por defecto usa `NoopEffects` (silencio), que es lo que corre en las pruebas y en Node. La implementación real vive en `src/effects.js` (código de enlace con el navegador, como `main.js` y `lifecycle.js`); `game/` nunca la importa.
+
+| Miembro | Cuándo lo llama el juego | Sonido | Vibración |
+|---|---|---|---|
+| `shot()` | La nave local dispara. | Pitido corto agudo, volumen bajo (suena unas 3 veces por segundo). | — |
+| `kill()` | Un impacto local destruye a un enemigo. | Tono medio descendente, breve. | — |
+| `hit()` | La nave local pierde una vida. | Tono grave descendente, más largo y fuerte. | 150 ms |
+| `gameOver()` | La partida termina (una sola vez). | Tres notas descendentes. | — |
+| `unlock()` | Cada primer gesto del usuario (toque o tecla). | Crea o reanuda el `AudioContext`. | — |
+
+- Los sonidos se sintetizan con osciladores de Web Audio: sin archivos de audio (coherente con §6; los sonidos definitivos son la tarea 4.8).
+- Los WebViews bloquean el audio hasta que hay un gesto del usuario (§7): el `AudioContext` se crea o reanuda en `unlock()`. Los eventos anteriores al primer gesto no suenan.
+- `createEffects({ AudioContextClass, haptics })` recibe el constructor de audio y el plugin de vibración inyectados (en `main.js`, `Haptics` de `@capacitor/haptics`). Si el entorno no tiene Web Audio o la vibración falla (p. ej. un navegador de escritorio), el efecto se omite en silencio: nunca debe interrumpir la partida.
+- En pausa no hay eventos, así que no suena nada; en coop los eventos del compañero no generan efectos hasta que la Fase 3 lo decida.
+
 ## 4. Modos de juego
 
 - **Solo**: sin red. El puntaje se guarda en Firestore si hay sesión.
@@ -107,6 +128,7 @@ Notas:
 | ADR-7 | Lienzo lógico fijo 360×640 escalado por CSS | Resolución dependiente del dispositivo | Misma simulación en todos los dispositivos; evita desfases entre jugadores. |
 | ADR-8 | Bucle con `requestAnimationFrame` y `dt` limitado a 50 ms | Paso fijo | Más simple; suficiente para el MVP. |
 | ADR-9 | Pausa automática en segundo plano con reanudación manual (toque) | Reanudar solo al volver a primer plano | El jugador puede volver sin estar listo y perder una vida al instante. |
+| ADR-10 | Sonidos sintetizados con Web Audio + `@capacitor/haptics` para vibrar | Archivos de audio / `navigator.vibrate` | Cero assets en el MVP; `navigator.vibrate` no cubre iOS ni garantiza el permiso en Android. |
 
 ## 6. Requisitos no funcionales
 
