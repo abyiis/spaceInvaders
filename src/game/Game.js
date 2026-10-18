@@ -45,6 +45,7 @@ export class Game {
     /** Segundos de juego transcurridos desde `startNewGame()`. */
     this.elapsed = 0;
     this.isGameOver = false;
+    this.paused = false;
     /** @type {import('./Bullet.js').Bullet[]} */
     this.bullets = [];
     this.player = new Player(this);
@@ -69,6 +70,20 @@ export class Game {
     this.isGameOver = true;
   }
 
+  /**
+   * Congela la simulación (p. ej. la app pasa a segundo plano).
+   * No hace nada tras el Game Over ni en coop, donde el reloj es el del servidor.
+   */
+  pause() {
+    if (this.isGameOver || this.sync.isCoop) return;
+    this.paused = true;
+  }
+
+  /** Reanuda una partida pausada. */
+  resume() {
+    this.paused = false;
+  }
+
   /** Libera el gateway de red; llamar al abandonar la partida. */
   dispose() {
     this.sync.dispose();
@@ -76,7 +91,7 @@ export class Game {
 
   /** @param {number} dt Segundos desde el frame anterior. */
   update(dt) {
-    if (this.isGameOver) return;
+    if (this.isGameOver || this.paused) return;
 
     this.elapsed += dt;
     this.player.update(dt);
@@ -136,6 +151,7 @@ export class Game {
 
     this.#renderHud(ctx);
     if (this.isGameOver) this.#renderGameOver(ctx);
+    else if (this.paused) this.#renderPaused(ctx);
   }
 
   #renderHud(ctx) {
@@ -148,6 +164,20 @@ export class Game {
       12,
       12,
     );
+  }
+
+  #renderPaused(ctx) {
+    ctx.fillStyle = 'rgba(11, 14, 26, 0.6)';
+    ctx.fillRect(0, 0, this.width, this.height);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 28px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('PAUSA', this.width / 2, this.height / 2 - 12);
+
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillText('Toca para continuar', this.width / 2, this.height / 2 + 24);
   }
 
   #renderGameOver(ctx) {

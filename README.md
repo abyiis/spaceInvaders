@@ -23,6 +23,7 @@ capacitor.config.json
 vite.config.js
 src/
   main.js                    Arranque y bucle del juego
+  lifecycle.js               Pausa al pasar la app a segundo plano
   style.css
   core/                      Lógica pura (constantes, dificultad, colisiones)
   game/                      Simulación (Game, Player, Enemy, Bullet, Formation, input)
@@ -35,12 +36,12 @@ Requisitos: **Node ≥ 20**. Para la app Android: Android Studio (iOS requiere m
 
 ```bash
 npm install
-npm test            # 32 pruebas de la lógica del juego
+npm test            # 44 pruebas de la lógica del juego
 npm run dev         # servidor de desarrollo; ábrelo en el navegador o desde el teléfono (misma Wi-Fi)
 npm run build       # genera dist/
 ```
 
-**Controles:** arrastra el dedo en horizontal (o usa ← → / A D) para mover la nave; dispara sola. Toca la pantalla (o Espacio/Enter) tras el Game Over para reiniciar.
+**Controles:** arrastra el dedo en horizontal (o usa ← → / A D) para mover la nave; dispara sola. Toca la pantalla (o Espacio/Enter) tras el Game Over para reiniciar. Si la app pasa a segundo plano el juego se pausa; toca la pantalla para continuar.
 
 ### Empaquetar como app Android
 
@@ -76,7 +77,7 @@ El agente leerá los specs, tomará la siguiente tarea de `TASKS.md`, la impleme
 ## Estado actual
 
 - Specs v1.0 completos.
-- Modo individual jugable (Fase 1, tareas 1.1 – 1.10 hechas; ver `TASKS.md`).
+- Modo individual jugable (Fase 1, tareas 1.1 – 1.11 hechas; ver `TASKS.md`).
 - Firebase **aún no integrado** en el código (Fase 2); `firebase` está declarado en `package.json`.
-- Verificado al generar el proyecto: las 32 pruebas con `node --test` pasan.
+- Verificado al generar el proyecto: las 44 pruebas con `node --test` pasan.
 - **No verificado**: `npm install`, `npm run build` y la app Capacitor (el entorno donde se generó no tenía acceso al registro de npm). Si `npm install` reporta conflictos de versiones, ajusta las versiones de `package.json` (Capacitor, Vite, Firebase) a las vigentes.

@@ -1,6 +1,6 @@
 # architecture.md — Arquitectura general
 
-> Estado: **v1.1 (fuente de verdad)**. Si el código y este documento difieren, se corrige primero el documento y luego el código (SDD).
+> Estado: **v1.2 (fuente de verdad)**. Si el código y este documento difieren, se corrige primero el documento y luego el código (SDD).
 
 ## 1. Objetivo
 
@@ -13,6 +13,7 @@ Juego móvil estilo Space Invaders, arcade infinito por puntuación, con modo co
 | Juego | HTML5 `<canvas>` 2D + JavaScript (ES modules), sin librería de juegos | Space Invaders no requiere un motor; menos dependencias y lógica fácil de probar en Node. |
 | Interfaz (menú, lobby, ranking, resultados) | HTML + CSS sobre el canvas | Pantallas estándar con CSS; aprovecha el carácter híbrido. |
 | Empaquetado híbrido | **Capacitor** (WebView nativo) | Genera proyectos Android Studio / Xcode con el mismo código web. |
+| Ciclo de vida de la app | `@capacitor/app` (evento `appStateChange`) | Plugin oficial de Capacitor para saber cuándo la app pasa a segundo plano en Android/iOS. En el navegador se usa además `visibilitychange`. Añadido en v1.2 (tarea 1.11). |
 | Build y servidor de desarrollo | Vite | Recarga en vivo y bundle para `dist/`. |
 | Estado de partida en vivo | Firebase Realtime Database (RTDB) | Baja latencia y facturación por ancho de banda, no por operación. |
 | Datos de baja frecuencia | Cloud Firestore | Ranking global y perfiles. |
@@ -28,6 +29,7 @@ Plan objetivo: **Spark (gratis)**. Restricción relevante: máximo 100 conexione
 index.html                    # contenedor: <canvas> + capas de UI
 src/
 ├── main.js                   # arranque, bucle requestAnimationFrame, enlace con el DOM
+├── lifecycle.js              # pausa al pasar a segundo plano (visibilitychange + appStateChange)
 ├── style.css                 # estilos globales y de pantallas
 ├── core/                     # lógica pura, sin DOM ni Firebase
 │   ├── constants.js
@@ -75,6 +77,18 @@ Notas:
 - `t` es `Game.elapsed` (segundos de juego acumulados desde `startNewGame()`). En coop la Fase 3 lo sustituirá por el reloj del servidor (`multiplayer_sync.md` §2).
 - El sentido entrante (eventos del compañero, `killed`, `lives`) **no** forma parte de esta versión del puerto; se añadirá en las tareas 3.6-3.10 y se anotará en el changelog.
 
+### 3.2 Pausa y ciclo de vida (v1.2)
+
+- `Game` expone `paused`, `pause()` y `resume()`. Mientras `paused` es `true`, `update(dt)` no avanza nada (ni `elapsed`, ni enemigos, ni balas, ni cooldowns) y `render(ctx)` dibuja la partida congelada con el aviso «PAUSA · Toca para continuar».
+- `pause()` no hace nada si la partida ya terminó (el toque de Game Over sigue reiniciando) ni si `sync.isCoop` es `true`: en coop la simulación depende del reloj del servidor y una pausa local la desincronizaría. La Fase 3 definirá cómo se trata el segundo plano en coop (tarea 3.12).
+- `startNewGame()` siempre deja `paused = false`.
+- `src/lifecycle.js` exporta `attachLifecycle(game, { doc, app })`. Es código de enlace como `main.js` (puede tocar el DOM y recibir el plugin de Capacitor); `game/` nunca lo importa. Pausa cuando:
+  1. `document.visibilityState === 'hidden'` (evento `visibilitychange`), o
+  2. el plugin `App` emite `appStateChange` con `isActive === false`.
+  Devuelve una función que quita los listeners. `app` se inyecta (en `main.js` es `App` de `@capacitor/app`) para poder probarlo en Node sin el plugin.
+- **Reanudar es siempre manual**: al volver a la app el juego sigue en pausa hasta que el jugador toca la pantalla o pulsa Espacio/Enter (`input.js`). Así la partida no continúa antes de que el jugador esté listo.
+- `input.js` suelta las teclas y el puntero activos cuando la ventana pierde el foco (`blur`), porque el `keyup` no llega en segundo plano y la nave quedaría moviéndose sola al volver.
+
 ## 4. Modos de juego
 
 - **Solo**: sin red. El puntaje se guarda en Firestore si hay sesión.
@@ -92,6 +106,7 @@ Notas:
 | ADR-6 | Coordenadas normalizadas (x ∈ [0,1]) en red | Píxeles | Independencia de resolución entre dispositivos. |
 | ADR-7 | Lienzo lógico fijo 360×640 escalado por CSS | Resolución dependiente del dispositivo | Misma simulación en todos los dispositivos; evita desfases entre jugadores. |
 | ADR-8 | Bucle con `requestAnimationFrame` y `dt` limitado a 50 ms | Paso fijo | Más simple; suficiente para el MVP. |
+| ADR-9 | Pausa automática en segundo plano con reanudación manual (toque) | Reanudar solo al volver a primer plano | El jugador puede volver sin estar listo y perder una vida al instante. |
 
 ## 6. Requisitos no funcionales
 

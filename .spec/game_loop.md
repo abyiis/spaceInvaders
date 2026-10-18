@@ -1,6 +1,6 @@
 # game_loop.md — Lógica del arcade infinito
 
-> Estado: **v1.0**. Valores numéricos viven en `src/core/constants.js` y deben coincidir con las tablas de este documento.
+> Estado: **v1.1**. Valores numéricos viven en `src/core/constants.js` y deben coincidir con las tablas de este documento.
 
 ## 0. Resolución lógica
 
@@ -22,7 +22,7 @@ Sin niveles. El juego encadena **oleadas** (waves) indefinidamente. Cada oleada 
 
 ## 3. Ciclo por frame (`update(dt)`)
 
-1. Si `isGameOver`, no se actualiza la simulación (solo se espera toque para reiniciar).
+1. Si `isGameOver` o `paused`, no se actualiza la simulación (en Game Over se espera un toque para reiniciar; en pausa, un toque para continuar).
 2. `Player`: aplica cooldown de disparo y de invulnerabilidad.
 3. `Formation`: mueve enemigos; si algún enemigo toca el borde lateral, invierte dirección y baja un escalón.
 4. `Formation`: temporizador de disparo enemigo.
@@ -57,8 +57,13 @@ Sin niveles. El juego encadena **oleadas** (waves) indefinidamente. Cada oleada 
 
 ```
 LOBBY → PLAYING → GAME_OVER → (toque) → PLAYING   (solo)
-                         └──→ resultados → LOBBY   (coop)
+           │  ▲              └──→ resultados → LOBBY   (coop)
+  segundo  │  │ toque / Espacio / Enter
+  plano    ▼  │
+          PAUSED                                     (solo; ver architecture.md §3.2)
 ```
+
+`PAUSED` solo existe en modo solo y nunca desde `GAME_OVER`. Mientras dura, la simulación está congelada (incluidos temporizadores de invulnerabilidad y de disparo).
 
 ## 8. Pruebas esperadas (unitarias, sin navegador, con `node --test`)
 

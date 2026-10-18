@@ -18,6 +18,10 @@ export function attachInput(canvas, game) {
 
   const onPointerDown = (e) => {
     e.preventDefault();
+    if (game.paused) {
+      game.resume();
+      return;
+    }
     if (game.isGameOver) {
       game.startNewGame();
       return;
@@ -28,7 +32,7 @@ export function attachInput(canvas, game) {
   };
 
   const onPointerMove = (e) => {
-    if (e.pointerId !== activePointerId || game.isGameOver) return;
+    if (e.pointerId !== activePointerId || game.isGameOver || game.paused) return;
     const x = toLogicalX(e.clientX);
     game.player.moveBy(x - lastLogicalX);
     lastLogicalX = x;
@@ -46,7 +50,12 @@ export function attachInput(canvas, game) {
   };
 
   const onKeyDown = (e) => {
-    if (game.isGameOver && (e.code === 'Space' || e.code === 'Enter')) {
+    const isConfirmKey = e.code === 'Space' || e.code === 'Enter';
+    if (game.paused && isConfirmKey) {
+      game.resume();
+      return;
+    }
+    if (game.isGameOver && isConfirmKey) {
       game.startNewGame();
       return;
     }
@@ -59,12 +68,20 @@ export function attachInput(canvas, game) {
     updateKeyboardDirection();
   };
 
+  // En segundo plano no llegan los keyup/pointerup: sin esto la nave seguiría moviéndose al volver.
+  const onBlur = () => {
+    keys.clear();
+    updateKeyboardDirection();
+    activePointerId = null;
+  };
+
   canvas.addEventListener('pointerdown', onPointerDown);
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerup', onPointerEnd);
   canvas.addEventListener('pointercancel', onPointerEnd);
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
+  window.addEventListener('blur', onBlur);
 
   return () => {
     canvas.removeEventListener('pointerdown', onPointerDown);
@@ -73,5 +90,6 @@ export function attachInput(canvas, game) {
     canvas.removeEventListener('pointercancel', onPointerEnd);
     window.removeEventListener('keydown', onKeyDown);
     window.removeEventListener('keyup', onKeyUp);
+    window.removeEventListener('blur', onBlur);
   };
 }

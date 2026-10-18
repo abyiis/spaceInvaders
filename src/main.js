@@ -1,7 +1,9 @@
 import './style.css';
 import { C } from './core/constants.js';
+import { App } from '@capacitor/app';
 import { Game } from './game/Game.js';
 import { attachInput } from './game/input.js';
+import { attachLifecycle } from './lifecycle.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -14,6 +16,7 @@ ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
 const game = new Game();
 attachInput(canvas, game);
+attachLifecycle(game, { app: App });
 
 let last = performance.now();
 
