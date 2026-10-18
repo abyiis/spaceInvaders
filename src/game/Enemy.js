@@ -5,9 +5,11 @@ const ROW_COLORS = ['#66bb6a', '#ab47bc', '#ff7043', '#26c6da', '#ec407a', '#ffc
 /** Enemigo individual. Su movimiento lo controla `Formation`. */
 export class Enemy {
   /**
-   * @param {{x: number, y: number, row: number, hp?: number}} opts
+   * @param {{id: number, x: number, y: number, row: number, hp?: number}} opts
+   *   `id` es el índice del enemigo en su oleada (`row * columns + col`).
    */
-  constructor({ x, y, row, hp = 1 }) {
+  constructor({ id, x, y, row, hp = 1 }) {
+    this.id = id;
     this.x = x;
     this.y = y;
     this.w = C.ENEMY_WIDTH;

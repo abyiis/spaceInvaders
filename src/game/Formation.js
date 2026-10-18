@@ -28,6 +28,7 @@ export class Formation {
       for (let col = 0; col < columns; col++) {
         this.enemies.push(
           new Enemy({
+            id: row * columns + col,
             x: startX + col * C.ENEMY_SPACING_X,
             y: C.FORMATION_TOP + row * C.ENEMY_SPACING_Y,
             row,

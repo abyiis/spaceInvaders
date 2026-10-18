@@ -1,6 +1,6 @@
 # architecture.md — Arquitectura general
 
-> Estado: **v1.0 (fuente de verdad)**. Si el código y este documento difieren, se corrige primero el documento y luego el código (SDD).
+> Estado: **v1.1 (fuente de verdad)**. Si el código y este documento difieren, se corrige primero el documento y luego el código (SDD).
 
 ## 1. Objetivo
 
@@ -35,6 +35,7 @@ src/
 │   └── collision.js          # AABB
 ├── game/                     # simulación del juego
 │   ├── Game.js               # estado, oleadas, colisiones, render(ctx)
+│   ├── SyncGateway.js        # puerto de red (typedef) + NoopSyncGateway
 │   ├── Player.js  Enemy.js  Bullet.js  Formation.js
 │   └── input.js              # Pointer Events + teclado (único módulo game/ que toca el DOM)
 ├── net/        (Fase 2-3)    # acceso a Firebase tras interfaces
@@ -55,6 +56,24 @@ Reglas de dependencia (obligatorias):
 3. `game/` **no** importa `firebase/*`. Se comunica con `net/` mediante una interfaz `SyncGateway` inyectada (`NoopSyncGateway` en modo solo).
 4. `net/` no importa `ui/`; `ui/` puede importar `net/` y `game/`.
 5. El modo individual debe funcionar sin Firebase configurado.
+
+### 3.1 Puerto `SyncGateway` (v1.1)
+
+`game/` nunca habla con Firebase: notifica sus eventos locales a un objeto `SyncGateway` que recibe por el constructor (`new Game({ sync })`). El puerto vive en `src/game/SyncGateway.js` (la capa que lo usa es la dueña del contrato) y `net/syncService.js` lo implementará en la Fase 3 sin que `game/` importe `net/`. Por defecto `Game` usa `NoopSyncGateway`, que no hace nada: así el modo solo funciona sin Firebase.
+
+| Miembro | Cuándo lo llama `Game` | Origen en `multiplayer_sync.md` |
+|---|---|---|
+| `isCoop: boolean` | — (solo lectura; `false` en el Noop) | §6 |
+| `publishPlayerX(x: number)` | Cada frame, con `x` normalizado 0..1. Solo entrega el valor: el gateway real conserva el último y un temporizador de 100 ms hace el `update()` parcial, solo si cambió más de 0,002. | §4.1 |
+| `emitShot(t: number, x: number)` | El jugador dispara (`t` = segundos de juego, `x` normalizado). | §4.2 `shot` |
+| `emitKill(wave: number, enemyId: number, t: number)` | Un impacto local destruye a un enemigo. | §4.2 `kill` |
+| `emitHit(t: number)` | La nave local pierde una vida. | §4.2 `hit` |
+| `dispose()` | Se abandona la partida. Cancela suscripciones y temporizadores. | `firebase_schema.md` §4.4 |
+
+Notas:
+- `enemyId` = índice del enemigo en su oleada (`row * columns + col`); es estable entre clientes porque la rejilla es determinista.
+- `t` es `Game.elapsed` (segundos de juego acumulados desde `startNewGame()`). En coop la Fase 3 lo sustituirá por el reloj del servidor (`multiplayer_sync.md` §2).
+- El sentido entrante (eventos del compañero, `killed`, `lives`) **no** forma parte de esta versión del puerto; se añadirá en las tareas 3.6-3.10 y se anotará en el changelog.
 
 ## 4. Modos de juego
 

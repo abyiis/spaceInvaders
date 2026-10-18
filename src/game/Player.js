@@ -35,6 +35,7 @@ export class Player {
   hit() {
     if (this.isInvulnerable || this.game.isGameOver) return false;
     this.invulnerable = C.PLAYER_INVULNERABLE_SECONDS;
+    this.game.sync.emitHit(this.game.elapsed);
     this.game.loseLife();
     return true;
   }
@@ -60,6 +61,7 @@ export class Player {
           vy: -C.PLAYER_BULLET_SPEED,
         }),
       );
+      this.game.sync.emitShot(this.game.elapsed, this.x / this.game.width);
     }
   }
 

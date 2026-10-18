@@ -35,7 +35,7 @@ Requisitos: **Node ≥ 20**. Para la app Android: Android Studio (iOS requiere m
 
 ```bash
 npm install
-npm test            # 22 pruebas de la lógica del juego
+npm test            # 32 pruebas de la lógica del juego
 npm run dev         # servidor de desarrollo; ábrelo en el navegador o desde el teléfono (misma Wi-Fi)
 npm run build       # genera dist/
 ```
@@ -46,13 +46,13 @@ npm run build       # genera dist/
 
 1. Cambia `appId` en `capacitor.config.json` por uno propio (p. ej. `co.edu.tuuniversidad.spacecoop`). Hazlo **antes** del paso siguiente.
 2. Añade la plataforma (una sola vez):
-   ```bash
+```bash
    npx cap add android
-   ```
+```
 3. Cada vez que cambies el código web:
-   ```bash
+```bash
    npm run android      # build + cap sync + abre Android Studio
-   ```
+```
 4. Ejecuta en un emulador o teléfono desde Android Studio, o genera el APK con *Build → Build Bundle(s) / APK(s)*.
 
 ## Firebase (tareas 0.8 – 0.10)
@@ -76,7 +76,7 @@ El agente leerá los specs, tomará la siguiente tarea de `TASKS.md`, la impleme
 ## Estado actual
 
 - Specs v1.0 completos.
-- Modo individual jugable (Fase 1, tareas 1.1 – 1.9 hechas; ver `TASKS.md`).
+- Modo individual jugable (Fase 1, tareas 1.1 – 1.10 hechas; ver `TASKS.md`).
 - Firebase **aún no integrado** en el código (Fase 2); `firebase` está declarado en `package.json`.
-- Verificado al generar el proyecto: las 22 pruebas con `node --test` pasan.
+- Verificado al generar el proyecto: las 32 pruebas con `node --test` pasan.
 - **No verificado**: `npm install`, `npm run build` y la app Capacitor (el entorno donde se generó no tenía acceso al registro de npm). Si `npm install` reporta conflictos de versiones, ajusta las versiones de `package.json` (Capacitor, Vite, Firebase) a las vigentes.

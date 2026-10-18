@@ -35,7 +35,7 @@ Estimación total orientativa: 6-7 semanas a media jornada.
 - [x] 1.7 `P1 D2` `waveParams(w)` como función pura en `src/core/difficulty.js` con pruebas `[loop]`
 - [x] 1.8 `P1 D2` Enemigos de 2 puntos de vida desde la oleada 5 (filas pares) con pruebas `[loop]`
 - [x] 1.9 `P1 D3` Invulnerabilidad tras daño (1,5 s) con parpadeo y pruebas `[loop]`
-- [ ] 1.10 `P1 D2` Definir la interfaz `SyncGateway` y `NoopSyncGateway`; inyectarla en `Game` `[arch]`
+- [x] 1.10 `P1 D2` Definir la interfaz `SyncGateway` y `NoopSyncGateway`; inyectarla en `Game` `[arch]`
 - [ ] 1.11 `P1 D2` Pausar el juego cuando la app pasa a segundo plano (`visibilitychange` y evento `appStateChange` de Capacitor) `[arch]`
 - [ ] 1.12 `P2 D2` Sonidos básicos (WebAudio) y vibración al recibir daño `[arch]`
 - [ ] 1.13 `P2 D3` Fondo con estrellas en parallax
@@ -96,3 +96,4 @@ Matchmaking aleatorio, chat, compras, anti-trampas, más de 4 jugadores, reconex
 | Fecha | Spec | Cambio | Motivo |
 |---|---|---|---|
 | 2026-10-17 | todos | v1.0 inicial (stack híbrido: Canvas + JS + CSS + Capacitor) | Creación del proyecto |
+| 2026-10-18 | architecture | v1.1: §3.1 puerto `SyncGateway` (salida: posición, `shot`, `kill`, `hit`, `dispose`); archivo `src/game/SyncGateway.js` | Tarea 1.10 |

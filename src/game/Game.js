@@ -2,6 +2,7 @@ import { C } from '../core/constants.js';
 import { boxesOverlap } from '../core/collision.js';
 import { Formation } from './Formation.js';
 import { Player } from './Player.js';
+import { NoopSyncGateway } from './SyncGateway.js';
 
 /**
  * Estado y simulación del juego. `update(dt)` no toca el DOM, por lo que
@@ -9,13 +10,25 @@ import { Player } from './Player.js';
  */
 export class Game {
   /**
-   * @param {{width?: number, height?: number, random?: () => number}} [opts]
+   * @param {{
+   *   width?: number,
+   *   height?: number,
+   *   random?: () => number,
+   *   sync?: import('./SyncGateway.js').SyncGateway,
+   * }} [opts]
    *   `random` debe devolver un número en [0, 1). Se inyecta para poder probar.
+   *   `sync` es el puerto de red; por defecto no hace nada (modo individual).
    */
-  constructor({ width = C.WIDTH, height = C.HEIGHT, random = Math.random } = {}) {
+  constructor({
+    width = C.WIDTH,
+    height = C.HEIGHT,
+    random = Math.random,
+    sync = new NoopSyncGateway(),
+  } = {}) {
     this.width = width;
     this.height = height;
     this.random = random;
+    this.sync = sync;
     this.startNewGame();
   }
 
@@ -29,6 +42,8 @@ export class Game {
     this.score = 0;
     this.lives = C.STARTING_LIVES;
     this.wave = 0;
+    /** Segundos de juego transcurridos desde `startNewGame()`. */
+    this.elapsed = 0;
     this.isGameOver = false;
     /** @type {import('./Bullet.js').Bullet[]} */
     this.bullets = [];
@@ -54,11 +69,18 @@ export class Game {
     this.isGameOver = true;
   }
 
+  /** Libera el gateway de red; llamar al abandonar la partida. */
+  dispose() {
+    this.sync.dispose();
+  }
+
   /** @param {number} dt Segundos desde el frame anterior. */
   update(dt) {
     if (this.isGameOver) return;
 
+    this.elapsed += dt;
     this.player.update(dt);
+    this.sync.publishPlayerX(this.player.x / this.width);
     this.formation.update(dt);
     for (const b of this.bullets) b.update(dt, this.height);
 
@@ -89,7 +111,10 @@ export class Game {
       if (bullet.fromPlayer) {
         for (const enemy of enemies) {
           if (enemy.dead || !boxesOverlap(bullet, enemy)) continue;
-          if (enemy.hit()) this.score += C.SCORE_PER_ENEMY;
+          if (enemy.hit()) {
+            this.score += C.SCORE_PER_ENEMY;
+            this.sync.emitKill(this.wave, enemy.id, this.elapsed);
+          }
           bullet.dead = true;
           break;
         }
