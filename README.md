@@ -65,7 +65,9 @@ firebase login
 firebase deploy --only database,firestore
 ```
 
-Antes: crea el proyecto en la consola de Firebase, registra una app **Web**, habilita **Authentication → Anónimo**, crea **Realtime Database** (región `us-central1`) y **Firestore**. La configuración web se guarda en `src/net/firebaseConfig.js` (ignorado por Git; se crea en la Fase 2).
+Antes: crea el proyecto en la consola de Firebase, registra una app **Web**, habilita **Authentication → Anónimo**, crea **Realtime Database** (región `us-central1`) y **Firestore**. Guarda los valores web que proporciona la consola en `src/net/firebaseConfig.js` (ignorado por Git), exportados como `firebaseConfig`.
+
+La integración de Firebase informa claramente si falta este archivo; el modo individual no lo importa y sigue funcionando sin configuración.
 
 ## Trabajo con un agente de IA
 

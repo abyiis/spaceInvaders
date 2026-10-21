@@ -42,7 +42,7 @@ Estimación total orientativa: 6-7 semanas a media jornada.
 
 ## Fase 2 — Integración Firebase & Lobby (≈ 1,5 semanas)
 
-- [ ] 2.1 `P0 D2` `src/net/firebase.js`: inicializar la app con el SDK modular y exportar `auth`, `rtdb`, `db`; fallar con un mensaje claro si falta `firebaseConfig.js` `[arch]`
+- [x] 2.1 `P0 D2` `src/net/firebase.js`: inicializar la app con el SDK modular y exportar `auth`, `rtdb`, `db`; fallar con un mensaje claro si falta `firebaseConfig.js` `[arch]`
 - [ ] 2.2 `P0 D2` `authService.js`: inicio de sesión anónimo y exposición de `uid` `[fb]`
 - [ ] 2.3 `P0 D3` Menú principal en HTML/CSS dentro de `#ui` (Jugar solo, Crear sala, Unirse a sala, Ranking) `[arch]`
 - [ ] 2.4 `P0 D3` `roomRepository.createRoom()`: genera código de 5 caracteres, semilla y nodo `meta` `[sync][fb]`
