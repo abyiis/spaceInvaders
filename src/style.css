@@ -40,9 +40,89 @@ body {
   background: var(--bg);
 }
 
-/* Capa para las pantallas HTML/CSS de la Fase 2. No bloquea el juego mientras está vacía. */
 #ui {
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+
+.main-menu {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(39, 54, 110, 0.72), transparent 65%),
+    rgba(7, 10, 23, 0.94);
+  color: #f5f7ff;
+  pointer-events: auto;
+}
+
+.main-menu__panel {
+  width: min(100%, 360px);
+  text-align: center;
+}
+
+.main-menu__eyebrow {
+  margin: 0 0 10px;
+  color: #8da4ff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.main-menu h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2.5rem, 12vw, 3.5rem);
+  line-height: 1;
+  text-shadow: 0 0 24px rgba(91, 125, 255, 0.55);
+}
+
+.main-menu__description {
+  margin: 16px 0 28px;
+  color: #c2c9e0;
+}
+
+.main-menu__actions {
+  display: grid;
+  gap: 12px;
+}
+
+.main-menu__button {
+  min-height: 52px;
+  border: 1px solid rgba(165, 181, 235, 0.42);
+  border-radius: 12px;
+  background: rgba(24, 31, 57, 0.92);
+  color: #f5f7ff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.main-menu__button:hover,
+.main-menu__button:focus-visible {
+  border-color: #9eafff;
+  background: #27335d;
+  outline: none;
+}
+
+.main-menu__button--primary {
+  border-color: #8298ff;
+  background: #536ce0;
+}
+
+.main-menu__button--primary:hover,
+.main-menu__button--primary:focus-visible {
+  background: #657df0;
+}
+
+.main-menu__message {
+  min-height: 2.8em;
+  margin: 18px 0 0;
+  color: #c2c9e0;
+  font-size: 0.9rem;
 }

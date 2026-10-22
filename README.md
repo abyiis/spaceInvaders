@@ -59,9 +59,9 @@ npm run build       # genera dist/
 
 ## Firebase (tareas 0.8 – 0.10)
 
-Para probar el inicio de sesión anónimo de la tarea 2.2, basta con crear un proyecto Firebase, registrar una app **Web** y habilitar **Authentication → Sign-in method → Anonymous**. Copia la configuración web en `src/net/firebaseConfig.js` (ignorado por Git), exportada como `firebaseConfig`.
+La tarea 2.3 añade el menú principal y el modo solo sin depender de Firebase. Para probar el inicio de sesión anónimo de la tarea 2.2, basta con crear un proyecto Firebase, registrar una app **Web** y habilitar **Authentication → Sign-in method → Anonymous**. Copia la configuración web en `src/net/firebaseConfig.js` (ignorado por Git), exportada como `firebaseConfig`.
 
-**La tarea 2.2 no necesita crear una base de datos.** Realtime Database será necesaria al implementar la creación y unión a salas (tarea 2.4); Firestore se necesitará para el ranking (tarea 2.8).
+**Las tareas 2.2 y 2.3 no necesitan crear una base de datos.** Realtime Database será necesaria al implementar la creación de salas (tarea 2.4); Firestore se necesitará para el ranking (tarea 2.8).
 
 Para desplegar las reglas cuando esas bases de datos estén creadas:
 
@@ -87,6 +87,6 @@ El agente leerá los specs, tomará la siguiente tarea de `TASKS.md`, la impleme
 
 - Specs v1.0 completos.
 - Modo individual jugable (Fase 1, tareas 1.1 – 1.13 hechas (Fase 1 completa); ver `TASKS.md`).
-- Firebase está integrado parcialmente: configuración inicial y autenticación anónima (tareas 2.1–2.2); lobby, salas y ranking siguen pendientes.
+- Firebase está integrado parcialmente: configuración inicial y autenticación anónima (tareas 2.1–2.2); el menú principal (tarea 2.3) ya permite iniciar el modo solo; lobby, salas y ranking siguen pendientes.
 - Verificado: `npm test` (73 pruebas), `npm run build` y `npm audit` (sin vulnerabilidades conocidas).
 - La app Capacitor todavía no se ha verificado en un emulador o dispositivo.
