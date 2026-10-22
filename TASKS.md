@@ -62,7 +62,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 - [x] 2B.1 `P0 D3` Router de pantallas `src/ui/screenRouter.js` y `src/ui/uiConstants.js`, con pruebas usando contenedor y pantallas falsas `[ui]`
 - [x] 2B.2 `P0 D3` Refactor de `main.js` y `mainMenu.js` para usar el router: el juego arranca en pausa, `attachInput` solo se engancha al montar `playing` y se quita al desmontarla, y «Jugar solo» monta `playing` llamando a `startNewGame()` `[ui][arch]`
 - [x] 2B.3 `P1 D2` Splash `src/ui/screens/splash.js`: nave en SVG, título y lema, 2,5 s, omitible desde 0,8 s, fundido de 200 ms y `prefers-reduced-motion`; tokens CSS comunes en `style.css`; pruebas de la lógica de tiempo con temporizadores inyectados `[ui]`
-- [ ] 2B.4 `P1 D2` Home: añadir el botón «Créditos» y conectar los botones al router; mantener los avisos de «disponible pronto» de Crear sala, Unirse a sala y Ranking `[ui]`
+- [x] 2B.4 `P1 D2` Home: añadir el botón «Créditos» y conectar los botones al router; mantener los avisos de «disponible pronto» de Crear sala, Unirse a sala y Ranking `[ui]`
 - [x] 2B.5 `P1 D1` *(equipo)* Datos de los créditos: solo los nombres de los integrantes (Juan Felipe Cano Noreña, Juan David Parra Sierra, Santiago Viana Ayala) `[ui]`
 - [x] 2B.6 `P1 D2` Pantalla de Créditos `src/ui/screens/credits.js` y `src/ui/creditsData.js` con los tres nombres de 2B.5 (sin roles), scroll con botón «Volver» fijo y prueba de la forma de los datos `[ui]`
 - [ ] 2B.7 `P0 D3` `Game` llama a `onGameOver(result)` una sola vez con `{ mode, score, wave, durationSeconds }`; se elimina el texto «GAME OVER» del canvas y `input.js` deja de reiniciar con el toque o con Espacio/Enter; pruebas `[loop][arch]`

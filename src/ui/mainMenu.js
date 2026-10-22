@@ -7,6 +7,7 @@
  *   onCreateRoom: () => Promise<void>,
  *   onJoinRoom: (code: string) => Promise<void>,
  *   onShowRanking?: () => Promise<void>,
+ *   onShowCredits?: () => void,
  *   onLoadAlias?: () => Promise<string>,
  *   onSaveAlias?: (name: string) => Promise<string>,
  * }} actions
@@ -41,6 +42,9 @@ export function mountMainMenu(container, actions) {
         </button>
         <button class="main-menu__button" type="button" data-action="ranking">
           Ranking
+        </button>
+        <button class="main-menu__button main-menu__button--secondary" type="button" data-action="credits">
+          Créditos
         </button>
       </div>
       <form class="main-menu__join-form" hidden>
@@ -98,6 +102,9 @@ export function mountMainMenu(container, actions) {
         break;
       case 'ranking':
         void runAsyncAction(actions.onShowRanking, button);
+        break;
+      case 'credits':
+        actions.onShowCredits?.();
         break;
       default:
         break;

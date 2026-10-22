@@ -73,6 +73,7 @@ const router = createScreenRouter({
     [SCREENS.CREDITS]: mountCredits,
     [SCREENS.HOME]: (container, _params, nav) => mountMainMenu(container, {
       onPlaySolo: () => nav.show(SCREENS.PLAYING),
+      onShowCredits: () => nav.show(SCREENS.CREDITS),
       onCreateRoom: async () => {
         const firebase = await import('./net/firebase.js');
         const room = await firebase.roomRepository.createRoom({ name: playerDisplayName });
