@@ -18,7 +18,7 @@ import { formatScore } from './screens/results.js';
  */
 export function mountMainMenu(container, actions) {
   const menu = document.createElement('section');
-  menu.className = 'main-menu';
+  menu.className = 'main-menu screen-enter';
   menu.setAttribute('aria-labelledby', 'main-menu-title');
   menu.innerHTML = `
     <div class="main-menu__panel">

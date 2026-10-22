@@ -19,6 +19,7 @@ body {
   margin: 0;
   height: 100%;
   background: var(--bg);
+  font-family: system-ui, sans-serif;
   overflow: hidden;
   overscroll-behavior: none;
   -webkit-user-select: none;

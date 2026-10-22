@@ -37,3 +37,25 @@ test('la entrada no reinicia ni cambia el estado durante Game Over', () => {
     else globalThis.window = previousWindow;
   }
 });
+
+test('al desmontar input se limpian las teclas sostenidas', () => {
+  const previousWindow = globalThis.window;
+  const fakeWindow = new EventTarget();
+  globalThis.window = fakeWindow;
+  const game = new Game({ random: () => 0.5 });
+  const canvas = fakeCanvas();
+  const detach = attachInput(canvas, game);
+
+  try {
+    const key = new Event('keydown');
+    Object.assign(key, { code: 'ArrowRight' });
+    fakeWindow.dispatchEvent(key);
+    assert.equal(game.player.moveDir, 1);
+
+    detach();
+    assert.equal(game.player.moveDir, 0);
+  } finally {
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+  }
+});

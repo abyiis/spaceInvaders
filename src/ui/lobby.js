@@ -21,7 +21,7 @@ export function mountLobby(container, {
   onBack,
 }) {
   const lobby = document.createElement('section');
-  lobby.className = 'main-menu room-lobby';
+  lobby.className = 'main-menu room-lobby screen-enter';
   lobby.setAttribute('aria-labelledby', 'room-lobby-title');
   lobby.innerHTML = `
     <div class="main-menu__panel room-lobby__panel">

@@ -37,12 +37,12 @@ Requisitos: **Node ≥ 20**. Para la app Android: Android Studio (iOS requiere m
 
 ```bash
 npm install
-npm test            # 67 pruebas de la lógica del juego
+npm test            # 135 pruebas unitarias
 npm run dev         # servidor de desarrollo; ábrelo en el navegador o desde el teléfono (misma Wi-Fi)
 npm run build       # genera dist/
 ```
 
-**Controles:** arrastra el dedo en horizontal (o usa ← → / A D) para mover la nave; dispara sola. Toca la pantalla (o Espacio/Enter) tras el Game Over para reiniciar. Si la app pasa a segundo plano el juego se pausa; toca la pantalla para continuar. Hay sonidos sintetizados (se activan con el primer toque) y el teléfono vibra al recibir daño. El fondo es un campo de estrellas en parallax.
+**Controles:** arrastra el dedo en horizontal (o usa ← → / A D) para mover la nave; dispara sola. Tras el Game Over, Resultados aparece después de 1,2 s; usa «Jugar de nuevo» para empezar otra partida. Pausa con ⏸, Esc o P; desde el menú puedes continuar o salir al inicio. Si la app pasa a segundo plano el juego se pausa; toca la pantalla para continuar. Hay sonidos sintetizados (se activan con el primer toque) y el teléfono vibra al recibir daño. El fondo es un campo de estrellas en parallax.
 
 ### Empaquetar como app Android
 
@@ -87,6 +87,7 @@ El agente leerá los specs, tomará la siguiente tarea de `TASKS.md`, la impleme
 
 - Specs v1.0 completos.
 - Modo individual jugable (Fase 1, tareas 1.1 – 1.13 hechas (Fase 1 completa); ver `TASKS.md`).
+- Fase 2B: router, Splash, Home, Créditos, Resultados, récord local y pausa implementados (tareas 2B.1 – 2B.12); queda pendiente la revisión manual completa en Android (2B.13).
 - Firebase está integrado parcialmente: configuración inicial, autenticación anónima, menú, salas, lobby y presencia (tareas 2.1–2.7); guardado de puntaje y ranking top 20 (2.8–2.9); alias persistente en Firestore (2.10). Las reglas RTDB/Firestore se verifican con emuladores locales (2.11).
 - Verificado: `npm test`, `npm run test:rules`, `npm run build` y `npm audit` (sin vulnerabilidades conocidas). La conexión a Firebase real todavía requiere prueba con Authentication anónima habilitada, bases creadas y reglas desplegadas.
 - La app Capacitor todavía no se ha verificado en un emulador o dispositivo.

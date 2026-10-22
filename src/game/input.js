@@ -78,6 +78,9 @@ export function attachInput(canvas, game) {
   window.addEventListener('blur', onBlur);
 
   return () => {
+    keys.clear();
+    updateKeyboardDirection();
+    activePointerId = null;
     canvas.removeEventListener('pointerdown', onPointerDown);
     canvas.removeEventListener('pointermove', onPointerMove);
     canvas.removeEventListener('pointerup', onPointerEnd);

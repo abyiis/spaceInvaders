@@ -4,8 +4,62 @@ import {
   createScoreSaveController,
   formatDuration,
   formatScore,
+  mountResults,
   scheduleResultsNavigation,
 } from '../src/ui/screens/results.js';
+
+class FakeElement {
+  constructor(document) {
+    this.document = document;
+    this.children = new Map();
+    this.listeners = new Map();
+    this.textContent = '';
+    this.hidden = true;
+    this.disabled = false;
+  }
+
+  setAttribute() {}
+
+  removeAttribute() {}
+
+  addEventListener(type, listener) {
+    this.listeners.set(type, listener);
+  }
+
+  querySelector(selector) {
+    if (!this.children.has(selector)) {
+      this.children.set(selector, new FakeElement(this.document));
+    }
+    return this.children.get(selector);
+  }
+
+  append(element) {
+    this.child = element;
+  }
+
+  focus() {
+    this.document.activeElement = this;
+  }
+
+  remove() {
+    this.removed = true;
+  }
+}
+
+async function withFakeDocument(run) {
+  const previousDocument = globalThis.document;
+  const document = {
+    activeElement: null,
+    createElement: () => new FakeElement(document),
+  };
+  globalThis.document = document;
+  try {
+    await run(document);
+  } finally {
+    if (previousDocument === undefined) delete globalThis.document;
+    else globalThis.document = previousDocument;
+  }
+}
 
 test('formatScore separa miles con punto', () => {
   assert.equal(formatScore(0), '0');
@@ -120,4 +174,57 @@ test('no duplica guardados simultáneos y descarta estados después de dispose',
 
   assert.equal(attempts, 1);
   assert.deepEqual(states, ['saving']);
+});
+
+test('mountResults presenta el resultado y enfoca Jugar de nuevo sin Firebase', async () => {
+  await withFakeDocument((document) => {
+    const container = new FakeElement(document);
+    const navCalls = [];
+    const unmount = mountResults(container, {
+      result: { mode: 'solo', score: 1250, wave: 3, durationSeconds: 205.4 },
+    }, { show: (...args) => navCalls.push(args) });
+    const screen = container.child;
+
+    assert.equal(screen.querySelector('[data-result-score]').textContent, '1.250');
+    assert.equal(screen.querySelector('[data-result-wave]').textContent, '3');
+    assert.equal(screen.querySelector('[data-result-duration]').textContent, '03:25');
+    assert.equal(screen.querySelector('[data-save-area]').hidden, true);
+    assert.equal(document.activeElement, screen.querySelector('[data-action="replay"]'));
+
+    screen.querySelector('[data-action="replay"]').listeners.get('click')();
+    screen.querySelector('[data-action="home"]').listeners.get('click')();
+    assert.deepEqual(navCalls, [['playing'], ['home']]);
+    unmount();
+    assert.equal(screen.removed, true);
+  });
+});
+
+test('mountResults muestra el nuevo récord y los estados/reintento de guardado', async () => {
+  await withFakeDocument(async (document) => {
+    const container = new FakeElement(document);
+    let attempts = 0;
+    const unmount = mountResults(container, {
+      result: { mode: 'solo', score: 1300, wave: 4, durationSeconds: 300 },
+      bestScoreStore: { submit: () => ({ best: 1300, isNewBest: true }) },
+      saveScore: async () => {
+        attempts += 1;
+        if (attempts === 1) throw new Error('offline');
+      },
+    }, { show() {} });
+    const screen = container.child;
+    const status = screen.querySelector('[data-save-status]');
+    const retry = screen.querySelector('[data-action="retry"]');
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(screen.querySelector('[data-new-best]').hidden, false);
+    assert.equal(status.textContent, 'No se pudo guardar el puntaje');
+    assert.equal(status.title, 'offline');
+    assert.equal(retry.hidden, false);
+
+    retry.listeners.get('click')();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(status.textContent, 'Puntaje guardado en el ranking');
+    assert.equal(attempts, 2);
+    unmount();
+  });
 });

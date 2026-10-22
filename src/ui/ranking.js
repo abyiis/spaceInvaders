@@ -10,7 +10,7 @@
  */
 export function mountRanking(container, { loadScores, onBack }) {
   const screen = document.createElement('section');
-  screen.className = 'main-menu ranking-screen';
+  screen.className = 'main-menu ranking-screen screen-enter';
   screen.setAttribute('aria-labelledby', 'ranking-title');
   screen.innerHTML = `
     <div class="main-menu__panel ranking-screen__panel">

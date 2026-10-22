@@ -92,7 +92,7 @@ export function createScoreSaveController({ saveScore, result, onState }) {
  * @param {{ show(name: string, params?: object): void }} nav
  * @returns {() => void}
  */
-export function mountResults(container, { result }, nav) {
+export function mountResults(container, { result, saveScore, bestScoreStore }, nav) {
   const screen = document.createElement('section');
   screen.className = 'app-screen results-screen screen-enter';
   screen.setAttribute('aria-labelledby', 'results-title');
