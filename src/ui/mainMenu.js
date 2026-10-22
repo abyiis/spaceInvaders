@@ -6,7 +6,7 @@
  *   onPlaySolo: () => void,
  *   onCreateRoom: () => Promise<void>,
  *   onJoinRoom: (code: string) => Promise<void>,
- *   onShowRanking: () => void,
+ *   onShowRanking?: () => Promise<void>,
  * }} actions
  */
 export function mountMainMenu(container, actions) {
@@ -84,7 +84,7 @@ export function mountMainMenu(container, actions) {
         joinInput.focus();
         break;
       case 'ranking':
-        actions.onShowRanking();
+        void runAsyncAction(actions.onShowRanking, button);
         break;
       default:
         break;

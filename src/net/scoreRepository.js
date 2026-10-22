@@ -1,6 +1,10 @@
 import {
   addDoc,
   collection,
+  getDocs,
+  limit,
+  orderBy,
+  query,
   serverTimestamp,
 } from 'firebase/firestore';
 
@@ -14,6 +18,10 @@ const MAX_PLAYER_NAME_LENGTH = 16;
  *   firestoreApi?: {
  *     addDoc: typeof addDoc,
  *     collection: typeof collection,
+ *     getDocs: typeof getDocs,
+ *     limit: typeof limit,
+ *     orderBy: typeof orderBy,
+ *     query: typeof query,
  *     serverTimestamp: typeof serverTimestamp,
  *   },
  * }} options
@@ -21,7 +29,7 @@ const MAX_PLAYER_NAME_LENGTH = 16;
 export function createScoreRepository({
   db,
   authService,
-  firestoreApi = { addDoc, collection, serverTimestamp },
+  firestoreApi = { addDoc, collection, getDocs, limit, orderBy, query, serverTimestamp },
 }) {
   return {
     async saveSoloScore({ score, wave, name = 'Jugador' }) {
@@ -56,6 +64,23 @@ export function createScoreRepository({
         },
       );
       return document.id;
+    },
+
+    async getTopScores() {
+      const uid = await authService.signIn();
+      if (typeof uid !== 'string' || uid.length === 0) {
+        throw new Error('Cannot read the leaderboard without an authenticated user.');
+      }
+      const scoresQuery = firestoreApi.query(
+        firestoreApi.collection(db, 'leaderboard'),
+        firestoreApi.orderBy('score', 'desc'),
+        firestoreApi.limit(20),
+      );
+      const snapshot = await firestoreApi.getDocs(scoresQuery);
+      return snapshot.docs.map((document) => ({
+        id: document.id,
+        ...document.data(),
+      }));
     },
   };
 }

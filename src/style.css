@@ -231,3 +231,35 @@ body {
 .score-save-status[hidden] {
   display: none;
 }
+
+.ranking-screen__panel {
+  display: grid;
+  gap: 14px;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.ranking-screen__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ranking-screen__list li {
+  display: grid;
+  grid-template-columns: 2.5em minmax(0, 1fr) auto;
+  gap: 10px;
+  border: 1px solid rgba(165, 181, 235, 0.3);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(24, 31, 57, 0.75);
+  color: #f5f7ff;
+  text-align: left;
+}
+
+.ranking-screen__list li span:last-child {
+  color: #a9b8ff;
+  font-variant-numeric: tabular-nums;
+}

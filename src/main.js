@@ -8,6 +8,7 @@ import { attachInput } from './game/input.js';
 import { attachLifecycle } from './lifecycle.js';
 import { mountLobby } from './ui/lobby.js';
 import { mountMainMenu } from './ui/mainMenu.js';
+import { mountRanking } from './ui/ranking.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -85,7 +86,13 @@ function showMainMenu() {
       const room = await firebase.roomRepository.joinRoom(code);
       showLobby(firebase, room);
     },
-    onShowRanking: undefined,
+    onShowRanking: async () => {
+      const { scoreRepository } = await import('./net/firebase.js');
+      mountRanking(ui, {
+        loadScores: () => scoreRepository.getTopScores(),
+        onBack: showMainMenu,
+      });
+    },
   });
 }
 
