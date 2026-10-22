@@ -208,16 +208,5 @@ export class Game {
   #renderGameOver(ctx) {
     ctx.fillStyle = 'rgba(11, 14, 26, 0.6)';
     ctx.fillRect(0, 0, this.width, this.height);
-
-    ctx.fillStyle = '#ffd740';
-    ctx.font = 'bold 28px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('GAME OVER', this.width / 2, this.height / 2 - 20);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '16px system-ui, sans-serif';
-    ctx.fillText(`Puntaje: ${this.score}`, this.width / 2, this.height / 2 + 14);
-    ctx.fillText('Toca para reiniciar', this.width / 2, this.height / 2 + 42);
   }
 }

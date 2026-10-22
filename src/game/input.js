@@ -18,12 +18,9 @@ export function attachInput(canvas, game) {
 
   const onPointerDown = (e) => {
     e.preventDefault();
+    if (game.isGameOver) return;
     if (game.paused) {
       game.resume();
-      return;
-    }
-    if (game.isGameOver) {
-      game.startNewGame();
       return;
     }
     activePointerId = e.pointerId;
@@ -50,13 +47,10 @@ export function attachInput(canvas, game) {
   };
 
   const onKeyDown = (e) => {
+    if (game.isGameOver) return;
     const isConfirmKey = e.code === 'Space' || e.code === 'Enter';
     if (game.paused && isConfirmKey) {
       game.resume();
-      return;
-    }
-    if (game.isGameOver && isConfirmKey) {
-      game.startNewGame();
       return;
     }
     keys.add(e.code);

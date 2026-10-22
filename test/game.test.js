@@ -108,6 +108,39 @@ test('onGameOver recibe un único resultado y se rearma al iniciar otra partida'
   assert.equal(results[1].durationSeconds, 4);
 });
 
+test('onGameOver no se vuelve a llamar durante actualizaciones posteriores al final', () => {
+  const results = [];
+  const g = new Game({
+    random: seeded(1),
+    onGameOver: (result) => results.push(result),
+  });
+  g.triggerGameOver();
+
+  g.update(1);
+  g.update(1);
+
+  assert.equal(results.length, 1);
+});
+
+test('onGameOver informa el modo coop cuando el gateway es coop', () => {
+  const results = [];
+  const g = new Game({
+    random: seeded(1),
+    sync: {
+      isCoop: true,
+      publishPlayerX() {},
+      emitShot() {},
+      emitKill() {},
+      emitHit() {},
+      dispose() {},
+    },
+    onGameOver: (result) => results.push(result),
+  });
+  g.triggerGameOver();
+
+  assert.equal(results[0].mode, 'coop');
+});
+
 test('al destruir todos los enemigos empieza la siguiente oleada con bonus', () => {
   const g = newGame();
   for (const e of g.formation.enemies) e.dead = true;
