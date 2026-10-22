@@ -70,7 +70,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 - [x] 2B.9 `P1 D2` Estado de guardado en Resultados (guardando, guardado, error con «Reintentar»), oculto si no hay Firebase; recibe `saveScore` inyectado desde `main.js` `[ui][fb]`
 - [x] 2B.10 `P1 D2` Récord personal local (`src/ui/bestScore.js`, `localStorage` inyectable, con pruebas): insignia «¡Nuevo récord!» en Resultados y línea «Tu récord» en Home `[ui]`
 - [ ] 2B.11 `P1 D2` Botón «Atrás» de Android con `@capacitor/app`: Créditos y Resultados vuelven a Home, Home cierra la app, jugando abre el menú de pausa; pruebas del mapa de destinos con el plugin inyectado `[ui][arch]`
-- [ ] 2B.12 `P1 D3` Botón de pausa (⏸, Esc o P) y menú de pausa con «Continuar» y «Salir al inicio» (`src/ui/pauseController.js`): el input se quita mientras el menú está abierto, abandonar no genera resultado ni guarda puntaje, y desmontar `playing` pausa el juego; pruebas `[ui][loop]`
+- [x] 2B.12 `P1 D3` Botón de pausa (⏸, Esc o P) y menú de pausa con «Continuar» y «Salir al inicio» (`src/ui/pauseController.js`): el input se quita mientras el menú está abierto, abandonar no genera resultado ni guarda puntaje, y desmontar `playing` pausa el juego; pruebas `[ui][loop]`
 - [ ] 2B.13 `P1 D2` Revisión manual del flujo completo en el navegador (360×640 y 320×568) y en Android, incluida la salida al Home desde la pausa; capturas para el informe `[ui]`
 
 ## Fase 3 — Cooperativo en sincronía (≈ 2 semanas)

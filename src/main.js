@@ -4,7 +4,6 @@ import { App } from '@capacitor/app';
 import { Haptics } from '@capacitor/haptics';
 import { createEffects } from './effects.js';
 import { Game } from './game/Game.js';
-import { attachInput } from './game/input.js';
 import { attachLifecycle } from './lifecycle.js';
 import { mountLobby } from './ui/lobby.js';
 import { mountMainMenu } from './ui/mainMenu.js';
@@ -12,6 +11,7 @@ import { mountRanking } from './ui/ranking.js';
 import { createBestScoreStore } from './ui/bestScore.js';
 import { createScreenRouter, SCREENS } from './ui/screenRouter.js';
 import { mountCredits } from './ui/screens/credits.js';
+import { mountPlaying } from './ui/screens/playing.js';
 import { mountResults, scheduleResultsNavigation } from './ui/screens/results.js';
 import { mountSplash } from './ui/screens/splash.js';
 import { RESULTS_DELAY_MS } from './ui/uiConstants.js';
@@ -40,6 +40,7 @@ async function saveSoloScore(result) {
 const game = new Game({
   effects,
   onGameOver: (result) => {
+    ui.querySelector('[data-action="pause"]')?.setAttribute('hidden', '');
     cancelPendingResults();
     cancelPendingResults = scheduleResultsNavigation(router, result, {
       delayMs: RESULTS_DELAY_MS,
@@ -99,13 +100,11 @@ const router = createScreenRouter({
         return playerDisplayName;
       },
     }),
-    [SCREENS.PLAYING]: () => {
-      game.startNewGame();
-      const detachInput = attachInput(canvas, game);
+    [SCREENS.PLAYING]: (container, _params, nav) => {
+      const unmount = mountPlaying(container, { game, canvas }, nav);
       return () => {
         cancelPendingResults();
-        detachInput();
-        game.pause();
+        unmount();
       };
     },
     lobby: (container, { firebase, room }, nav) => mountLobby(container, {

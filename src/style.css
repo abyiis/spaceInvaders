@@ -255,6 +255,48 @@ body {
   gap: 12px;
 }
 
+.pause-button {
+  position: absolute;
+  top: max(env(safe-area-inset-top), calc((100dvh - min(100dvh, 177.78vw)) / 2 + 8px));
+  right: max(env(safe-area-inset-right), calc((100vw - min(100vw, 56.25dvh)) / 2 + 8px));
+  z-index: 2;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: rgba(16, 22, 43, 0.9);
+  color: var(--ui-text);
+  font-size: 1.1rem;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.pause-button:focus-visible {
+  outline: 2px solid #9eafff;
+  outline-offset: 2px;
+}
+
+.pause-button[hidden] {
+  display: none;
+}
+
+.pause-menu__panel {
+  display: grid;
+  gap: 14px;
+  width: min(100%, 360px);
+  border: 1px solid var(--ui-border);
+  border-radius: 20px;
+  padding: 28px;
+  background: rgba(16, 22, 43, 0.98);
+  text-align: center;
+}
+
+.pause-menu__panel h1 {
+  margin: 0 0 8px;
+  color: var(--ui-text);
+  font-size: 2rem;
+}
+
 @keyframes splash-progress {
   to { width: 100%; }
 }
