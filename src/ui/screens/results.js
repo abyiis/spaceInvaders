@@ -87,6 +87,7 @@ export function createScoreSaveController({ saveScore, result, onState }) {
  * @param {{
  *   result: { score: number, wave: number, durationSeconds: number },
  *   saveScore?: (result: object) => Promise<void>,
+ *   bestScoreStore?: { submit(score: number): { best: number | null, isNewBest: boolean } },
  * }} params
  * @param {{ show(name: string, params?: object): void }} nav
  * @returns {() => void}
@@ -103,6 +104,7 @@ export function mountResults(container, { result }, nav) {
         <span data-result-score></span>
         <span class="results-screen__score-label">puntos</span>
       </p>
+      <p class="results-screen__new-best" data-new-best hidden>¡Nuevo récord!</p>
       <dl class="results-screen__details">
         <div><dt>Oleada alcanzada</dt><dd data-result-wave></dd></div>
         <div><dt>Tiempo</dt><dd data-result-duration></dd></div>
@@ -127,6 +129,10 @@ export function mountResults(container, { result }, nav) {
   screen.querySelector('[data-result-score]').textContent = formatScore(result.score);
   screen.querySelector('[data-result-wave]').textContent = String(result.wave);
   screen.querySelector('[data-result-duration]').textContent = formatDuration(result.durationSeconds);
+  if (result.mode === 'solo' && bestScoreStore) {
+    const { isNewBest } = bestScoreStore.submit(result.score);
+    screen.querySelector('[data-new-best]').hidden = !isNewBest;
+  }
   screen.querySelector('[data-action="replay"]').addEventListener('click', () => nav.show('playing'));
   screen.querySelector('[data-action="home"]').addEventListener('click', () => nav.show('home'));
 

@@ -204,6 +204,17 @@ body {
   font-weight: 500;
 }
 
+.results-screen__new-best {
+  margin: -12px 0 24px;
+  color: #ffd740;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.results-screen__new-best[hidden] {
+  display: none;
+}
+
 .results-screen__details {
   display: grid;
   gap: 12px;
@@ -300,6 +311,16 @@ body {
 .main-menu__description {
   margin: 16px 0 28px;
   color: #c2c9e0;
+}
+
+.main-menu__best-score {
+  margin: -16px 0 24px;
+  color: #ffd740;
+  font-weight: 700;
+}
+
+.main-menu__best-score[hidden] {
+  display: none;
 }
 
 .main-menu__alias {

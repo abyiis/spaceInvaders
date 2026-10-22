@@ -1,3 +1,5 @@
+import { formatScore } from './screens/results.js';
+
 /**
  * Mounts the main menu into the application UI layer.
  *
@@ -10,6 +12,7 @@
  *   onShowCredits?: () => void,
  *   onLoadAlias?: () => Promise<string>,
  *   onSaveAlias?: (name: string) => Promise<string>,
+ *   bestScore?: number | null,
  * }} actions
  * @returns {() => void}
  */
@@ -22,6 +25,7 @@ export function mountMainMenu(container, actions) {
       <p class="main-menu__eyebrow">Arcade cooperativo</p>
       <h1 id="main-menu-title">Space Coop</h1>
       <p class="main-menu__description">Defiende la galaxia. ¿Listo para jugar?</p>
+      <p class="main-menu__best-score" data-best-score hidden></p>
       <details class="main-menu__alias" hidden>
         <summary>Alias: <span data-current-alias>Jugador</span></summary>
         <form class="main-menu__alias-form">
@@ -67,6 +71,11 @@ export function mountMainMenu(container, actions) {
   const aliasForm = menu.querySelector('.main-menu__alias-form');
   const aliasInput = menu.querySelector('#player-alias');
   const currentAlias = menu.querySelector('[data-current-alias]');
+  const bestScoreLine = menu.querySelector('[data-best-score]');
+  if (Number.isSafeInteger(actions.bestScore) && actions.bestScore >= 0) {
+    bestScoreLine.textContent = `Tu récord: ${formatScore(actions.bestScore)}`;
+    bestScoreLine.hidden = false;
+  }
   const runAsyncAction = async (action, button) => {
     if (typeof action !== 'function') {
       message.textContent = 'Esta opción todavía no está disponible.';

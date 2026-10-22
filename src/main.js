@@ -9,6 +9,7 @@ import { attachLifecycle } from './lifecycle.js';
 import { mountLobby } from './ui/lobby.js';
 import { mountMainMenu } from './ui/mainMenu.js';
 import { mountRanking } from './ui/ranking.js';
+import { createBestScoreStore } from './ui/bestScore.js';
 import { createScreenRouter, SCREENS } from './ui/screenRouter.js';
 import { mountCredits } from './ui/screens/credits.js';
 import { mountResults, scheduleResultsNavigation } from './ui/screens/results.js';
@@ -27,6 +28,7 @@ ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 const effects = createEffects({ haptics: Haptics });
 const ui = document.getElementById('ui');
 let playerDisplayName = 'Jugador';
+const bestScoreStore = createBestScoreStore();
 const hasFirebaseConfig = Object.keys(import.meta.glob('./net/firebaseConfig.js')).length > 0;
 let cancelPendingResults = () => {};
 
@@ -66,8 +68,10 @@ const router = createScreenRouter({
     [SCREENS.RESULTS]: (container, { result }, nav) => mountResults(container, {
       result,
       saveScore: result.mode === 'solo' && hasFirebaseConfig ? saveSoloScore : undefined,
+      bestScoreStore: result.mode === 'solo' ? bestScoreStore : undefined,
     }, nav),
     [SCREENS.HOME]: (container, _params, nav) => mountMainMenu(container, {
+      bestScore: bestScoreStore.get(),
       onPlaySolo: () => nav.show(SCREENS.PLAYING),
       onShowCredits: () => nav.show(SCREENS.CREDITS),
       onCreateRoom: async () => {
