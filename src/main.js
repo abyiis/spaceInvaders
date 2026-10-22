@@ -9,6 +9,7 @@ import { attachLifecycle } from './lifecycle.js';
 import { mountLobby } from './ui/lobby.js';
 import { mountMainMenu } from './ui/mainMenu.js';
 import { mountRanking } from './ui/ranking.js';
+import { createScreenRouter, SCREENS } from './ui/screenRouter.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -60,54 +61,63 @@ for (const type of ['pointerdown', 'pointerup', 'keydown']) {
 attachLifecycle(game, { app: App });
 
 function showLobby(firebase, room) {
-  mountLobby(ui, {
-    code: room.code,
-    uid: room.uid,
-    watchPlayers: firebase.roomRepository.watchPlayers,
-    watchPresence: firebase.roomRepository.watchPresence,
-    setReady: firebase.roomRepository.setReady,
-    onBack: showMainMenu,
-  });
+  router.show('lobby', { firebase, room });
 }
 
-function showMainMenu() {
-  mountMainMenu(ui, {
-    onPlaySolo: () => {
-      attachInput(canvas, game);
+const router = createScreenRouter({
+  container: ui,
+  screens: {
+    [SCREENS.HOME]: (container, _params, nav) => mountMainMenu(container, {
+      onPlaySolo: () => nav.show(SCREENS.PLAYING),
+      onCreateRoom: async () => {
+        const firebase = await import('./net/firebase.js');
+        const room = await firebase.roomRepository.createRoom({ name: playerDisplayName });
+        showLobby(firebase, room);
+      },
+      onJoinRoom: async (code) => {
+        const firebase = await import('./net/firebase.js');
+        const room = await firebase.roomRepository.joinRoom(code, { name: playerDisplayName });
+        showLobby(firebase, room);
+      },
+      onShowRanking: async () => {
+        const { scoreRepository } = await import('./net/firebase.js');
+        nav.show('ranking', { scoreRepository });
+      },
+      onLoadAlias: async () => {
+        const { profileRepository } = await import('./net/firebase.js');
+        playerDisplayName = await profileRepository.getDisplayName();
+        return playerDisplayName;
+      },
+      onSaveAlias: async (name) => {
+        const { profileRepository } = await import('./net/firebase.js');
+        playerDisplayName = await profileRepository.saveDisplayName(name);
+        return playerDisplayName;
+      },
+    }),
+    [SCREENS.PLAYING]: () => {
       game.startNewGame();
-      game.resume();
+      const detachInput = attachInput(canvas, game);
+      return () => {
+        detachInput();
+        game.pause();
+      };
     },
-    onCreateRoom: async () => {
-      const firebase = await import('./net/firebase.js');
-      const room = await firebase.roomRepository.createRoom({ name: playerDisplayName });
-      showLobby(firebase, room);
-    },
-    onJoinRoom: async (code) => {
-      const firebase = await import('./net/firebase.js');
-      const room = await firebase.roomRepository.joinRoom(code, { name: playerDisplayName });
-      showLobby(firebase, room);
-    },
-    onShowRanking: async () => {
-      const { scoreRepository } = await import('./net/firebase.js');
-      mountRanking(ui, {
-        loadScores: () => scoreRepository.getTopScores(),
-        onBack: showMainMenu,
-      });
-    },
-    onLoadAlias: async () => {
-      const { profileRepository } = await import('./net/firebase.js');
-      playerDisplayName = await profileRepository.getDisplayName();
-      return playerDisplayName;
-    },
-    onSaveAlias: async (name) => {
-      const { profileRepository } = await import('./net/firebase.js');
-      playerDisplayName = await profileRepository.saveDisplayName(name);
-      return playerDisplayName;
-    },
-  });
-}
+    lobby: (container, { firebase, room }, nav) => mountLobby(container, {
+      code: room.code,
+      uid: room.uid,
+      watchPlayers: firebase.roomRepository.watchPlayers,
+      watchPresence: firebase.roomRepository.watchPresence,
+      setReady: firebase.roomRepository.setReady,
+      onBack: () => nav.show(SCREENS.HOME),
+    }),
+    ranking: (container, { scoreRepository }, nav) => mountRanking(container, {
+      loadScores: () => scoreRepository.getTopScores(),
+      onBack: () => nav.show(SCREENS.HOME),
+    }),
+  },
+});
 
-showMainMenu();
+router.show(SCREENS.HOME);
 
 let last = performance.now();
 

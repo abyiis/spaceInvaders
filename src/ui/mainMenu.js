@@ -10,6 +10,7 @@
  *   onLoadAlias?: () => Promise<string>,
  *   onSaveAlias?: (name: string) => Promise<string>,
  * }} actions
+ * @returns {() => void}
  */
 export function mountMainMenu(container, actions) {
   const menu = document.createElement('section');
@@ -62,7 +63,7 @@ export function mountMainMenu(container, actions) {
   const aliasForm = menu.querySelector('.main-menu__alias-form');
   const aliasInput = menu.querySelector('#player-alias');
   const currentAlias = menu.querySelector('[data-current-alias]');
-  const runAsyncAction = async (action, button, closeOnSuccess = true) => {
+  const runAsyncAction = async (action, button) => {
     if (typeof action !== 'function') {
       message.textContent = 'Esta opción todavía no está disponible.';
       return;
@@ -71,7 +72,6 @@ export function mountMainMenu(container, actions) {
     message.textContent = 'Conectando con Firebase…';
     try {
       await action();
-      if (closeOnSuccess) menu.remove();
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       message.textContent = `No se pudo completar la acción: ${detail}`;
@@ -88,7 +88,6 @@ export function mountMainMenu(container, actions) {
     switch (button.dataset.action) {
       case 'solo':
         actions.onPlaySolo();
-        menu.remove();
         break;
       case 'create':
         void runAsyncAction(actions.onCreateRoom, button);
@@ -131,9 +130,11 @@ export function mountMainMenu(container, actions) {
         aliasInput.value = name;
         currentAlias.textContent = name;
         message.textContent = 'Alias guardado.';
-      }, button, false);
+      }, button);
     });
   }
 
   container.append(menu);
+  menu.querySelector('[data-action="solo"]').focus();
+  return () => menu.remove();
 }
