@@ -59,7 +59,7 @@ Estimación total orientativa: 7-8 semanas a media jornada (incluye la Fase 2B).
 Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque no dependen del coop. Dependencias: 2B.2 necesita 2B.1; 2B.3, 2B.4, 2B.6 y 2B.12 necesitan 2B.2; 2B.8 necesita 2B.2 y 2B.7; 2B.9 necesita 2B.8 y 2.8; 2B.10 necesita 2B.8; 2B.11 necesita 2B.2 y 2B.12 (el caso «jugando»); 2B.13 va al final.
 
 - [x] 2B.0 `P0 D2` Specs de pantallas: nuevo `.spec/ui_screens.md` v1.1 y actualización de `architecture.md` (v1.6) y `game_loop.md` (v1.4) `[ui][arch][loop]`
-- [ ] 2B.1 `P0 D3` Router de pantallas `src/ui/screenRouter.js` y `src/ui/uiConstants.js`, con pruebas usando contenedor y pantallas falsas `[ui]`
+- [x] 2B.1 `P0 D3` Router de pantallas `src/ui/screenRouter.js` y `src/ui/uiConstants.js`, con pruebas usando contenedor y pantallas falsas `[ui]`
 - [ ] 2B.2 `P0 D3` Refactor de `main.js` y `mainMenu.js` para usar el router: el juego arranca en pausa, `attachInput` solo se engancha al montar `playing` y se quita al desmontarla, y «Jugar solo» monta `playing` llamando a `startNewGame()` `[ui][arch]`
 - [ ] 2B.3 `P1 D2` Splash `src/ui/screens/splash.js`: nave en SVG, título y lema, 2,5 s, omitible desde 0,8 s, fundido de 200 ms y `prefers-reduced-motion`; tokens CSS comunes en `style.css`; pruebas de la lógica de tiempo con temporizadores inyectados `[ui]`
 - [ ] 2B.4 `P1 D2` Home: añadir el botón «Créditos» y conectar los botones al router; mantener los avisos de «disponible pronto» de Crear sala, Unirse a sala y Ranking `[ui]`
