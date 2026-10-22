@@ -10,6 +10,7 @@ import { mountLobby } from './ui/lobby.js';
 import { mountMainMenu } from './ui/mainMenu.js';
 import { mountRanking } from './ui/ranking.js';
 import { createScreenRouter, SCREENS } from './ui/screenRouter.js';
+import { mountCredits } from './ui/screens/credits.js';
 import { mountSplash } from './ui/screens/splash.js';
 
 const canvas = document.getElementById('game');
@@ -69,6 +70,7 @@ const router = createScreenRouter({
   container: ui,
   screens: {
     [SCREENS.SPLASH]: mountSplash,
+    [SCREENS.CREDITS]: mountCredits,
     [SCREENS.HOME]: (container, _params, nav) => mountMainMenu(container, {
       onPlaySolo: () => nav.show(SCREENS.PLAYING),
       onCreateRoom: async () => {

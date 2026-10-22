@@ -118,6 +118,60 @@ body {
   animation: splash-progress 2.5s linear both;
 }
 
+.credits-screen__panel {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  width: min(100%, 420px);
+  max-height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: 20px;
+  background: rgba(16, 22, 43, 0.96);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.credits-screen__content {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+}
+
+.credits-screen__content h1 {
+  margin: 0 0 24px;
+  font-size: clamp(2rem, 10vw, 2.8rem);
+}
+
+.credits-screen__content h2 {
+  margin: 22px 0 10px;
+  color: #a9b8ff;
+  font-size: 1rem;
+}
+
+.credits-screen__team,
+.credits-screen__technologies {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--ui-text);
+}
+
+.credits-screen__note {
+  margin: 22px 0 0;
+  color: var(--ui-muted);
+  line-height: 1.5;
+}
+
+.credits-screen__footer {
+  padding: 12px 24px max(16px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(165, 181, 235, 0.2);
+  background: var(--ui-panel);
+}
+
+.credits-screen__footer button {
+  width: 100%;
+}
+
 @keyframes splash-progress {
   to { width: 100%; }
 }
