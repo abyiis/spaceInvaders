@@ -21,6 +21,5 @@ ios/App/build/
 firebase-debug.log
 .env
 .env.local
-src/net/firebaseConfig.js
 android/app/google-services.json
 ios/App/App/GoogleService-Info.plist

@@ -59,19 +59,17 @@ npm run build       # genera dist/
 
 ## Firebase (tareas 0.8 – 0.10)
 
-La tarea 2.3 añade el menú principal y el modo solo sin depender de Firebase. Para probar el inicio de sesión anónimo de la tarea 2.2, basta con crear un proyecto Firebase, registrar una app **Web** y habilitar **Authentication → Sign-in method → Anonymous**. Copia la configuración web en `src/net/firebaseConfig.js` (ignorado por Git), exportada como `firebaseConfig`.
+La tarea 2.3 añade el menú principal y el modo solo sin depender de Firebase. La tarea 2.4 implementa la creación de salas en RTDB. Para usarla, registra una app **Web**, habilita **Authentication → Sign-in method → Anonymous** y guarda la configuración Web en `src/net/firebaseConfig.js` (ignorado por Git), exportada como `firebaseConfig`; incluye el `databaseURL` de Realtime Database.
 
-**Las tareas 2.2 y 2.3 no necesitan crear una base de datos.** Realtime Database será necesaria al implementar la creación de salas (tarea 2.4); Firestore se necesitará para el ranking (tarea 2.8).
-
-Para desplegar las reglas cuando esas bases de datos estén creadas:
+Firestore se necesitará para el ranking (tarea 2.8). Para publicar solo las reglas de RTDB:
 
 ```bash
 npm install -g firebase-tools
 firebase login
-firebase deploy --only database,firestore
+firebase deploy --only database
 ```
 
-Antes del despliegue, crea Realtime Database en la región `us-central1` y Firestore en la consola de Firebase.
+La base RTDB debe estar creada en la región `us-central1`. No abras el acceso público: las reglas del repositorio restringen el uso a usuarios autenticados.
 
 El servicio de autenticación expone `authService.signIn()` y `authService.uid` desde `src/net/firebase.js`. La configuración Firebase se valida al importar ese módulo; el modo individual no lo importa y sigue funcionando sin configuración.
 
@@ -87,6 +85,6 @@ El agente leerá los specs, tomará la siguiente tarea de `TASKS.md`, la impleme
 
 - Specs v1.0 completos.
 - Modo individual jugable (Fase 1, tareas 1.1 – 1.13 hechas (Fase 1 completa); ver `TASKS.md`).
-- Firebase está integrado parcialmente: configuración inicial y autenticación anónima (tareas 2.1–2.2); el menú principal (tarea 2.3) ya permite iniciar el modo solo; lobby, salas y ranking siguen pendientes.
-- Verificado: `npm test` (73 pruebas), `npm run build` y `npm audit` (sin vulnerabilidades conocidas).
+- Firebase está integrado parcialmente: configuración inicial y autenticación anónima (tareas 2.1–2.2), menú principal (tarea 2.3) y creación de salas (tarea 2.4); unión, lobby y ranking siguen pendientes.
+- Verificado: `npm test` (78 pruebas) y `npm run build`. La conexión de RTDB debe probarse con autenticación anónima habilitada y reglas desplegadas.
 - La app Capacitor todavía no se ha verificado en un emulador o dispositivo.
