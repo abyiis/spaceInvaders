@@ -59,15 +59,21 @@ npm run build       # genera dist/
 
 ## Firebase (tareas 0.8 – 0.10)
 
+Para probar el inicio de sesión anónimo de la tarea 2.2, basta con crear un proyecto Firebase, registrar una app **Web** y habilitar **Authentication → Sign-in method → Anonymous**. Copia la configuración web en `src/net/firebaseConfig.js` (ignorado por Git), exportada como `firebaseConfig`.
+
+**La tarea 2.2 no necesita crear una base de datos.** Realtime Database será necesaria al implementar la creación y unión a salas (tarea 2.4); Firestore se necesitará para el ranking (tarea 2.8).
+
+Para desplegar las reglas cuando esas bases de datos estén creadas:
+
 ```bash
 npm install -g firebase-tools
 firebase login
 firebase deploy --only database,firestore
 ```
 
-Antes: crea el proyecto en la consola de Firebase, registra una app **Web**, habilita **Authentication → Anónimo**, crea **Realtime Database** (región `us-central1`) y **Firestore**. Guarda los valores web que proporciona la consola en `src/net/firebaseConfig.js` (ignorado por Git), exportados como `firebaseConfig`.
+Antes del despliegue, crea Realtime Database en la región `us-central1` y Firestore en la consola de Firebase.
 
-La integración de Firebase informa claramente si falta este archivo; el modo individual no lo importa y sigue funcionando sin configuración.
+El servicio de autenticación expone `authService.signIn()` y `authService.uid` desde `src/net/firebase.js`. La configuración Firebase se valida al importar ese módulo; el modo individual no lo importa y sigue funcionando sin configuración.
 
 ## Trabajo con un agente de IA
 
@@ -81,6 +87,6 @@ El agente leerá los specs, tomará la siguiente tarea de `TASKS.md`, la impleme
 
 - Specs v1.0 completos.
 - Modo individual jugable (Fase 1, tareas 1.1 – 1.13 hechas (Fase 1 completa); ver `TASKS.md`).
-- Firebase **aún no integrado** en el código (Fase 2); `firebase` está declarado en `package.json`.
-- Verificado al generar el proyecto: las 67 pruebas con `node --test` pasan.
-- **No verificado**: `npm install`, `npm run build` y la app Capacitor (el entorno donde se generó no tenía acceso al registro de npm). Si `npm install` reporta conflictos de versiones, ajusta las versiones de `package.json` (Capacitor, Vite, Firebase) a las vigentes.
+- Firebase está integrado parcialmente: configuración inicial y autenticación anónima (tareas 2.1–2.2); lobby, salas y ranking siguen pendientes.
+- Verificado: `npm test` (73 pruebas), `npm run build` y `npm audit` (sin vulnerabilidades conocidas).
+- La app Capacitor todavía no se ha verificado en un emulador o dispositivo.
