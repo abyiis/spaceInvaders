@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test",
+    "test:rules": "firebase emulators:exec --project demo-space-coop --only database,firestore \"node --test test/firebaseRules.test.js\"",
     "cap:sync": "npm run build && npx cap sync",
     "android": "npm run cap:sync && npx cap open android"
   },
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",
+    "@firebase/rules-unit-testing": "^4.0.1",
     "vite": "^6.0.0"
   },
   "engines": {

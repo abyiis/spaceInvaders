@@ -19,6 +19,8 @@ ios/App/build/
 # Firebase / secretos
 .firebase/
 firebase-debug.log
+database-debug.log
+firestore-debug.log
 .env
 .env.local
 android/app/google-services.json

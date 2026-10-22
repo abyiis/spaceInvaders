@@ -71,6 +71,8 @@ firebase deploy --only database
 
 La base RTDB debe estar creada en la región `us-central1`. No abras el acceso público: las reglas del repositorio restringen el uso a usuarios autenticados.
 
+Para verificar las reglas localmente, instala Java y Firebase CLI (`npm install -g firebase-tools`) y ejecuta `npm run test:rules`. El comando inicia ambos emuladores, ejecuta las pruebas y los apaga; no despliega reglas ni accede a los datos del proyecto real.
+
 El servicio de autenticación expone `authService.signIn()` y `authService.uid` desde `src/net/firebase.js`. La configuración Firebase se valida al importar ese módulo; el modo individual no lo importa y sigue funcionando sin configuración.
 
 ## Trabajo con un agente de IA
@@ -85,6 +87,6 @@ El agente leerá los specs, tomará la siguiente tarea de `TASKS.md`, la impleme
 
 - Specs v1.0 completos.
 - Modo individual jugable (Fase 1, tareas 1.1 – 1.13 hechas (Fase 1 completa); ver `TASKS.md`).
-- Firebase está integrado parcialmente: configuración inicial, autenticación anónima, menú, salas, lobby y presencia (tareas 2.1–2.7); guardado de puntaje y ranking top 20 (2.8–2.9); alias persistente en Firestore (2.10); quedan pendientes las pruebas de reglas.
-- Verificado: `npm test` (95 pruebas) y `npm run build`. La conexión de RTDB/Firestore debe probarse con autenticación anónima habilitada, bases creadas y reglas desplegadas.
+- Firebase está integrado parcialmente: configuración inicial, autenticación anónima, menú, salas, lobby y presencia (tareas 2.1–2.7); guardado de puntaje y ranking top 20 (2.8–2.9); alias persistente en Firestore (2.10). Las reglas RTDB/Firestore se verifican con emuladores locales (2.11).
+- Verificado: `npm test`, `npm run test:rules`, `npm run build` y `npm audit` (sin vulnerabilidades conocidas). La conexión a Firebase real todavía requiere prueba con Authentication anónima habilitada, bases creadas y reglas desplegadas.
 - La app Capacitor todavía no se ha verificado en un emulador o dispositivo.
