@@ -7,8 +7,16 @@ function createDependencies({ committed = true } = {}) {
     signIn: async () => 'host-user',
   };
   const transactionCalls = [];
+  const snapshots = new Map();
   const timestamp = { '.sv': 'timestamp' };
   const databaseApi = {
+    get: async (databaseRef) => {
+      const value = snapshots.get(databaseRef.path);
+      return {
+        exists: () => value !== undefined,
+        val: () => value ?? null,
+      };
+    },
     ref: (_database, path) => ({ path }),
     serverTimestamp: () => timestamp,
     runTransaction: async (roomRef, update, options) => {
@@ -18,7 +26,7 @@ function createDependencies({ committed = true } = {}) {
     },
   };
   const rtdb = {};
-  return { authService, databaseApi, rtdb, timestamp, transactionCalls };
+  return { authService, databaseApi, rtdb, snapshots, timestamp, transactionCalls };
 }
 
 test('createRoom authenticates and transactionally creates room metadata', async () => {
@@ -114,4 +122,91 @@ test('createRoom rejects invalid room codes and missing authenticated uid', asyn
     unauthenticatedRepository.createRoom(),
     /without an authenticated user/,
   );
+});
+
+test('joinRoom validates the room, reserves the player node and normalizes its code', async () => {
+  const dependencies = createDependencies();
+  dependencies.snapshots.set('rooms/K7QX2/meta', {
+    hostUid: 'host-user',
+    seed: 123,
+    status: 'lobby',
+    maxPlayers: 2,
+  });
+  dependencies.snapshots.set('rooms/K7QX2/players', {
+    'host-user': { name: 'Host', connected: true },
+  });
+  const repository = createRoomRepository({
+    ...dependencies,
+    seedFactory: () => 7,
+  });
+
+  const joined = await repository.joinRoom(' k7qx2 ');
+
+  assert.equal(joined.code, 'K7QX2');
+  assert.equal(joined.meta.hostUid, 'host-user');
+  assert.deepEqual(joined.player, {
+    name: 'Jugador',
+    x: 0,
+    ts: dependencies.timestamp,
+    ready: false,
+    connected: true,
+  });
+  assert.deepEqual(dependencies.transactionCalls[0], {
+    roomRef: { path: 'rooms/K7QX2/players/host-user' },
+    value: joined.player,
+    options: { applyLocally: false },
+  });
+});
+
+test('joinRoom rejects malformed codes, missing rooms, non-lobby rooms and full rooms', async () => {
+  const dependencies = createDependencies();
+  const repository = createRoomRepository(dependencies);
+  await assert.rejects(repository.joinRoom('bad'), /exactly five valid characters/);
+
+  await assert.rejects(repository.joinRoom('AAAAA'), /does not exist/);
+
+  dependencies.snapshots.set('rooms/AAAAA/meta', { status: 'playing', maxPlayers: 2 });
+  dependencies.snapshots.set('rooms/AAAAA/players', {});
+  await assert.rejects(repository.joinRoom('AAAAA'), /not accepting players/);
+
+  dependencies.snapshots.set('rooms/AAAAA/meta', { status: 'lobby', maxPlayers: 2 });
+  dependencies.snapshots.set('rooms/AAAAA/players', {
+    host: { connected: true },
+    guest: { connected: true },
+  });
+  await assert.rejects(repository.joinRoom('AAAAA'), /Room is full/);
+});
+
+test('joinRoom allows the same uid to re-enter an existing room', async () => {
+  const dependencies = createDependencies({ committed: false });
+  const priorPlayer = { name: 'Existing', ready: true, connected: false };
+  dependencies.snapshots.set('rooms/AAAAA/meta', { status: 'lobby', maxPlayers: 1 });
+  dependencies.snapshots.set('rooms/AAAAA/players', { 'host-user': priorPlayer });
+  dependencies.databaseApi.runTransaction = async (playerRef, update) => {
+    assert.equal(update(priorPlayer), undefined);
+    return { committed: false, snapshot: { val: () => priorPlayer } };
+  };
+  const repository = createRoomRepository(dependencies);
+
+  const result = await repository.joinRoom('AAAAA');
+
+  assert.deepEqual(result.player, priorPlayer);
+});
+
+test('joinRoom propagates database errors and rejects failed slot reservations', async () => {
+  const dependencies = createDependencies();
+  dependencies.snapshots.set('rooms/AAAAA/meta', { status: 'lobby', maxPlayers: 2 });
+  dependencies.snapshots.set('rooms/AAAAA/players', {});
+  const failure = new Error('Permission denied');
+  dependencies.databaseApi.runTransaction = async () => {
+    throw failure;
+  };
+  const repository = createRoomRepository(dependencies);
+  await assert.rejects(repository.joinRoom('AAAAA'), (error) => error === failure);
+
+  dependencies.databaseApi.runTransaction = async () => ({
+    committed: false,
+    snapshot: { val: () => null },
+  });
+  await assert.rejects(repository.joinRoom('AAAAA'), /reserve a player slot/);
 });

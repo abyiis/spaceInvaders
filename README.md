@@ -59,7 +59,7 @@ npm run build       # genera dist/
 
 ## Firebase (tareas 0.8 – 0.10)
 
-La tarea 2.3 añade el menú principal y el modo solo sin depender de Firebase. La tarea 2.4 implementa la creación de salas en RTDB. Para usarla, registra una app **Web**, habilita **Authentication → Sign-in method → Anonymous** y guarda la configuración Web en `src/net/firebaseConfig.js` (ignorado por Git), exportada como `firebaseConfig`; incluye el `databaseURL` de Realtime Database.
+La tarea 2.3 añade el menú principal y el modo solo sin depender de Firebase. Las tareas 2.4 y 2.5 implementan la creación y unión a salas en RTDB. Para usarlas, registra una app **Web**, habilita **Authentication → Sign-in method → Anonymous** y guarda la configuración Web en `src/net/firebaseConfig.js` (ignorado por Git), exportada como `firebaseConfig`; incluye el `databaseURL` de Realtime Database.
 
 Firestore se necesitará para el ranking (tarea 2.8). Para publicar solo las reglas de RTDB:
 

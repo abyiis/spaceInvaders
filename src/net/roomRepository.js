@@ -1,4 +1,4 @@
-import { ref, runTransaction, serverTimestamp } from 'firebase/database';
+import { get, ref, runTransaction, serverTimestamp } from 'firebase/database';
 
 const ROOM_CODE_CHARACTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ROOM_CODE_LENGTH = 5;
@@ -29,6 +29,7 @@ function generateSeed() {
  *   rtdb: import('firebase/database').Database,
  *   authService: { signIn: () => Promise<string> },
  *   databaseApi?: {
+ *     get: typeof get,
  *     ref: typeof ref,
  *     runTransaction: typeof runTransaction,
  *     serverTimestamp: typeof serverTimestamp,
@@ -40,7 +41,7 @@ function generateSeed() {
 export function createRoomRepository({
   rtdb,
   authService,
-  databaseApi = { ref, runTransaction, serverTimestamp },
+  databaseApi = { get, ref, runTransaction, serverTimestamp },
   codeFactory = generateRoomCode,
   seedFactory = generateSeed,
 }) {
@@ -82,6 +83,65 @@ export function createRoomRepository({
       }
 
       throw new Error('Could not create a room after several code generation attempts.');
+    },
+
+    async joinRoom(inputCode) {
+      const code = typeof inputCode === 'string' ? inputCode.trim().toUpperCase() : '';
+      if (
+        code.length !== ROOM_CODE_LENGTH ||
+        !Array.from(code).every((character) => ROOM_CODE_CHARACTERS.includes(character))
+      ) {
+        throw new Error('Room code must contain exactly five valid characters.');
+      }
+
+      const uid = await authService.signIn();
+      if (typeof uid !== 'string' || uid.length === 0) {
+        throw new Error('Cannot join a room without an authenticated user.');
+      }
+
+      const [metaSnapshot, playersSnapshot] = await Promise.all([
+        databaseApi.get(databaseApi.ref(rtdb, `rooms/${code}/meta`)),
+        databaseApi.get(databaseApi.ref(rtdb, `rooms/${code}/players`)),
+      ]);
+      if (!metaSnapshot.exists()) {
+        throw new Error('Room does not exist.');
+      }
+
+      const meta = metaSnapshot.val();
+      if (meta.status !== 'lobby') {
+        throw new Error('Room is not accepting players.');
+      }
+
+      const players = playersSnapshot.val() ?? {};
+      const existingPlayer = players[uid];
+      const maxPlayers = Number.isInteger(meta.maxPlayers) ? meta.maxPlayers : 2;
+      if (!existingPlayer && Object.keys(players).length >= maxPlayers) {
+        throw new Error('Room is full.');
+      }
+
+      const player = {
+        name: 'Jugador',
+        x: 0,
+        ts: databaseApi.serverTimestamp(),
+        ready: false,
+        connected: true,
+      };
+      const playerRef = databaseApi.ref(rtdb, `rooms/${code}/players/${uid}`);
+      const result = await databaseApi.runTransaction(
+        playerRef,
+        (currentData) => currentData === null ? player : undefined,
+        { applyLocally: false },
+      );
+
+      if (!result.committed && !existingPlayer) {
+        throw new Error('Could not reserve a player slot. Please try joining again.');
+      }
+
+      return {
+        code,
+        meta,
+        player: result.snapshot?.val() ?? existingPlayer ?? player,
+      };
     },
   };
 }
