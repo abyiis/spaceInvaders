@@ -1,4 +1,5 @@
 import { formatScore } from './screens/results.js';
+import { formatFirebaseError } from './firebaseErrorMessage.js';
 
 /**
  * Mounts the main menu into the application UI layer.
@@ -86,7 +87,7 @@ export function mountMainMenu(container, actions) {
     try {
       await action();
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
+      const detail = formatFirebaseError(error);
       message.textContent = `No se pudo completar la acción: ${detail}`;
     } finally {
       button.disabled = false;
@@ -134,7 +135,7 @@ export function mountMainMenu(container, actions) {
         currentAlias.textContent = name;
       })
       .catch((error) => {
-        const detail = error instanceof Error ? error.message : String(error);
+        const detail = formatFirebaseError(error);
         message.textContent = `No se pudo cargar tu alias: ${detail}`;
       });
 

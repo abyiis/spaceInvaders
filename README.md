@@ -61,15 +61,15 @@ npm run build       # genera dist/
 
 La tarea 2.3 añade el menú principal y el modo solo sin depender de Firebase. Las tareas 2.4–2.7 implementan la creación y unión a salas, el lobby en vivo y la presencia en RTDB. Para usarlas, registra una app **Web**, habilita **Authentication → Sign-in method → Anonymous** y configura `src/net/firebaseConfig.js`, exportando `firebaseConfig` e incluyendo el `databaseURL` de Realtime Database. Este archivo está versionado para compartir la configuración web del proyecto; no añadas credenciales privadas ni claves de servidor.
 
-Firestore se necesita para guardar puntajes (tarea 2.8) y consultar el ranking (tarea 2.9). Para publicar solo las reglas de RTDB:
+Firestore se necesita para guardar puntajes (tarea 2.8), consultar el ranking (tarea 2.9) y persistir el alias. Habilita Firestore en el proyecto de Google Cloud usado por la configuración web y publica las reglas de ambas bases en ese mismo proyecto:
 
 ```bash
 npm install -g firebase-tools
 firebase login
-firebase deploy --only database
+firebase deploy --only database,firestore --project <project-id>
 ```
 
-La base RTDB debe estar creada en la región `us-central1`. No abras el acceso público: las reglas del repositorio restringen el uso a usuarios autenticados.
+Sustituye `<project-id>` por el ID del proyecto de `firebaseConfig.js`. La base RTDB debe estar creada en la región `us-central1`. No abras el acceso público: las reglas del repositorio restringen el uso a usuarios autenticados.
 
 Para verificar las reglas localmente, instala Java y Firebase CLI (`npm install -g firebase-tools`) y ejecuta `npm run test:rules`. El comando inicia ambos emuladores, ejecuta las pruebas y los apaga; no despliega reglas ni accede a los datos del proyecto real.
 
