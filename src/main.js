@@ -11,7 +11,9 @@ import { mountMainMenu } from './ui/mainMenu.js';
 import { mountRanking } from './ui/ranking.js';
 import { createScreenRouter, SCREENS } from './ui/screenRouter.js';
 import { mountCredits } from './ui/screens/credits.js';
+import { mountResults, scheduleResultsNavigation } from './ui/screens/results.js';
 import { mountSplash } from './ui/screens/splash.js';
+import { RESULTS_DELAY_MS } from './ui/uiConstants.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -32,6 +34,7 @@ saveStatus.setAttribute('role', 'status');
 saveStatus.setAttribute('aria-live', 'polite');
 saveStatus.hidden = true;
 ui.append(saveStatus);
+let cancelPendingResults = () => {};
 
 async function saveSoloScore(result) {
   saveStatus.hidden = false;
@@ -49,6 +52,10 @@ async function saveSoloScore(result) {
 const game = new Game({
   effects,
   onGameOver: (result) => {
+    cancelPendingResults();
+    cancelPendingResults = scheduleResultsNavigation(router, result, {
+      delayMs: RESULTS_DELAY_MS,
+    });
     if (result.mode === 'solo' && hasFirebaseConfig) void saveSoloScore(result);
   },
 });
@@ -71,6 +78,7 @@ const router = createScreenRouter({
   screens: {
     [SCREENS.SPLASH]: mountSplash,
     [SCREENS.CREDITS]: mountCredits,
+    [SCREENS.RESULTS]: mountResults,
     [SCREENS.HOME]: (container, _params, nav) => mountMainMenu(container, {
       onPlaySolo: () => nav.show(SCREENS.PLAYING),
       onShowCredits: () => nav.show(SCREENS.CREDITS),
@@ -103,6 +111,7 @@ const router = createScreenRouter({
       game.startNewGame();
       const detachInput = attachInput(canvas, game);
       return () => {
+        cancelPendingResults();
         detachInput();
         game.pause();
       };

@@ -172,6 +172,63 @@ body {
   width: 100%;
 }
 
+.results-screen__panel {
+  width: min(100%, 420px);
+  border: 1px solid var(--ui-border);
+  border-radius: 20px;
+  padding: 28px;
+  background: rgba(16, 22, 43, 0.96);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  text-align: center;
+}
+
+.results-screen__panel h1 {
+  margin: 0 0 24px;
+  font-size: clamp(2rem, 9vw, 2.8rem);
+}
+
+.results-screen__score {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 24px;
+  color: #ffffff;
+  font-size: clamp(3rem, 16vw, 4.5rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.results-screen__score-label {
+  color: var(--ui-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.results-screen__details {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 28px;
+}
+
+.results-screen__details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ui-muted);
+}
+
+.results-screen__details dd {
+  margin: 0;
+  color: var(--ui-text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.results-screen__actions {
+  display: grid;
+  gap: 12px;
+}
+
 @keyframes splash-progress {
   to { width: 100%; }
 }
