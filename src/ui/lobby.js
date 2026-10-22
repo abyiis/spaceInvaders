@@ -1,0 +1,119 @@
+/**
+ * Mount the live room lobby and return a cleanup function.
+ *
+ * @param {HTMLElement} container
+ * @param {{
+ *   code: string,
+ *   uid: string,
+ *   watchPlayers: (code: string, onPlayers: (players: Record<string, object>) => void, onError: (error: Error) => void) => () => void,
+ *   setReady: (code: string, ready: boolean) => Promise<void>,
+ *   onBack: () => void,
+ * }} options
+ * @returns {() => void}
+ */
+export function mountLobby(container, { code, uid, watchPlayers, setReady, onBack }) {
+  const lobby = document.createElement('section');
+  lobby.className = 'main-menu room-lobby';
+  lobby.setAttribute('aria-labelledby', 'room-lobby-title');
+  lobby.innerHTML = `
+    <div class="main-menu__panel room-lobby__panel">
+      <p class="main-menu__eyebrow">Sala cooperativa</p>
+      <h1 id="room-lobby-title">Código: <span class="room-lobby__code"></span></h1>
+      <p class="main-menu__description">Comparte el código y espera a tu compañero.</p>
+      <ul class="room-lobby__players" aria-label="Jugadores conectados"></ul>
+      <button class="main-menu__button main-menu__button--primary" type="button" data-action="ready">
+        Listo
+      </button>
+      <button class="main-menu__button" type="button" data-action="back">
+        Volver al inicio
+      </button>
+      <p class="main-menu__message" role="status" aria-live="polite">Cargando jugadores…</p>
+    </div>
+  `;
+
+  const codeLabel = lobby.querySelector('.room-lobby__code');
+  const playersList = lobby.querySelector('.room-lobby__players');
+  const readyButton = lobby.querySelector('[data-action="ready"]');
+  const message = lobby.querySelector('.main-menu__message');
+  codeLabel.textContent = code;
+
+  let ready = false;
+  let disposed = false;
+  let savingReady = false;
+
+  const renderPlayers = (players) => {
+    if (disposed) return;
+    playersList.replaceChildren();
+    for (const [playerUid, player] of Object.entries(players)) {
+      const item = document.createElement('li');
+      const name = document.createElement('span');
+      const state = document.createElement('span');
+      const isCurrentPlayer = playerUid === uid;
+      name.textContent = `${player.name || 'Jugador'}${isCurrentPlayer ? ' (tú)' : ''}`;
+      state.textContent = player.ready ? 'Listo' : 'Esperando';
+      item.append(name, state);
+      playersList.append(item);
+      if (isCurrentPlayer) {
+        ready = player.ready === true;
+        readyButton.textContent = ready ? 'Quitar listo' : 'Listo';
+      }
+    }
+
+    const othersReady = Object.entries(players)
+      .filter(([playerUid]) => playerUid !== uid)
+      .every(([, player]) => player.ready === true);
+    message.textContent = Object.keys(players).length < 2
+      ? 'Esperando a otro jugador…'
+      : ready && othersReady
+        ? 'Todos están listos. Esperando que el host inicie la partida.'
+        : 'Marca «Listo» cuando estés preparado.';
+  };
+
+  const unsubscribe = watchPlayers(
+    code,
+    renderPlayers,
+    (error) => {
+      if (!disposed) {
+        message.textContent = `No se pudo actualizar la sala: ${error.message}`;
+      }
+    },
+  );
+
+  lobby.addEventListener('click', async (event) => {
+    if (!(event.target instanceof Element)) return;
+    const button = event.target.closest('[data-action]');
+    if (!button) return;
+
+    if (button.dataset.action === 'back') {
+      cleanup();
+      onBack();
+      return;
+    }
+    if (button.dataset.action !== 'ready' || savingReady) return;
+
+    savingReady = true;
+    readyButton.disabled = true;
+    message.textContent = 'Actualizando estado…';
+    try {
+      await setReady(code, !ready);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      message.textContent = `No se pudo cambiar el estado: ${detail}`;
+    } finally {
+      savingReady = false;
+      readyButton.disabled = false;
+    }
+  });
+
+  container.append(lobby);
+  readyButton.focus();
+
+  function cleanup() {
+    if (disposed) return;
+    disposed = true;
+    unsubscribe();
+    lobby.remove();
+  }
+
+  return cleanup;
+}

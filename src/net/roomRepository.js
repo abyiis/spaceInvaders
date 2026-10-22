@@ -1,4 +1,11 @@
-import { get, ref, runTransaction, serverTimestamp } from 'firebase/database';
+import {
+  get,
+  onValue,
+  ref,
+  runTransaction,
+  serverTimestamp,
+  update,
+} from 'firebase/database';
 
 const ROOM_CODE_CHARACTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ROOM_CODE_LENGTH = 5;
@@ -30,9 +37,11 @@ function generateSeed() {
  *   authService: { signIn: () => Promise<string> },
  *   databaseApi?: {
  *     get: typeof get,
+ *     onValue: typeof onValue,
  *     ref: typeof ref,
  *     runTransaction: typeof runTransaction,
  *     serverTimestamp: typeof serverTimestamp,
+ *     update: typeof update,
  *   },
  *   codeFactory?: () => string,
  *   seedFactory?: () => number,
@@ -41,7 +50,7 @@ function generateSeed() {
 export function createRoomRepository({
   rtdb,
   authService,
-  databaseApi = { get, ref, runTransaction, serverTimestamp },
+  databaseApi = { get, onValue, ref, runTransaction, serverTimestamp, update },
   codeFactory = generateRoomCode,
   seedFactory = generateSeed,
 }) {
@@ -79,7 +88,25 @@ export function createRoomRepository({
           { applyLocally: false },
         );
 
-        if (result.committed) return { code, seed };
+        if (result.committed) {
+          const player = {
+            name: 'Jugador',
+            x: 0,
+            ts: databaseApi.serverTimestamp(),
+            ready: false,
+            connected: true,
+          };
+          const playerRef = databaseApi.ref(rtdb, `rooms/${code}/players/${uid}`);
+          const playerResult = await databaseApi.runTransaction(
+            playerRef,
+            (currentData) => currentData === null ? player : undefined,
+            { applyLocally: false },
+          );
+          if (!playerResult.committed) {
+            throw new Error('Room was created, but the host player could not be registered.');
+          }
+          return { code, seed, uid, player };
+        }
       }
 
       throw new Error('Could not create a room after several code generation attempts.');
@@ -139,9 +166,51 @@ export function createRoomRepository({
 
       return {
         code,
+        uid,
         meta,
         player: result.snapshot?.val() ?? existingPlayer ?? player,
       };
+    },
+
+    watchPlayers(inputCode, onPlayers, onError) {
+      const code = typeof inputCode === 'string' ? inputCode.trim().toUpperCase() : '';
+      if (
+        code.length !== ROOM_CODE_LENGTH ||
+        !Array.from(code).every((character) => ROOM_CODE_CHARACTERS.includes(character))
+      ) {
+        throw new Error('Room code must contain exactly five valid characters.');
+      }
+      if (typeof onPlayers !== 'function' || typeof onError !== 'function') {
+        throw new TypeError('Player subscription callbacks must be functions.');
+      }
+
+      return databaseApi.onValue(
+        databaseApi.ref(rtdb, `rooms/${code}/players`),
+        (snapshot) => onPlayers(snapshot.val() ?? {}),
+        onError,
+      );
+    },
+
+    async setReady(inputCode, ready) {
+      const code = typeof inputCode === 'string' ? inputCode.trim().toUpperCase() : '';
+      if (
+        code.length !== ROOM_CODE_LENGTH ||
+        !Array.from(code).every((character) => ROOM_CODE_CHARACTERS.includes(character))
+      ) {
+        throw new Error('Room code must contain exactly five valid characters.');
+      }
+      if (typeof ready !== 'boolean') {
+        throw new TypeError('Ready state must be a boolean.');
+      }
+
+      const uid = await authService.signIn();
+      if (typeof uid !== 'string' || uid.length === 0) {
+        throw new Error('Cannot update ready state without an authenticated user.');
+      }
+      await databaseApi.update(
+        databaseApi.ref(rtdb, `rooms/${code}/players/${uid}`),
+        { ready },
+      );
     },
   };
 }

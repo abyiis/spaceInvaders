@@ -9,12 +9,23 @@ function createDependencies({ committed = true } = {}) {
   const transactionCalls = [];
   const snapshots = new Map();
   const timestamp = { '.sv': 'timestamp' };
+  const updates = [];
+  let valueCallback;
+  let errorCallback;
   const databaseApi = {
     get: async (databaseRef) => {
       const value = snapshots.get(databaseRef.path);
       return {
         exists: () => value !== undefined,
         val: () => value ?? null,
+      };
+    },
+    onValue: (databaseRef, onValue, onError) => {
+      valueCallback = onValue;
+      errorCallback = onError;
+      return () => {
+        valueCallback = undefined;
+        errorCallback = undefined;
       };
     },
     ref: (_database, path) => ({ path }),
@@ -24,12 +35,29 @@ function createDependencies({ committed = true } = {}) {
       transactionCalls.push({ roomRef, value, options });
       return { committed, snapshot: { val: () => value } };
     },
+    update: async (databaseRef, data) => {
+      updates.push({ databaseRef, data });
+    },
   };
   const rtdb = {};
-  return { authService, databaseApi, rtdb, snapshots, timestamp, transactionCalls };
+  return {
+    authService,
+    databaseApi,
+    get errorCallback() {
+      return errorCallback;
+    },
+    get valueCallback() {
+      return valueCallback;
+    },
+    rtdb,
+    snapshots,
+    timestamp,
+    transactionCalls,
+    updates,
+  };
 }
 
-test('createRoom authenticates and transactionally creates room metadata', async () => {
+test('createRoom authenticates and creates room metadata and the host player', async () => {
   const dependencies = createDependencies();
   const repository = createRoomRepository({
     ...dependencies,
@@ -37,7 +65,19 @@ test('createRoom authenticates and transactionally creates room metadata', async
     seedFactory: () => 12345,
   });
 
-  assert.deepEqual(await repository.createRoom(), { code: 'K7QX2', seed: 12345 });
+  const created = await repository.createRoom();
+  assert.deepEqual(created, {
+    code: 'K7QX2',
+    seed: 12345,
+    uid: 'host-user',
+    player: {
+      name: 'Jugador',
+      x: 0,
+      ts: dependencies.timestamp,
+      ready: false,
+      connected: true,
+    },
+  });
   assert.deepEqual(dependencies.transactionCalls, [
     {
       roomRef: { path: 'rooms/K7QX2/meta' },
@@ -50,15 +90,22 @@ test('createRoom authenticates and transactionally creates room metadata', async
       },
       options: { applyLocally: false },
     },
+    {
+      roomRef: { path: 'rooms/K7QX2/players/host-user' },
+      value: created.player,
+      options: { applyLocally: false },
+    },
   ]);
 });
 
 test('createRoom retries when a generated room code is already taken', async () => {
   const dependencies = createDependencies();
-  let attempt = 0;
+  let metaAttempts = 0;
   dependencies.databaseApi.runTransaction = async (roomRef, update) => {
-    attempt += 1;
-    if (attempt === 1) {
+    if (roomRef.path.endsWith('/meta')) {
+      metaAttempts += 1;
+    }
+    if (metaAttempts === 1) {
       assert.equal(update({ hostUid: 'another-host' }), undefined);
       return { committed: false };
     }
@@ -67,12 +114,23 @@ test('createRoom retries when a generated room code is already taken', async () 
   };
   const repository = createRoomRepository({
     ...dependencies,
-    codeFactory: () => (attempt === 0 ? 'AAAAA' : 'BBBBB'),
+    codeFactory: () => (metaAttempts === 0 ? 'AAAAA' : 'BBBBB'),
     seedFactory: () => 7,
   });
 
-  assert.deepEqual(await repository.createRoom(), { code: 'BBBBB', seed: 7 });
-  assert.equal(attempt, 2);
+  assert.deepEqual(await repository.createRoom(), {
+    code: 'BBBBB',
+    seed: 7,
+    uid: 'host-user',
+    player: {
+      name: 'Jugador',
+      x: 0,
+      ts: dependencies.timestamp,
+      ready: false,
+      connected: true,
+    },
+  });
+  assert.equal(metaAttempts, 2);
 });
 
 test('createRoom stops after the maximum number of occupied codes', async () => {
