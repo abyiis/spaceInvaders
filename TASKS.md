@@ -15,8 +15,8 @@ Estimación total orientativa: 6-7 semanas a media jornada.
 
 - [x] 0.1 `P0 D1` Estructura de proyecto y specs v1.0 en `.spec/` `[arch]`
 - [x] 0.2 `P0 D2` Boilerplate Canvas + JS + CSS jugable (nave, enemigos, disparos) con pruebas `node --test`
-- [ ] 0.3 `P0 D1` Instalar Node ≥ 20, ejecutar `npm install` y `npm run dev`; verificar el juego en el navegador (móvil o modo responsive de DevTools)
-- [ ] 0.4 `P0 D1` Ejecutar `npm run build` y confirmar que se genera `dist/`
+- [x] 0.3 `P0 D1` Instalar Node ≥ 20, ejecutar `npm install` y `npm run dev`; verificar el juego en el navegador (móvil o modo responsive de DevTools)
+- [x] 0.4 `P0 D1` Ejecutar `npm run build` y confirmar que se genera `dist/`
 - [ ] 0.5 `P0 D1` Inicializar repositorio Git y primer commit
 - [ ] 0.6 `P0 D2` Cambiar `appId` en `capacitor.config.json` (p. ej. `co.edu.tuuniversidad.spacecoop`) y ejecutar `npx cap add android` `[arch]`
 - [ ] 0.7 `P0 D2` Ejecutar `npm run android` y probar el juego en un emulador o teléfono real `[arch]`
