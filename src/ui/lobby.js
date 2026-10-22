@@ -6,12 +6,20 @@
  *   code: string,
  *   uid: string,
  *   watchPlayers: (code: string, onPlayers: (players: Record<string, object>) => void, onError: (error: Error) => void) => () => void,
+ *   watchPresence: (code: string, uid: string, onError: (error: Error) => void) => () => Promise<void>,
  *   setReady: (code: string, ready: boolean) => Promise<void>,
  *   onBack: () => void,
  * }} options
  * @returns {() => void}
  */
-export function mountLobby(container, { code, uid, watchPlayers, setReady, onBack }) {
+export function mountLobby(container, {
+  code,
+  uid,
+  watchPlayers,
+  watchPresence,
+  setReady,
+  onBack,
+}) {
   const lobby = document.createElement('section');
   lobby.className = 'main-menu room-lobby';
   lobby.setAttribute('aria-labelledby', 'room-lobby-title');
@@ -34,6 +42,7 @@ export function mountLobby(container, { code, uid, watchPlayers, setReady, onBac
   const codeLabel = lobby.querySelector('.room-lobby__code');
   const playersList = lobby.querySelector('.room-lobby__players');
   const readyButton = lobby.querySelector('[data-action="ready"]');
+  const backButton = lobby.querySelector('[data-action="back"]');
   const message = lobby.querySelector('.main-menu__message');
   codeLabel.textContent = code;
 
@@ -78,6 +87,11 @@ export function mountLobby(container, { code, uid, watchPlayers, setReady, onBac
       }
     },
   );
+  const stopPresence = watchPresence(code, uid, (error) => {
+    if (!disposed) {
+      message.textContent = `No se pudo actualizar la presencia: ${error.message}`;
+    }
+  });
 
   lobby.addEventListener('click', async (event) => {
     if (!(event.target instanceof Element)) return;
@@ -85,8 +99,16 @@ export function mountLobby(container, { code, uid, watchPlayers, setReady, onBac
     if (!button) return;
 
     if (button.dataset.action === 'back') {
-      cleanup();
-      onBack();
+      backButton.disabled = true;
+      message.textContent = 'Saliendo de la sala…';
+      try {
+        await cleanup();
+        onBack();
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        message.textContent = `No se pudo cerrar la presencia de la sala: ${detail}`;
+        backButton.disabled = false;
+      }
       return;
     }
     if (button.dataset.action !== 'ready' || savingReady) return;
@@ -108,11 +130,17 @@ export function mountLobby(container, { code, uid, watchPlayers, setReady, onBac
   container.append(lobby);
   readyButton.focus();
 
-  function cleanup() {
+  async function cleanup() {
     if (disposed) return;
     disposed = true;
     unsubscribe();
-    lobby.remove();
+    try {
+      await stopPresence();
+      lobby.remove();
+    } catch (error) {
+      disposed = false;
+      throw error;
+    }
   }
 
   return cleanup;

@@ -36,6 +36,7 @@ function showLobby(firebase, room) {
     code: room.code,
     uid: room.uid,
     watchPlayers: firebase.roomRepository.watchPlayers,
+    watchPresence: firebase.roomRepository.watchPresence,
     setReady: firebase.roomRepository.setReady,
     onBack: showMainMenu,
   });

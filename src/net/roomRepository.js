@@ -1,5 +1,6 @@
 import {
   get,
+  onDisconnect,
   onValue,
   ref,
   runTransaction,
@@ -37,6 +38,7 @@ function generateSeed() {
  *   authService: { signIn: () => Promise<string> },
  *   databaseApi?: {
  *     get: typeof get,
+ *     onDisconnect: typeof onDisconnect,
  *     onValue: typeof onValue,
  *     ref: typeof ref,
  *     runTransaction: typeof runTransaction,
@@ -50,7 +52,15 @@ function generateSeed() {
 export function createRoomRepository({
   rtdb,
   authService,
-  databaseApi = { get, onValue, ref, runTransaction, serverTimestamp, update },
+  databaseApi = {
+    get,
+    onDisconnect,
+    onValue,
+    ref,
+    runTransaction,
+    serverTimestamp,
+    update,
+  },
   codeFactory = generateRoomCode,
   seedFactory = generateSeed,
 }) {
@@ -211,6 +221,56 @@ export function createRoomRepository({
         databaseApi.ref(rtdb, `rooms/${code}/players/${uid}`),
         { ready },
       );
+    },
+
+    watchPresence(inputCode, uid, onError) {
+      const code = typeof inputCode === 'string' ? inputCode.trim().toUpperCase() : '';
+      if (
+        code.length !== ROOM_CODE_LENGTH ||
+        !Array.from(code).every((character) => ROOM_CODE_CHARACTERS.includes(character))
+      ) {
+        throw new Error('Room code must contain exactly five valid characters.');
+      }
+      if (typeof uid !== 'string' || uid.length === 0) {
+        throw new Error('A valid authenticated uid is required for room presence.');
+      }
+      if (typeof onError !== 'function') {
+        throw new TypeError('Presence error callback must be a function.');
+      }
+
+      const playerRef = databaseApi.ref(rtdb, `rooms/${code}/players/${uid}`);
+      let disposed = false;
+      let queue = Promise.resolve();
+      const unsubscribe = databaseApi.onValue(
+        databaseApi.ref(rtdb, '.info/connected'),
+        (snapshot) => {
+          if (disposed || snapshot.val() !== true) return;
+          queue = queue
+            .then(async () => {
+              if (disposed) return;
+              const disconnect = databaseApi.onDisconnect(playerRef);
+              await disconnect.update({ connected: false });
+              if (disposed) {
+                await disconnect.cancel();
+                return;
+              }
+              await databaseApi.update(playerRef, { connected: true });
+            })
+            .catch((error) => {
+              if (!disposed) onError(error);
+            });
+        },
+        onError,
+      );
+
+      return async () => {
+        if (disposed) return;
+        disposed = true;
+        unsubscribe();
+        await queue;
+        await databaseApi.update(playerRef, { connected: false });
+        await databaseApi.onDisconnect(playerRef).cancel();
+      };
     },
   };
 }

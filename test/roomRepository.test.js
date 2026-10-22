@@ -10,6 +10,8 @@ function createDependencies({ committed = true } = {}) {
   const snapshots = new Map();
   const timestamp = { '.sv': 'timestamp' };
   const updates = [];
+  const disconnectCalls = [];
+  const subscriptions = new Map();
   let valueCallback;
   let errorCallback;
   const databaseApi = {
@@ -20,10 +22,20 @@ function createDependencies({ committed = true } = {}) {
         val: () => value ?? null,
       };
     },
+    onDisconnect: (databaseRef) => ({
+      update: async (data) => {
+        disconnectCalls.push({ action: 'update', databaseRef, data });
+      },
+      cancel: async () => {
+        disconnectCalls.push({ action: 'cancel', databaseRef });
+      },
+    }),
     onValue: (databaseRef, onValue, onError) => {
       valueCallback = onValue;
       errorCallback = onError;
+      subscriptions.set(databaseRef.path, { onValue, onError });
       return () => {
+        subscriptions.delete(databaseRef.path);
         valueCallback = undefined;
         errorCallback = undefined;
       };
@@ -43,6 +55,7 @@ function createDependencies({ committed = true } = {}) {
   return {
     authService,
     databaseApi,
+    disconnectCalls,
     get errorCallback() {
       return errorCallback;
     },
@@ -51,6 +64,7 @@ function createDependencies({ committed = true } = {}) {
     },
     rtdb,
     snapshots,
+    subscriptions,
     timestamp,
     transactionCalls,
     updates,
@@ -306,4 +320,42 @@ test('setReady writes only the authenticated player ready field', async () => {
     },
   ]);
   await assert.rejects(repository.setReady('AAAAA', 'yes'), /must be a boolean/);
+});
+
+test('watchPresence registers disconnect state, marks connected, and clears presence on stop', async () => {
+  const dependencies = createDependencies();
+  const repository = createRoomRepository(dependencies);
+  const errors = [];
+  const stop = repository.watchPresence(' aaaaa ', 'host-user', (error) => errors.push(error));
+
+  const connection = dependencies.subscriptions.get('.info/connected');
+  assert.ok(connection);
+  connection.onValue({ val: () => false });
+  assert.equal(dependencies.disconnectCalls.length, 0);
+  connection.onValue({ val: () => true });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.deepEqual(dependencies.disconnectCalls, [
+    {
+      action: 'update',
+      databaseRef: { path: 'rooms/AAAAA/players/host-user' },
+      data: { connected: false },
+    },
+  ]);
+  assert.deepEqual(dependencies.updates[0], {
+    databaseRef: { path: 'rooms/AAAAA/players/host-user' },
+    data: { connected: true },
+  });
+
+  await stop();
+  assert.deepEqual(dependencies.updates[1], {
+    databaseRef: { path: 'rooms/AAAAA/players/host-user' },
+    data: { connected: false },
+  });
+  assert.deepEqual(dependencies.disconnectCalls[1], {
+    action: 'cancel',
+    databaseRef: { path: 'rooms/AAAAA/players/host-user' },
+  });
+  assert.equal(dependencies.subscriptions.has('.info/connected'), false);
+  assert.deepEqual(errors, []);
 });

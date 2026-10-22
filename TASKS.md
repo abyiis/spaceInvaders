@@ -48,7 +48,7 @@ Estimación total orientativa: 7-8 semanas a media jornada (incluye la Fase 2B).
 - [x] 2.4 `P0 D3` `roomRepository.createRoom()`: genera código de 5 caracteres, semilla y nodo `meta` `[sync][fb]`
 - [x] 2.5 `P0 D3` `roomRepository.joinRoom(code)` con validación (sala existe, no llena, estado `lobby`) `[sync]`
 - [x] 2.6 `P0 D3` Pantalla de lobby con lista de jugadores en vivo y botón "Listo" `[sync]`
-- [ ] 2.7 `P0 D3` Presencia: `onDisconnect()` y estado `connected` `[sync]`
+- [x] 2.7 `P0 D3` Presencia: `onDisconnect()` y estado `connected` `[sync]`
 - [ ] 2.8 `P1 D2` Guardar puntaje en Firestore al terminar partida solo `[fb]` *(su estado se muestra en la pantalla de Resultados: 2B.9)*
 - [ ] 2.9 `P1 D2` Pantalla de ranking (top 20) `[fb]`
 - [ ] 2.10 `P1 D2` Alias de jugador (persistido en `users/{uid}`) `[fb]`
