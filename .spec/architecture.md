@@ -1,158 +1,316 @@
-# architecture.md — Arquitectura general
+# ui_screens.md — Pantallas de la app y navegación
 
-> Estado: **v1.4 (fuente de verdad)**. Si el código y este documento difieren, se corrige primero el documento y luego el código (SDD).
+> Estado: **v1.1**. Aplica a todas las pantallas HTML/CSS que se montan en `#ui` sobre el canvas. Los tiempos viven en `src/ui/uiConstants.js` y deben coincidir con la tabla de §11.
 
-## 1. Objetivo
+## 1. Alcance
 
-Juego móvil estilo Space Invaders, arcade infinito por puntuación, con modo cooperativo en tiempo real de 2 jugadores (extensible a 4) sobre Firebase. Aplicación **híbrida**: se programa con HTML, CSS y JavaScript y se empaqueta como app instalable (Android/iOS) con Capacitor.
+Este documento define cuatro pantallas decididas por el equipo, el menú de pausa de la partida y el mecanismo de navegación que las une:
 
-## 2. Stack
-
-| Capa | Tecnología | Motivo |
+| Pantalla | Qué es | Tareas |
 |---|---|---|
-| Juego | HTML5 `<canvas>` 2D + JavaScript (ES modules), sin librería de juegos | Space Invaders no requiere un motor; menos dependencias y lógica fácil de probar en Node. |
-| Interfaz (menú, lobby, ranking, resultados) | HTML + CSS sobre el canvas | Pantallas estándar con CSS; aprovecha el carácter híbrido. |
-| Empaquetado híbrido | **Capacitor** (WebView nativo) | Genera proyectos Android Studio / Xcode con el mismo código web. |
-| Ciclo de vida de la app | `@capacitor/app` (evento `appStateChange`) | Plugin oficial de Capacitor para saber cuándo la app pasa a segundo plano en Android/iOS. En el navegador se usa además `visibilitychange`. Añadido en v1.2 (tarea 1.11). |
-| Sonido | Web Audio API (sintetizado, sin archivos) | Sin assets ni dependencias; funciona igual en navegador y WebView. Añadido en v1.3 (tarea 1.12). |
-| Vibración | `@capacitor/haptics` (cae a `navigator.vibrate` en navegador) | `navigator.vibrate` no existe en iOS; el plugin cubre Android e iOS y declara por sí mismo el permiso `VIBRATE`. Añadido en v1.3 (tarea 1.12). |
-| Build y servidor de desarrollo | Vite | Recarga en vivo y bundle para `dist/`. |
-| Estado de partida en vivo | Firebase Realtime Database (RTDB) | Baja latencia y facturación por ancho de banda, no por operación. |
-| Datos de baja frecuencia | Cloud Firestore | Ranking global y perfiles. |
-| Identidad | Firebase Auth (anónima) | Entrar sin registro. |
-| SDK | Firebase JS SDK modular (`firebase/app`, `firebase/auth`, `firebase/database`, `firebase/firestore`) | Funciona igual en navegador y en el WebView de Capacitor. |
-| Pruebas | `node --test` (runner integrado de Node) | Sin dependencias; la lógica de juego no toca el DOM. |
+| **Splash** | Pantalla de arranque con la marca del juego. | 2B.3 |
+| **Home** | Menú principal. Es la evolución del menú de la tarea 2.3, no una pantalla paralela. | 2B.4 |
+| **Créditos** | Equipo y tecnologías. | 2B.5, 2B.6 |
+| **Resultados** | Puntaje obtenido al terminar la partida. Sustituye al «GAME OVER» dibujado en el canvas. | 2B.7 – 2B.10 |
+| **Menú de pausa** | Botón de pausa durante la partida, con «Continuar» y «Salir al inicio». | 2B.12 |
 
-Plan objetivo: **Spark (gratis)**. Restricción relevante: máximo 100 conexiones simultáneas en RTDB.
+Lobby (tarea 2.6) y Ranking (tarea 2.9) usarán este mismo router cuando se implementen; su contenido se define en sus tareas, en `multiplayer_sync.md` y en `firebase_schema.md`.
 
-## 3. Capas y dependencias
+El **splash nativo** de Android/iOS (tarea 4.4) es otra cosa: lo dibuja el sistema operativo antes de que cargue el WebView. El splash de este documento se muestra dentro de la app, ya cargada, y continúa la marca sin repetirla de forma larga (ver §11).
+
+## 2. Flujo entre pantallas
 
 ```
-index.html                    # contenedor: <canvas> + capas de UI
-src/
-├── main.js                   # arranque, bucle requestAnimationFrame, enlace con el DOM
-├── lifecycle.js              # pausa al pasar a segundo plano (visibilitychange + appStateChange)
-├── effects.js                # sonido (Web Audio) y vibración: implementa el puerto Effects
-├── style.css                 # estilos globales y de pantallas
-├── core/                     # lógica pura, sin DOM ni Firebase
-│   ├── constants.js
-│   ├── difficulty.js         # waveParams(w)
-│   └── collision.js          # AABB
-├── game/                     # simulación del juego
-│   ├── Game.js               # estado, oleadas, colisiones, render(ctx)
-│   ├── SyncGateway.js        # puerto de red (typedef) + NoopSyncGateway
-│   ├── Effects.js            # puerto de sonido/vibración (typedef) + NoopEffects
-│   ├── Starfield.js          # fondo de estrellas en parallax (decorativo, v1.4)
-│   ├── Player.js  Enemy.js  Bullet.js  Formation.js
-│   └── input.js              # Pointer Events + teclado (único módulo game/ que toca el DOM)
-├── net/        (Fase 2-3)    # acceso a Firebase tras interfaces
-│   ├── firebase.js           # init + exports
-│   ├── authService.js
-│   ├── roomRepository.js
-│   └── syncService.js
-└── ui/         (Fase 2)      # pantallas HTML/CSS: menú, lobby, ranking, game over
-test/                         # pruebas con node:test
-firebase/                     # reglas de seguridad
-capacitor.config.json
+arranque → SPLASH ──(2,5 s o toque tras 0,8 s)──→ HOME
+                                                   │
+        ┌───────────── Créditos ───────────────────┤
+        ▼                                          │
+     CREDITS ──Volver──→ HOME                      │
+                                                   ├── Jugar solo ──→ PLAYING ──Game Over (+1,2 s)──→ RESULTS
+                                                   ├── Crear / Unirse ──→ LOBBY      (tareas 2.6, 3.x)
+                                                   └── Ranking ──→ RANKING           (tarea 2.9)
+
+RESULTS ──Jugar de nuevo──→ PLAYING (solo)          RESULTS ──Inicio──→ HOME
+
+PLAYING ──⏸ Pausa → Salir al inicio──→ HOME          (partida abandonada)
 ```
 
-Reglas de dependencia (obligatorias):
+| Desde | Evento | Hacia | Notas |
+|---|---|---|---|
+| (arranque) | La app carga | `splash` | Una vez por arranque. Volver del segundo plano **no** repite el splash. |
+| `splash` | Pasan 2,5 s, o toque/tecla tras 0,8 s | `home` | |
+| `home` | «Jugar solo» | `playing` | Empieza una partida nueva (`startNewGame()`). |
+| `home` | «Créditos» | `credits` | |
+| `home` | «Crear sala», «Unirse a sala», «Ranking» | — | Hasta que existan sus pantallas, muestran un aviso «disponible pronto» (comportamiento actual de 2.3). |
+| `credits` | «Volver» | `home` | |
+| `playing` | Game Over | `results` | Tras 1,2 s (§8). |
+| `playing` | Botón ⏸ y luego «Salir al inicio» | `home` | La partida se abandona: no hay resultado, ni ranking, ni récord (§9). |
+| `results` | «Jugar de nuevo» | `playing` | Partida nueva. En coop será «Volver al lobby» (tarea 3.13). |
+| `results` | «Inicio» | `home` | |
 
-1. `core/` no importa nada del proyecto ni del DOM.
-2. `game/` (salvo `input.js`) **no** usa `window`/`document` en `update()`; el método `render(ctx)` recibe el contexto 2D como parámetro. Esto permite probar la simulación en Node.
-3. `game/` **no** importa `firebase/*`. Se comunica con `net/` mediante una interfaz `SyncGateway` inyectada (`NoopSyncGateway` en modo solo).
-4. `net/` no importa `ui/`; `ui/` puede importar `net/` y `game/`.
-5. El modo individual debe funcionar sin Firebase configurado.
+## 3. Reglas generales
 
-### 3.1 Puerto `SyncGateway` (v1.1)
+1. Todas las pantallas se construyen con **HTML + CSS dentro de `#ui`**, nunca dibujadas en el canvas. Única excepción heredada: el aviso «PAUSA» de `game_loop.md` §7, que sigue en el canvas.
+2. Hay **una sola pantalla activa**. `playing` es la pantalla de juego: `#ui` solo contiene el botón de pausa y su menú (§9); el resto lo dibuja el canvas, que recibe la entrada.
+3. **Invariante de la simulación:** el juego solo avanza mientras la pantalla activa es `playing`. En cualquier otra pantalla el juego está en pausa (`paused`) o terminado (`isGameOver`). Por eso desmontar `playing` siempre llama a `game.pause()`.
+4. Cada pantalla es una función `mount…(container, params, nav) → unmount`. Al cambiar de pantalla el router llama al `unmount` de la anterior, que **quita su DOM y sus listeners** (no se ocultan con CSS).
+5. Capas: `ui/` puede importar `game/` y `net/`; `game/` **no** importa `ui/`. La UI se entera del juego por callbacks inyectados (§10). Las pantallas de `ui/` no importan `firebase/*` directamente.
+6. Textos de la interfaz en español; nombres de código en inglés.
+7. **Accesibilidad:**
+   - Cada pantalla es una `<section>` con `aria-labelledby` apuntando a su título.
+   - Al montarse, el foco va al botón principal (en el splash, a la propia sección).
+   - Los botones son `<button type="button">`, con altura táctil de al menos 48 px y estado `:focus-visible` visible.
+   - Texto claro sobre fondo oscuro con contraste mínimo 4,5:1.
+   - Los mensajes de estado usan `role="status"` y `aria-live="polite"`.
+8. **Zonas seguras:** el relleno de cada pantalla suma `env(safe-area-inset-*)` (muescas y barras del sistema).
+9. **Movimiento:** la entrada de cada pantalla es un fundido de opacidad de 200 ms. Con `prefers-reduced-motion: reduce` se elimina el fundido y toda animación decorativa.
+10. **Sin assets externos** (coherente con `architecture.md` §6): el logo es texto más un SVG en línea con la nave del jugador (`#4fc3f7`).
+11. Los colores y medidas comunes se definen una vez como variables CSS en `src/style.css` y las pantallas las reutilizan; la paleta parte de la del menú actual (fondo `#0b0e1a`, acento `#536ce0`).
 
-`game/` nunca habla con Firebase: notifica sus eventos locales a un objeto `SyncGateway` que recibe por el constructor (`new Game({ sync })`). El puerto vive en `src/game/SyncGateway.js` (la capa que lo usa es la dueña del contrato) y `net/syncService.js` lo implementará en la Fase 3 sin que `game/` importe `net/`. Por defecto `Game` usa `NoopSyncGateway`, que no hace nada: así el modo solo funciona sin Firebase.
+## 4. Router de pantallas (`src/ui/screenRouter.js`)
 
-| Miembro | Cuándo lo llama `Game` | Origen en `multiplayer_sync.md` |
+```js
+/**
+ * @typedef {(container: HTMLElement, params: object, nav: Router) => (() => void)} ScreenMount
+ * @param {{
+ *   container: HTMLElement,
+ *   screens: Record<string, ScreenMount>,
+ *   backTargets?: Record<string, string>,
+ * }} options
+ * @returns {{ show(name: string, params?: object): void, back(): boolean,
+ *             readonly current: string | null, destroy(): void }}
+ */
+export function createScreenRouter(options) {}
+```
+
+| Miembro | Comportamiento |
+|---|---|
+| `show(name, params)` | Llama al `unmount` de la pantalla actual (si hay), monta la nueva con `params` y actualiza `current`. Si `name` no está registrada lanza un `Error` y **no** desmonta la actual. |
+| `current` | Nombre de la pantalla activa, o `null` antes del primer `show`. |
+| `back()` | Si `backTargets[current]` existe, hace `show` de ese destino y devuelve `true`; si no, devuelve `false` (el llamador decide qué hacer). |
+| `destroy()` | Desmonta la pantalla actual y deja `current = null`. |
+
+- Nombres registrados: `splash`, `home`, `credits`, `playing`, `results` (y más adelante `lobby`, `ranking`). Se exportan como constantes `SCREENS`.
+- `backTargets` por defecto: `credits → home`, `results → home` (y más adelante `ranking → home`, `lobby → home`).
+- El router no captura errores de las pantallas: un fallo al montar se propaga.
+- El router no conoce el DOM salvo para pasar `container`: así se prueba en Node con un contenedor y pantallas falsas.
+
+## 5. Splash
+
+**Propósito:** presentar la marca al abrir la app.
+
+- Contenido: nave (SVG en línea), título «SPACE COOP», lema «Arcade cooperativo» y una barra de carga **decorativa** (no refleja carga real).
+- Dura **2,5 s** y pasa sola a `home`. Un toque, un clic o una tecla la omiten, pero **solo a partir de 0,8 s**, para que la marca llegue a verse.
+- Se muestra una sola vez por arranque de la app.
+- No importa Firebase ni hace trabajo de red: el modo solo debe poder empezar sin configuración (`architecture.md` §3, regla 5).
+- Con `prefers-reduced-motion: reduce` no hay animación de la barra ni brillo, pero la pantalla se mantiene el mismo tiempo.
+- El primer toque en el splash también desbloquea el audio (`architecture.md` §3.3), porque `main.js` escucha `pointerdown`/`pointerup`/`keydown` en `window`.
+- La lógica de tiempo (avance automático y omisión tras 0,8 s) usa temporizadores inyectados para poder probarse en Node.
+
+## 6. Home
+
+**Propósito:** punto de partida y navegación. Es el menú principal de la tarea 2.3 adaptado al router.
+
+- Contenido: lema «Arcade cooperativo», título «Space Coop», descripción «Defiende la galaxia. ¿Listo para jugar?» y los botones, en este orden:
+  1. **Jugar solo** (principal).
+  2. **Crear sala**.
+  3. **Unirse a sala**.
+  4. **Ranking**.
+  5. **Créditos** (secundario, visualmente más discreto que los anteriores).
+- «Jugar solo» → `playing`. «Créditos» → `credits`.
+- «Crear sala», «Unirse a sala» y «Ranking» mantienen sus avisos en `role="status"` hasta que existan sus pantallas.
+- Si existe un récord personal (§8.5) se muestra una línea «Tu récord: N» bajo la descripción.
+- La implementación vive en `src/ui/mainMenu.js`; se adapta para devolver su función `unmount` y recibir las acciones por parámetro.
+
+## 7. Créditos
+
+**Propósito:** reconocer al equipo que hizo el juego.
+
+- Secciones, en este orden:
+  1. **Equipo:** los nombres de los integrantes, uno por línea.
+  2. **Tecnologías:** HTML5 Canvas, JavaScript, Vite, Capacitor, Firebase.
+  3. Nota final: «Sonidos y gráficos generados por código, sin recursos externos.»
+- Botón **Volver** siempre visible (fijo al pie del panel) → `home`.
+- Si el contenido no cabe en pantalla, el panel hace scroll vertical con `overscroll-behavior: contain`; el botón Volver no se desplaza.
+- Los datos viven en `src/ui/creditsData.js`, para editarlos sin tocar la pantalla:
+
+```js
+export const CREDITS = {
+  team: [
+    { name: 'Juan Felipe Cano Noreña' },
+    { name: 'Juan David Parra Sierra' },
+    { name: 'Santiago Viana Ayala' },
+  ],
+};
+```
+
+- El equipo solo aportó los nombres: esta versión **no** muestra roles, curso, institución ni agradecimientos. Si más adelante se quieren, se añaden a `CREDITS` y a este documento.
+- Una prueba comprueba la **forma** de los datos: `team` con al menos un integrante y cada `name` como texto no vacío.
+
+## 8. Resultados
+
+**Propósito:** mostrar el puntaje obtenido al terminar la partida y decidir qué sigue.
+
+### 8.1 Modelo de datos
+
+```js
+/** @typedef {{ mode: 'solo' | 'coop', score: number, wave: number, durationSeconds: number }} GameResult */
+```
+
+- `score`: puntaje final (`game_loop.md` §5).
+- `wave`: oleada en la que terminó la partida.
+- `durationSeconds`: `Game.elapsed` al terminar, en segundos.
+- `mode`: `'coop'` si `sync.isCoop`, si no `'solo'`.
+- La tarea 3.13 ampliará el modelo con `players` (desglose por jugador) y anotará el cambio en el changelog.
+
+### 8.2 Contenido (modo solo)
+
+| Elemento | Texto / formato |
+|---|---|
+| Título | «Fin de la partida» |
+| Puntaje (número grande) | `formatScore(score)`; punto como separador de miles desde 1.000 (`1250` → `1.250`) |
+| Oleada | «Oleada alcanzada: N» |
+| Tiempo | «Tiempo: mm:ss», con minutos sin tope (`205,4 s` → `03:25`; `4510 s` → `75:10`) |
+| Récord (§8.5) | Insignia «¡Nuevo récord!» |
+| Guardado (§8.4) | Línea de estado bajo los datos |
+| Acción principal | Botón **Jugar de nuevo** |
+| Acción secundaria | Botón **Inicio** |
+
+`formatScore` y `formatDuration` son funciones **puras** con pruebas. No dependen del idioma del sistema ni de `Intl`, para que el resultado sea idéntico en Node, en el navegador y en el WebView.
+
+### 8.3 Comportamiento
+
+- **Aparece 1,2 s después del Game Over.** Durante ese tiempo el canvas muestra la escena congelada, sin texto, para que el jugador vea cómo terminó.
+- Mientras tanto **no se reinicia la partida con toques ni teclas**: por eso `input.js` deja de reiniciar en Game Over (§10). Así un toque accidental al morir no se salta el puntaje.
+- Al montarse, el foco va a **Jugar de nuevo**, de modo que Enter y Espacio lo activan de forma nativa.
+- Se muestra solo si la pantalla activa sigue siendo `playing` cuando vence el retraso.
+- **Jugar de nuevo** → `playing`; **Inicio** → `home`. El botón «Atrás» de Android equivale a Inicio (§12).
+- La pantalla **no escribe en Firestore**: delega en una función `saveScore(result)` inyectada.
+
+### 8.4 Estado de guardado (tarea 2B.9, depende de 2.8)
+
+Solo se muestra si `main.js` entrega `saveScore` (Firebase configurado y tarea 2.8 hecha). Sin `saveScore`, la línea de estado no existe y el modo solo funciona sin red.
+
+| Estado | Texto | Acción |
 |---|---|---|
-| `isCoop: boolean` | — (solo lectura; `false` en el Noop) | §6 |
-| `publishPlayerX(x: number)` | Cada frame, con `x` normalizado 0..1. Solo entrega el valor: el gateway real conserva el último y un temporizador de 100 ms hace el `update()` parcial, solo si cambió más de 0,002. | §4.1 |
-| `emitShot(t: number, x: number)` | El jugador dispara (`t` = segundos de juego, `x` normalizado). | §4.2 `shot` |
-| `emitKill(wave: number, enemyId: number, t: number)` | Un impacto local destruye a un enemigo. | §4.2 `kill` |
-| `emitHit(t: number)` | La nave local pierde una vida. | §4.2 `hit` |
-| `dispose()` | Se abandona la partida. Cancela suscripciones y temporizadores. | `firebase_schema.md` §4.4 |
+| Guardando | «Guardando puntaje…» | — |
+| Guardado | «Puntaje guardado en el ranking» | — |
+| Error | «No se pudo guardar el puntaje» | Botón **Reintentar** |
 
-Notas:
-- `enemyId` = índice del enemigo en su oleada (`row * columns + col`); es estable entre clientes porque la rejilla es determinista.
-- `t` es `Game.elapsed` (segundos de juego acumulados desde `startNewGame()`). En coop la Fase 3 lo sustituirá por el reloj del servidor (`multiplayer_sync.md` §2).
-- El sentido entrante (eventos del compañero, `killed`, `lives`) **no** forma parte de esta versión del puerto; se añadirá en las tareas 3.6-3.10 y se anotará en el changelog.
+El guardado se lanza una sola vez al montar la pantalla; «Reintentar» lo repite. El resultado se corresponde con el documento de `leaderboard` de `firebase_schema.md` §2.
 
-### 3.2 Pausa y ciclo de vida (v1.2)
+### 8.5 Récord personal local (tarea 2B.10)
 
-- `Game` expone `paused`, `pause()` y `resume()`. Mientras `paused` es `true`, `update(dt)` no avanza nada (ni `elapsed`, ni enemigos, ni balas, ni cooldowns) y `render(ctx)` dibuja la partida congelada con el aviso «PAUSA · Toca para continuar».
-- `pause()` no hace nada si la partida ya terminó (el toque de Game Over sigue reiniciando) ni si `sync.isCoop` es `true`: en coop la simulación depende del reloj del servidor y una pausa local la desincronizaría. La Fase 3 definirá cómo se trata el segundo plano en coop (tarea 3.12).
-- `startNewGame()` siempre deja `paused = false`.
-- `src/lifecycle.js` exporta `attachLifecycle(game, { doc, app })`. Es código de enlace como `main.js` (puede tocar el DOM y recibir el plugin de Capacitor); `game/` nunca lo importa. Pausa cuando:
-  1. `document.visibilityState === 'hidden'` (evento `visibilitychange`), o
-  2. el plugin `App` emite `appStateChange` con `isActive === false`.
-  Devuelve una función que quita los listeners. `app` se inyecta (en `main.js` es `App` de `@capacitor/app`) para poder probarlo en Node sin el plugin.
-- **Reanudar es siempre manual**: al volver a la app el juego sigue en pausa hasta que el jugador toca la pantalla o pulsa Espacio/Enter (`input.js`). Así la partida no continúa antes de que el jugador esté listo.
-- `input.js` suelta las teclas y el puntero activos cuando la ventana pierde el foco (`blur`), porque el `keyup` no llega en segundo plano y la nave quedaría moviéndose sola al volver.
+- Se guarda en `localStorage` con la clave `spacecoop.bestScore`; no es un cambio del esquema de Firebase.
+- Módulo `src/ui/bestScore.js`: `createBestScoreStore({ storage })` con `get()` y `submit(score) → { best, isNewBest }`. El almacenamiento se inyecta para probarlo en Node.
+- Si `localStorage` falla o no existe, se ignora en silencio y no se muestra récord.
+- Solo cuenta el modo solo y solo las partidas que terminan (una partida abandonada con «Salir al inicio» no cuenta).
 
-### 3.3 Efectos: sonido y vibración (v1.3)
+### 8.6 Modo coop (tarea 3.13)
 
-Igual que la red, el audio y la vibración son un puerto: `game/` avisa de lo que ocurre y no sabe cómo se reproduce. `Game` recibe `effects` por el constructor (`new Game({ effects })`); por defecto usa `NoopEffects` (silencio), que es lo que corre en las pruebas y en Node. La implementación real vive en `src/effects.js` (código de enlace con el navegador, como `main.js` y `lifecycle.js`); `game/` nunca la importa.
+La pantalla reserva el caso `mode: 'coop'`: título «Resultado del equipo», desglose por jugador y botón «Volver al lobby». Al salir de Resultados, el host borra la sala (`multiplayer_sync.md` §6, paso 6). Hasta la tarea 3.13 la pantalla solo atiende `mode: 'solo'`.
 
-| Miembro | Cuándo lo llama el juego | Sonido | Vibración |
-|---|---|---|---|
-| `shot()` | La nave local dispara. | Pitido corto agudo, volumen bajo (suena unas 3 veces por segundo). | — |
-| `kill()` | Un impacto local destruye a un enemigo. | Tono medio descendente, breve. | — |
-| `hit()` | La nave local pierde una vida. | Tono grave descendente, más largo y fuerte. | 150 ms |
-| `gameOver()` | La partida termina (una sola vez). | Tres notas descendentes. | — |
-| `unlock()` | Cada primer gesto del usuario (toque o tecla). | Crea o reanuda el `AudioContext`. | — |
+## 9. Menú de pausa y salida al Home
 
-- Los sonidos se sintetizan con osciladores de Web Audio: sin archivos de audio (coherente con §6; los sonidos definitivos son la tarea 4.8).
-- Los WebViews bloquean el audio hasta que hay un gesto del usuario (§7): el `AudioContext` se crea o reanuda en `unlock()`. Los eventos anteriores al primer gesto no suenan.
-- `createEffects({ AudioContextClass, haptics })` recibe el constructor de audio y el plugin de vibración inyectados (en `main.js`, `Haptics` de `@capacitor/haptics`). Si el entorno no tiene Web Audio o la vibración falla (p. ej. un navegador de escritorio), el efecto se omite en silencio: nunca debe interrumpir la partida.
-- En pausa no hay eventos, así que no suena nada; en coop los eventos del compañero no generan efectos hasta que la Fase 3 lo decida.
+**Propósito:** pausar la partida a voluntad y poder salir al Home sin terminarla.
 
-### 3.4 Fondo decorativo (v1.4)
+- **Botón de pausa** (⏸, `aria-label="Pausar"`, de al menos 44 × 44 px) en la esquina superior derecha del área de juego. Es HTML dentro de `#ui`, alineado con el canvas; el HUD de texto sigue dibujado en el canvas, arriba a la izquierda. La tecla **Esc** o **P** hace lo mismo.
+- Al pulsarlo: `game.pause()` y aparece el **menú de pausa**, una superposición con el mismo fondo que los demás menús, con el título «Pausa» y dos botones:
+  1. **Continuar** (principal, recibe el foco): cierra el menú y llama a `game.resume()`.
+  2. **Salir al inicio**: va a `home`.
+- **Salir al inicio abandona la partida:** no se llama a `onGameOver`, no hay pantalla de Resultados, no se guarda nada en el ranking y no cuenta para el récord. Para evitar salidas accidentales hacen falta dos pasos (⏸ y luego «Salir al inicio»).
+- Mientras el menú está abierto **el input del juego está desactivado** (se quita y se vuelve a enganchar al continuar), de modo que Espacio/Enter solo activan el botón enfocado y no reanudan el juego por detrás.
+- **Pausa por segundo plano** (`attachLifecycle`): no cambia. El canvas muestra «PAUSA · Toca para continuar» y un toque reanuda. Si el jugador abre el menú, manda el menú.
+- El botón se oculta cuando la partida termina (`isGameOver`), para no interferir con los 1,2 s previos a Resultados.
+- **Coop:** `pause()` no aplica en coop (`architecture.md` §3.2). Ahí el botón será «Salir», con la confirmación «¿Salir de la partida?», y abandonará la sala. Se define en la tarea 3.16; hasta entonces el botón no se muestra en coop.
+- La lógica vive en `src/ui/pauseController.js`, con el juego y el enganche del input inyectados, para probarla en Node: `open()`, `resume()` y `exit()`.
 
-`Game` crea un `Starfield` (`src/game/Starfield.js`) y lo actualiza y dibuja como parte de su simulación. Es puramente cosmético: `update(dt)` no toca el DOM y `render(ctx)` recibe el contexto como parámetro (regla 2 de §3). Usa su propio generador de azar (`new Game({ starsRandom })`, por defecto `Math.random`) y **nunca** `Game.random`, para no alterar la secuencia determinista de la partida. No se sincroniza por red. El detalle visual está en `game_loop.md` §3.1.
+| Elemento | Texto |
+|---|---|
+| Botón de pausa (accesibilidad) | «Pausar» |
+| Título del menú | «Pausa» |
+| Botones | «Continuar», «Salir al inicio» |
 
-## 4. Modos de juego
+## 10. Integración con el juego
 
-- **Solo**: sin red. El puntaje se guarda en Firestore si hay sesión.
-- **Coop (2 jugadores)**: sala por código. Un jugador es **host** (autoridad sobre vidas, puntaje, oleada y fin de partida).
+Esto es lo que cambia en `game/` y en el arranque (detalle en `game_loop.md` §7.1 y `architecture.md` §3.5):
 
-## 5. Decisiones de diseño (ADR resumidas)
+1. `Game` acepta la opción `onGameOver(result)` (por defecto una función vacía). Se llama **una sola vez** desde `triggerGameOver()` con un `GameResult`. `startNewGame()` la rearma.
+2. `main.js` conecta las piezas: al recibir `onGameOver` programa `router.show('results', { result })` tras `RESULTS_DELAY_MS`.
+3. Se elimina el texto «GAME OVER / Puntaje / Toca para reiniciar» del canvas (`#renderGameOver`). Se mantiene el oscurecimiento de la escena congelada.
+4. `input.js` **ya no reinicia** al toque ni con Espacio/Enter cuando `isGameOver`. El reinicio es solo por el botón «Jugar de nuevo».
+5. **El input del juego solo está activo en `playing`:** se engancha (`attachInput`) al montar esa pantalla y se quita con la función que devuelve al desmontarla. Motivo: `input.js` escucha Espacio/Enter en `window`; si siguiera enganchado, pulsar Enter sobre un botón del Home reanudaría el juego por detrás del menú.
+6. Montar `playing` llama a `game.startNewGame()`, que deja `paused = false` y reinicia el estado, y crea el botón de pausa (§9). Desmontarla quita el botón y el input y llama a `game.pause()`. Al arrancar la app el juego se crea y se pausa, como ahora.
+7. `attachLifecycle` (`architecture.md` §3.2) no cambia: pausar en segundo plano sigue funcionando y reanudar sigue siendo manual con un toque en el canvas.
 
-| # | Decisión | Alternativa descartada | Razón |
-|---|---|---|---|
-| ADR-1 | Web (Canvas + JS + CSS) con Capacitor | Flutter / Unity / Kotlin nativo | Requisito: app híbrida con tecnologías web. |
-| ADR-2 | Canvas 2D sin motor | Phaser | Menos dependencias; el alcance es pequeño. Phaser sigue siendo una migración posible. |
-| ADR-3 | RTDB para la partida | Firestore | Firestore cobra por lectura/escritura; a 10-15 Hz agota la cuota diaria. |
-| ADR-4 | Host autoritativo | Servidor dedicado / Cloud Functions | Sin costo ni backend propio. |
-| ADR-5 | Formación enemiga determinista (semilla + hora del servidor) | Sincronizar cada enemigo | Reduce tráfico a casi cero. |
-| ADR-6 | Coordenadas normalizadas (x ∈ [0,1]) en red | Píxeles | Independencia de resolución entre dispositivos. |
-| ADR-7 | Lienzo lógico fijo 360×640 escalado por CSS | Resolución dependiente del dispositivo | Misma simulación en todos los dispositivos; evita desfases entre jugadores. |
-| ADR-8 | Bucle con `requestAnimationFrame` y `dt` limitado a 50 ms | Paso fijo | Más simple; suficiente para el MVP. |
-| ADR-9 | Pausa automática en segundo plano con reanudación manual (toque) | Reanudar solo al volver a primer plano | El jugador puede volver sin estar listo y perder una vida al instante. |
-| ADR-10 | Sonidos sintetizados con Web Audio + `@capacitor/haptics` para vibrar | Archivos de audio / `navigator.vibrate` | Cero assets en el MVP; `navigator.vibrate` no cubre iOS ni garantiza el permiso en Android. |
+## 11. Tiempos y constantes (`src/ui/uiConstants.js`)
 
-## 6. Requisitos no funcionales
+| Constante | Valor | Uso |
+|---|---|---|
+| `SPLASH_DURATION_MS` | 2500 | Duración del splash |
+| `SPLASH_SKIP_AFTER_MS` | 800 | Desde cuándo se puede omitir el splash |
+| `RESULTS_DELAY_MS` | 1200 | Espera entre el Game Over y Resultados |
+| `SCREEN_FADE_MS` | 200 | Fundido de entrada de una pantalla |
+| `BEST_SCORE_STORAGE_KEY` | `'spacecoop.bestScore'` | Clave del récord local (§8.5) |
 
-- 60 FPS en un gama media de 2020 dentro del WebView.
-- Latencia percibida del compañero < 200 ms (con interpolación).
-- Tráfico por jugador < 5 KB/s en partida.
-- Sin assets externos en el MVP (formas dibujadas con Canvas); sprites y audio opcionales en Fase 4.
-- Bloqueo de orientación vertical en la app empaquetada (Fase 4).
+Presupuesto de arranque: el splash nativo (tarea 4.4) debe durar **1 s o menos** y el splash de la app 2,5 s, de modo que el Home aparezca en **3,5 s o menos** desde que se toca el ícono.
 
-## 7. Particularidades del entorno híbrido
+## 12. Botón «Atrás» de Android (tarea 2B.11)
 
-- `vite.config.js` usa `base: './'` para que los recursos se resuelvan con rutas relativas dentro del WebView.
-- Tras cada cambio web: `npm run build` y `npx cap sync` antes de abrir Android Studio / Xcode.
-- Eventos táctiles: usar **Pointer Events** y `touch-action: none` en el canvas para evitar scroll y zoom.
-- Audio en WebView móvil requiere un gesto del usuario antes de reproducir (relevante en Fase 4).
-- iOS requiere macOS y Xcode; Android requiere Android Studio. Para la entrega universitaria basta con Android (APK).
+Se escucha el evento `backButton` del plugin `@capacitor/app` (ya es dependencia; no se añade ninguna). Al registrar un listener, Capacitor deja de cerrar la app por sí solo, así que el cierre hay que pedirlo explícitamente.
 
-## 8. Criterios de aceptación globales
+| Pantalla activa | Acción |
+|---|---|
+| `splash` | Se ignora |
+| `home` | Cierra la app (`App.exitApp()`) |
+| `credits`, `results` | Vuelve a `home` (`router.back()`) |
+| `playing` | Abre el menú de pausa (§9) en solo; en coop se ignora hasta la tarea 3.16 |
 
+El mapa de destinos es lógica pura y se prueba en Node con el plugin inyectado, igual que `attachLifecycle`.
+
+## 13. Pruebas esperadas
+
+**Unitarias (`node --test`, sin navegador):**
+
+- Router: monta y desmonta en orden; `current` correcto; nombre desconocido lanza error y conserva la pantalla actual; `params` llegan a la pantalla; `back()` respeta `backTargets` y devuelve `false` si no hay destino; `destroy()` desmonta.
+- `formatScore`: `0`, `999`, `1000`, `1250`, `1234567`.
+- `formatDuration`: `0`, `59.9`, `60`, `205.4`, `4510`.
+- `Game.onGameOver`: se llama una vez con `{ mode, score, wave, durationSeconds }`; no se repite en `update()` posteriores ni al llamar otra vez a `triggerGameOver()`; se rearma tras `startNewGame()`; `mode` es `'coop'` con un gateway cuyo `isCoop` es `true`.
+- Splash: avance automático a 2,5 s; la omisión antes de 0,8 s se ignora y después funciona (temporizadores inyectados).
+- Forma de `CREDITS` (§7): al menos un integrante y cada `name` no vacío.
+- Menú de pausa (`pauseController`): `open()` pausa el juego y quita el input; `resume()` reanuda y lo vuelve a enganchar; `exit()` llama a la salida y **no** dispara `onGameOver`; `open()` no hace nada tras el Game Over ni en coop.
+- Récord local: primera partida, récord superado, puntaje menor, `storage` que lanza.
+- Mapa de destinos del botón «Atrás».
+
+**Manuales:**
+
+- Flujo completo en el navegador a 360×640 y a 320×568: splash → home → créditos → home → jugar → morir → resultados → jugar de nuevo → morir → resultados → inicio.
+- El mismo flujo en el emulador o teléfono Android (WebView).
+- Con teclado: Tab recorre los botones, Enter los activa, el foco siempre es visible.
+- Con «Reducir movimiento» activado en el sistema: sin fundidos ni animaciones.
+- Mientras se muestra un menú (Home, Créditos, Resultados o Pausa), pulsar Enter o Espacio **no** reanuda el juego por detrás.
+- Pausa → «Continuar» devuelve la partida tal como estaba; pausa → «Salir al inicio» lleva al Home y «Jugar solo» empieza una partida nueva.
+
+## 14. Criterios de aceptación
+
+- Al abrir la app se ve el splash, y a los 2,5 s (o con un toque pasados 0,8 s) aparece el Home.
+- Desde el Home se llega a Créditos y se vuelve; «Jugar solo» empieza una partida nueva.
+- Al perder la última vida, tras 1,2 s aparece Resultados con el puntaje, la oleada y el tiempo **correctos**.
+- Un toque o una tecla durante esos 1,2 s no reinicia la partida.
+- «Jugar de nuevo» arranca una partida limpia (puntaje 0, 3 vidas, oleada 1); «Inicio» vuelve al Home.
+- Durante la partida se puede pausar con el botón ⏸ (o Esc/P) y salir al Home; esa partida no produce resultado.
+- El juego no avanza detrás de ninguna pantalla.
 - `npm test` pasa y `npm run build` termina sin errores.
-- Modo solo jugable de principio a fin sin Firebase configurado, en navegador y en la app Android.
-- Dos dispositivos reales completan una partida cooperativa de 5 minutos sin desincronización visible.
+- El modo solo funciona sin Firebase configurado.
+
+## 15. Supuestos y puntos abiertos
+
+Confirmados por el equipo el 2026-10-22, salvo los marcados como pendientes:
+
+1. **Home = menú de la tarea 2.3 adaptado**, no una pantalla nueva. *(Confirmado.)*
+2. **El fondo de estrellas no se anima detrás de los menús:** el juego está en pausa fuera de `playing` (§3, regla 3). Animarlo exigiría que `Game` actualice el fondo en pausa; puede añadirse después. *(Confirmado.)*
+3. **Créditos:** solo los nombres de los tres integrantes. *(Confirmado.)*
+4. **Récord personal (§8.5) y botón «Atrás» (§12):** se quieren tener; pasan a prioridad P1. *(Confirmado.)*
+5. **Salir al Home a mitad de partida:** sí, mediante el botón de pausa (§9). Abandonar no guarda resultado. *(Confirmado.)*
+6. **Pendiente:** si una partida abandonada debería poder guardarse en el ranking. Por ahora no.
+7. **Coop:** Resultados reserva el caso, pero su contenido se define en la tarea 3.13; la salida de una partida coop, en la 3.16.
