@@ -1,5 +1,12 @@
 :root {
   --bg: #0b0e1a;
+  --ui-bg: #0b0e1a;
+  --ui-panel: #10162b;
+  --ui-accent: #536ce0;
+  --ui-text: #f5f7ff;
+  --ui-muted: #c2c9e0;
+  --ui-border: rgba(165, 181, 235, 0.42);
+  --screen-fade-ms: 200ms;
   --game-ratio: 360 / 640;
 }
 
@@ -44,6 +51,86 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+
+.app-screen {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(39, 54, 110, 0.72), transparent 65%),
+    rgba(7, 10, 23, 0.96);
+  color: var(--ui-text);
+  pointer-events: auto;
+}
+
+.screen-enter {
+  animation: screen-fade-in var(--screen-fade-ms) ease-out both;
+}
+
+@keyframes screen-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.splash-screen__content {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.splash-screen__ship {
+  width: 72px;
+  height: 72px;
+  filter: drop-shadow(0 0 18px rgba(79, 195, 247, 0.55));
+}
+
+.splash-screen h1 {
+  margin: 24px 0 0;
+  color: #ffffff;
+  font-size: clamp(2.5rem, 12vw, 3.5rem);
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.splash-screen p {
+  margin: 12px 0 36px;
+  color: var(--ui-muted);
+}
+
+.splash-screen__progress {
+  width: min(220px, 60vw);
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(165, 181, 235, 0.22);
+}
+
+.splash-screen__progress span {
+  display: block;
+  width: 35%;
+  height: 100%;
+  border-radius: inherit;
+  background: #4fc3f7;
+  animation: splash-progress 2.5s linear both;
+}
+
+@keyframes splash-progress {
+  to { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-enter,
+  .splash-screen__progress span {
+    animation: none;
+  }
+
+  .splash-screen__ship {
+    filter: none;
+  }
 }
 
 .main-menu {

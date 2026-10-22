@@ -10,6 +10,7 @@ import { mountLobby } from './ui/lobby.js';
 import { mountMainMenu } from './ui/mainMenu.js';
 import { mountRanking } from './ui/ranking.js';
 import { createScreenRouter, SCREENS } from './ui/screenRouter.js';
+import { mountSplash } from './ui/screens/splash.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -67,6 +68,7 @@ function showLobby(firebase, room) {
 const router = createScreenRouter({
   container: ui,
   screens: {
+    [SCREENS.SPLASH]: mountSplash,
     [SCREENS.HOME]: (container, _params, nav) => mountMainMenu(container, {
       onPlaySolo: () => nav.show(SCREENS.PLAYING),
       onCreateRoom: async () => {
@@ -117,7 +119,7 @@ const router = createScreenRouter({
   },
 });
 
-router.show(SCREENS.HOME);
+router.show(SCREENS.SPLASH);
 
 let last = performance.now();
 
