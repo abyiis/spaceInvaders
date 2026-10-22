@@ -46,8 +46,48 @@ export function scheduleResultsNavigation(router, result, {
 }
 
 /**
+ * @param {{
+ *   saveScore: (result: object) => Promise<void>,
+ *   result: object,
+ *   onState: (state: { status: 'saving' | 'saved' | 'error', error?: Error }) => void,
+ * }} options
+ * @returns {{ save(): Promise<void>, dispose(): void }}
+ */
+export function createScoreSaveController({ saveScore, result, onState }) {
+  let disposed = false;
+  let saving = false;
+
+  return {
+    async save() {
+      if (disposed || saving) return;
+      saving = true;
+      onState({ status: 'saving' });
+      try {
+        await saveScore(result);
+        if (!disposed) onState({ status: 'saved' });
+      } catch (error) {
+        if (!disposed) {
+          onState({
+            status: 'error',
+            error: error instanceof Error ? error : new Error(String(error)),
+          });
+        }
+      } finally {
+        saving = false;
+      }
+    },
+    dispose() {
+      disposed = true;
+    },
+  };
+}
+
+/**
  * @param {HTMLElement} container
- * @param {{ result: { score: number, wave: number, durationSeconds: number } }} params
+ * @param {{
+ *   result: { score: number, wave: number, durationSeconds: number },
+ *   saveScore?: (result: object) => Promise<void>,
+ * }} params
  * @param {{ show(name: string, params?: object): void }} nav
  * @returns {() => void}
  */
@@ -67,6 +107,12 @@ export function mountResults(container, { result }, nav) {
         <div><dt>Oleada alcanzada</dt><dd data-result-wave></dd></div>
         <div><dt>Tiempo</dt><dd data-result-duration></dd></div>
       </dl>
+      <div class="results-screen__save" data-save-area hidden>
+        <p role="status" aria-live="polite" data-save-status></p>
+        <button class="main-menu__button" type="button" data-action="retry" hidden>
+          Reintentar
+        </button>
+      </div>
       <div class="results-screen__actions">
         <button class="main-menu__button main-menu__button--primary" type="button" data-action="replay">
           Jugar de nuevo
@@ -83,8 +129,42 @@ export function mountResults(container, { result }, nav) {
   screen.querySelector('[data-result-duration]').textContent = formatDuration(result.durationSeconds);
   screen.querySelector('[data-action="replay"]').addEventListener('click', () => nav.show('playing'));
   screen.querySelector('[data-action="home"]').addEventListener('click', () => nav.show('home'));
+
+  const saveArea = screen.querySelector('[data-save-area]');
+  const saveStatus = screen.querySelector('[data-save-status]');
+  const retryButton = screen.querySelector('[data-action="retry"]');
+  let saveController;
+  if (typeof saveScore === 'function') {
+    saveArea.hidden = false;
+    saveController = createScoreSaveController({
+      saveScore,
+      result,
+      onState: ({ status, error }) => {
+        if (status === 'saving') {
+          saveStatus.textContent = 'Guardando puntaje…';
+          saveStatus.removeAttribute('title');
+          retryButton.hidden = true;
+          retryButton.disabled = true;
+        } else if (status === 'saved') {
+          saveStatus.textContent = 'Puntaje guardado en el ranking';
+          saveStatus.removeAttribute('title');
+        } else {
+          saveStatus.textContent = 'No se pudo guardar el puntaje';
+          saveStatus.title = error.message;
+          retryButton.hidden = false;
+          retryButton.disabled = false;
+        }
+      },
+    });
+    retryButton.addEventListener('click', () => { void saveController.save(); });
+    void saveController.save();
+  }
+
   container.append(screen);
   screen.querySelector('[data-action="replay"]').focus();
 
-  return () => screen.remove();
+  return () => {
+    saveController?.dispose();
+    screen.remove();
+  };
 }

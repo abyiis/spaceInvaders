@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatDuration, formatScore, scheduleResultsNavigation } from '../src/ui/screens/results.js';
+import {
+  createScoreSaveController,
+  formatDuration,
+  formatScore,
+  scheduleResultsNavigation,
+} from '../src/ui/screens/results.js';
 
 test('formatScore separa miles con punto', () => {
   assert.equal(formatScore(0), '0');
@@ -71,4 +76,48 @@ test('cancelar impide la navegación y limpia el temporizador', () => {
 
   assert.equal(timer.cleared, true);
   assert.deepEqual(calls, []);
+});
+
+test('controla estados al guardar y permite un nuevo intento tras un error', async () => {
+  const states = [];
+  const result = { score: 300 };
+  let attempts = 0;
+  const controller = createScoreSaveController({
+    result,
+    saveScore: async (received) => {
+      assert.equal(received, result);
+      attempts += 1;
+      if (attempts === 1) throw new Error('offline');
+    },
+    onState: (state) => states.push(state.status),
+  });
+
+  await controller.save();
+  await controller.save();
+
+  assert.deepEqual(states, ['saving', 'error', 'saving', 'saved']);
+  assert.equal(attempts, 2);
+});
+
+test('no duplica guardados simultáneos y descarta estados después de dispose', async () => {
+  const states = [];
+  let finishSave;
+  let attempts = 0;
+  const controller = createScoreSaveController({
+    result: {},
+    saveScore: () => {
+      attempts += 1;
+      return new Promise((resolve) => { finishSave = resolve; });
+    },
+    onState: (state) => states.push(state.status),
+  });
+
+  const first = controller.save();
+  const duplicate = controller.save();
+  controller.dispose();
+  finishSave();
+  await Promise.all([first, duplicate]);
+
+  assert.equal(attempts, 1);
+  assert.deepEqual(states, ['saving']);
 });

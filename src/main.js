@@ -28,25 +28,11 @@ const effects = createEffects({ haptics: Haptics });
 const ui = document.getElementById('ui');
 let playerDisplayName = 'Jugador';
 const hasFirebaseConfig = Object.keys(import.meta.glob('./net/firebaseConfig.js')).length > 0;
-const saveStatus = document.createElement('p');
-saveStatus.className = 'score-save-status';
-saveStatus.setAttribute('role', 'status');
-saveStatus.setAttribute('aria-live', 'polite');
-saveStatus.hidden = true;
-ui.append(saveStatus);
 let cancelPendingResults = () => {};
 
 async function saveSoloScore(result) {
-  saveStatus.hidden = false;
-  saveStatus.textContent = 'Guardando puntaje…';
-  try {
-    const { scoreRepository } = await import('./net/firebase.js');
-    await scoreRepository.saveSoloScore({ ...result, name: playerDisplayName });
-    saveStatus.textContent = 'Puntaje guardado en el ranking';
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    saveStatus.textContent = `No se pudo guardar el puntaje: ${detail}`;
-  }
+  const { scoreRepository } = await import('./net/firebase.js');
+  await scoreRepository.saveSoloScore({ ...result, name: playerDisplayName });
 }
 
 const game = new Game({
@@ -56,7 +42,6 @@ const game = new Game({
     cancelPendingResults = scheduleResultsNavigation(router, result, {
       delayMs: RESULTS_DELAY_MS,
     });
-    if (result.mode === 'solo' && hasFirebaseConfig) void saveSoloScore(result);
   },
 });
 game.pause();
@@ -78,7 +63,10 @@ const router = createScreenRouter({
   screens: {
     [SCREENS.SPLASH]: mountSplash,
     [SCREENS.CREDITS]: mountCredits,
-    [SCREENS.RESULTS]: mountResults,
+    [SCREENS.RESULTS]: (container, { result }, nav) => mountResults(container, {
+      result,
+      saveScore: result.mode === 'solo' && hasFirebaseConfig ? saveSoloScore : undefined,
+    }, nav),
     [SCREENS.HOME]: (container, _params, nav) => mountMainMenu(container, {
       onPlaySolo: () => nav.show(SCREENS.PLAYING),
       onShowCredits: () => nav.show(SCREENS.CREDITS),
