@@ -22,6 +22,7 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
+import { createRoomRepository } from '../src/net/roomRepository.js';
 
 const emulatorAvailable = Boolean(
   process.env.FIREBASE_DATABASE_EMULATOR_HOST &&
@@ -89,6 +90,33 @@ describe('Firebase security rules', { skip: !emulatorAvailable }, () => {
       rtdbRef(hostDatabase, 'rooms/ABCDE/players/host'),
       { ...player, x: 1.1 },
     ));
+  });
+
+  it('creates a room with transactional metadata and host registration', async () => {
+    const database = testEnvironment.authenticatedContext('host').database();
+    const repository = createRoomRepository({
+      rtdb: database,
+      authService: { signIn: async () => 'host' },
+      codeFactory: () => 'ABCDE',
+      seedFactory: () => 123,
+    });
+
+    const room = await repository.createRoom({ name: 'Host' });
+    assert.equal(room.code, 'ABCDE');
+    assert.equal(room.uid, 'host');
+    const meta = (await getRtdb(rtdbRef(database, 'rooms/ABCDE/meta'))).val();
+    assert.deepEqual({ ...meta, createdAt: undefined }, {
+      hostUid: 'host',
+      seed: 123,
+      status: 'lobby',
+      createdAt: undefined,
+      maxPlayers: 2,
+    });
+    assert.equal(typeof meta.createdAt, 'number');
+    const player = (await getRtdb(rtdbRef(database, 'rooms/ABCDE/players/host'))).val();
+    assert.equal(player.name, 'Host');
+    assert.equal(player.connected, true);
+    assert.equal(typeof player.ts, 'number');
   });
 
   it('Realtime Database restricts room state to the host and event writes to their owner', async () => {
