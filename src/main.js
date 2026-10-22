@@ -19,7 +19,34 @@ canvas.height = C.HEIGHT * dpr;
 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
 const effects = createEffects({ haptics: Haptics });
-const game = new Game({ effects });
+const ui = document.getElementById('ui');
+const hasFirebaseConfig = Object.keys(import.meta.glob('./net/firebaseConfig.js')).length > 0;
+const saveStatus = document.createElement('p');
+saveStatus.className = 'score-save-status';
+saveStatus.setAttribute('role', 'status');
+saveStatus.setAttribute('aria-live', 'polite');
+saveStatus.hidden = true;
+ui.append(saveStatus);
+
+async function saveSoloScore(result) {
+  saveStatus.hidden = false;
+  saveStatus.textContent = 'Guardando puntaje…';
+  try {
+    const { scoreRepository } = await import('./net/firebase.js');
+    await scoreRepository.saveSoloScore(result);
+    saveStatus.textContent = 'Puntaje guardado en el ranking';
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    saveStatus.textContent = `No se pudo guardar el puntaje: ${detail}`;
+  }
+}
+
+const game = new Game({
+  effects,
+  onGameOver: (result) => {
+    if (result.mode === 'solo' && hasFirebaseConfig) void saveSoloScore(result);
+  },
+});
 game.pause();
 
 // Los WebViews bloquean el audio hasta un gesto del usuario. Se prueba en varios eventos porque
@@ -29,7 +56,6 @@ for (const type of ['pointerdown', 'pointerup', 'keydown']) {
 }
 
 attachLifecycle(game, { app: App });
-const ui = document.getElementById('ui');
 
 function showLobby(firebase, room) {
   mountLobby(ui, {

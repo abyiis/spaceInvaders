@@ -59,9 +59,9 @@ npm run build       # genera dist/
 
 ## Firebase (tareas 0.8 – 0.10)
 
-La tarea 2.3 añade el menú principal y el modo solo sin depender de Firebase. Las tareas 2.4–2.7 implementan la creación y unión a salas, el lobby en vivo y la presencia en RTDB. Para usarlas, registra una app **Web**, habilita **Authentication → Sign-in method → Anonymous** y guarda la configuración Web en `src/net/firebaseConfig.js` (ignorado por Git), exportada como `firebaseConfig`; incluye el `databaseURL` de Realtime Database.
+La tarea 2.3 añade el menú principal y el modo solo sin depender de Firebase. Las tareas 2.4–2.7 implementan la creación y unión a salas, el lobby en vivo y la presencia en RTDB. Para usarlas, registra una app **Web**, habilita **Authentication → Sign-in method → Anonymous** y configura `src/net/firebaseConfig.js`, exportando `firebaseConfig` e incluyendo el `databaseURL` de Realtime Database. Este archivo está versionado para compartir la configuración web del proyecto; no añadas credenciales privadas ni claves de servidor.
 
-Firestore se necesitará para el ranking (tarea 2.8). Para publicar solo las reglas de RTDB:
+Firestore se necesita para guardar puntajes (tarea 2.8) y consultar el ranking (tarea 2.9). Para publicar solo las reglas de RTDB:
 
 ```bash
 npm install -g firebase-tools
@@ -85,6 +85,6 @@ El agente leerá los specs, tomará la siguiente tarea de `TASKS.md`, la impleme
 
 - Specs v1.0 completos.
 - Modo individual jugable (Fase 1, tareas 1.1 – 1.13 hechas (Fase 1 completa); ver `TASKS.md`).
-- Firebase está integrado parcialmente: configuración inicial, autenticación anónima, menú, creación y unión a salas, lobby en vivo y presencia (tareas 2.1–2.7); ranking sigue pendiente.
-- Verificado: `npm test` (85 pruebas) y `npm run build`. La conexión de RTDB debe probarse con autenticación anónima habilitada y reglas desplegadas.
+- Firebase está integrado parcialmente: configuración inicial, autenticación anónima, menú, salas, lobby y presencia (tareas 2.1–2.7); guardado de puntaje implementado (2.8), ranking y alias pendientes.
+- Verificado: `npm test` (89 pruebas) y `npm run build`. La conexión de RTDB/Firestore debe probarse con autenticación anónima habilitada, bases creadas y reglas desplegadas.
 - La app Capacitor todavía no se ha verificado en un emulador o dispositivo.

@@ -19,6 +19,7 @@ export class Game {
    *   sync?: import('./SyncGateway.js').SyncGateway,
    *   effects?: import('./Effects.js').Effects,
    *   starsRandom?: () => number,
+   *   onGameOver?: (result: { mode: string, score: number, wave: number, durationSeconds: number }) => void,
    * }} [opts]
    *   `random` debe devolver un número en [0, 1). Se inyecta para poder probar.
    *   `sync` es el puerto de red; por defecto no hace nada (modo individual).
@@ -33,12 +34,14 @@ export class Game {
     sync = new NoopSyncGateway(),
     effects = new NoopEffects(),
     starsRandom = Math.random,
+    onGameOver = () => {},
   } = {}) {
     this.width = width;
     this.height = height;
     this.random = random;
     this.sync = sync;
     this.effects = effects;
+    this.onGameOver = onGameOver;
     this.starfield = new Starfield({ width, height, random: starsRandom });
     this.startNewGame();
   }
@@ -81,6 +84,12 @@ export class Game {
     if (this.isGameOver) return;
     this.isGameOver = true;
     this.effects.gameOver();
+    this.onGameOver({
+      mode: this.sync.isCoop ? 'coop' : 'solo',
+      score: this.score,
+      wave: this.wave,
+      durationSeconds: this.elapsed,
+    });
   }
 
   /**

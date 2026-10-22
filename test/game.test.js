@@ -78,6 +78,36 @@ test('si un enemigo alcanza la línea del jugador termina la partida', () => {
   assert.equal(g.isGameOver, true);
 });
 
+test('onGameOver recibe un único resultado y se rearma al iniciar otra partida', () => {
+  const results = [];
+  const g = new Game({
+    random: seeded(1),
+    onGameOver: (result) => results.push(result),
+  });
+  g.score = 80;
+  g.wave = 3;
+  g.elapsed = 12.5;
+
+  g.triggerGameOver();
+  g.triggerGameOver();
+
+  assert.deepEqual(results, [
+    {
+      mode: 'solo',
+      score: 80,
+      wave: 3,
+      durationSeconds: 12.5,
+    },
+  ]);
+
+  g.startNewGame();
+  g.elapsed = 4;
+  g.triggerGameOver();
+  assert.equal(results.length, 2);
+  assert.equal(results[1].score, 0);
+  assert.equal(results[1].durationSeconds, 4);
+});
+
 test('al destruir todos los enemigos empieza la siguiente oleada con bonus', () => {
   const g = newGame();
   for (const e of g.formation.enemies) e.dead = true;
