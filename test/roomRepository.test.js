@@ -268,3 +268,42 @@ test('joinRoom propagates database errors and rejects failed slot reservations',
   });
   await assert.rejects(repository.joinRoom('AAAAA'), /reserve a player slot/);
 });
+
+test('watchPlayers subscribes only to the room player node and returns its cancellation', () => {
+  const dependencies = createDependencies();
+  const repository = createRoomRepository(dependencies);
+  const received = [];
+  const onError = () => {};
+  const unsubscribe = repository.watchPlayers(
+    ' aaaaa ',
+    (players) => received.push(players),
+    onError,
+  );
+
+  assert.equal(typeof unsubscribe, 'function');
+  assert.equal(typeof dependencies.valueCallback, 'function');
+  assert.equal(dependencies.errorCallback, onError);
+  dependencies.valueCallback({ val: () => ({ player: { name: 'Test' } }) });
+  assert.deepEqual(received, [{ player: { name: 'Test' } }]);
+  unsubscribe();
+  assert.equal(dependencies.valueCallback, undefined);
+  assert.throws(
+    () => repository.watchPlayers('AAAAA', () => {}),
+    /callbacks must be functions/,
+  );
+});
+
+test('setReady writes only the authenticated player ready field', async () => {
+  const dependencies = createDependencies();
+  const repository = createRoomRepository(dependencies);
+
+  await repository.setReady(' aaaaa ', true);
+
+  assert.deepEqual(dependencies.updates, [
+    {
+      databaseRef: { path: 'rooms/AAAAA/players/host-user' },
+      data: { ready: true },
+    },
+  ]);
+  await assert.rejects(repository.setReady('AAAAA', 'yes'), /must be a boolean/);
+});

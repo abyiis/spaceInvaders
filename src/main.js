@@ -6,6 +6,7 @@ import { createEffects } from './effects.js';
 import { Game } from './game/Game.js';
 import { attachInput } from './game/input.js';
 import { attachLifecycle } from './lifecycle.js';
+import { mountLobby } from './ui/lobby.js';
 import { mountMainMenu } from './ui/mainMenu.js';
 
 const canvas = document.getElementById('game');
@@ -28,10 +29,40 @@ for (const type of ['pointerdown', 'pointerup', 'keydown']) {
 }
 
 attachLifecycle(game, { app: App });
-mountMainMenu(document.getElementById('ui'), () => {
-  attachInput(canvas, game);
-  game.resume();
-});
+const ui = document.getElementById('ui');
+
+function showLobby(firebase, room) {
+  mountLobby(ui, {
+    code: room.code,
+    uid: room.uid,
+    watchPlayers: firebase.roomRepository.watchPlayers,
+    setReady: firebase.roomRepository.setReady,
+    onBack: showMainMenu,
+  });
+}
+
+function showMainMenu() {
+  mountMainMenu(ui, {
+    onPlaySolo: () => {
+      attachInput(canvas, game);
+      game.startNewGame();
+      game.resume();
+    },
+    onCreateRoom: async () => {
+      const firebase = await import('./net/firebase.js');
+      const room = await firebase.roomRepository.createRoom();
+      showLobby(firebase, room);
+    },
+    onJoinRoom: async (code) => {
+      const firebase = await import('./net/firebase.js');
+      const room = await firebase.roomRepository.joinRoom(code);
+      showLobby(firebase, room);
+    },
+    onShowRanking: undefined,
+  });
+}
+
+showMainMenu();
 
 let last = performance.now();
 

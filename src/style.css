@@ -126,3 +126,86 @@ body {
   color: #c2c9e0;
   font-size: 0.9rem;
 }
+
+.main-menu__join-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  text-align: left;
+}
+
+.main-menu__join-form[hidden] {
+  display: none;
+}
+
+.main-menu__join-form label {
+  color: #c2c9e0;
+  font-size: 0.9rem;
+}
+
+.main-menu__join-form input {
+  min-height: 48px;
+  border: 1px solid rgba(165, 181, 235, 0.55);
+  border-radius: 10px;
+  padding: 0 14px;
+  background: #10162b;
+  color: #ffffff;
+  font: inherit;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.main-menu__join-form input:focus-visible {
+  border-color: #9eafff;
+  outline: 2px solid #9eafff;
+  outline-offset: 2px;
+}
+
+.main-menu__join-form p {
+  margin: 0;
+  color: #aeb8d4;
+  font-size: 0.8rem;
+}
+
+.room-lobby__panel {
+  display: grid;
+  gap: 14px;
+}
+
+.room-lobby h1 {
+  font-size: clamp(1.8rem, 8vw, 2.6rem);
+  overflow-wrap: anywhere;
+}
+
+.room-lobby__code {
+  color: #9eafff;
+  letter-spacing: 0.12em;
+}
+
+.room-lobby .main-menu__description {
+  margin: 0;
+}
+
+.room-lobby__players {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.room-lobby__players li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(165, 181, 235, 0.3);
+  border-radius: 10px;
+  padding: 12px;
+  background: rgba(24, 31, 57, 0.75);
+  color: #f5f7ff;
+  text-align: left;
+}
+
+.room-lobby__players li span:last-child {
+  color: #a9b8ff;
+}

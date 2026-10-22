@@ -57,6 +57,7 @@ export function mountMainMenu(container, actions) {
     message.textContent = 'Conectando con Firebase…';
     try {
       await action();
+      menu.remove();
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       message.textContent = `No se pudo completar la acción: ${detail}`;
