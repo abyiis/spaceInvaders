@@ -72,7 +72,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 - [x] 2B.11 `P1 D2` Botón «Atrás» de Android con `@capacitor/app`: Créditos y Resultados vuelven a Home, Home cierra la app, jugando abre el menú de pausa; pruebas del mapa de destinos con el plugin inyectado `[ui][arch]`
 - [x] 2B.12 `P1 D3` Botón de pausa (⏸, Esc o P) y menú de pausa con «Continuar» y «Salir al inicio» (`src/ui/pauseController.js`): el input se quita mientras el menú está abierto, abandonar no genera resultado ni guarda puntaje, y desmontar `playing` pausa el juego; pruebas `[ui][loop]`
 - [ ] 2B.13 `P1 D2` Revisión manual del flujo completo en el navegador (360×640 y 320×568) y en Android, incluida la salida al Home desde la pausa; capturas para el informe `[ui]`
-  - Parcial: Home/Créditos revisados en navegador a 360×640 y 320×568; pausa, continuar y salida al inicio revisados a 320×568. Falta validar manualmente Game Over → Resultados y Android; no hay carpeta `android/`, `adb` ni Android SDK disponibles, así que la tarea permanece pendiente.
+  - Parcial: Home/Créditos revisados a 360×640 y 320×568; pausa, continuar y salida al inicio a 320×568; Game Over → Resultados tras perder vidas a 360×640. Falta repetir Resultados a 320×568 y validar Android; no hay carpeta `android/`, `adb` ni Android SDK disponibles, así que la tarea permanece pendiente.
 
 ## Fase 3 — Cooperativo en sincronía (≈ 2 semanas)
 

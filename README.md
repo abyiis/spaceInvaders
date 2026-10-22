@@ -37,7 +37,7 @@ Requisitos: **Node ≥ 20**. Para la app Android: Android Studio (iOS requiere m
 
 ```bash
 npm install
-npm test            # 135 pruebas unitarias
+npm test            # 137 pruebas unitarias
 npm run dev         # servidor de desarrollo; ábrelo en el navegador o desde el teléfono (misma Wi-Fi)
 npm run build       # genera dist/
 ```
