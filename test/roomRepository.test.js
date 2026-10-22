@@ -79,13 +79,13 @@ test('createRoom authenticates and creates room metadata and the host player', a
     seedFactory: () => 12345,
   });
 
-  const created = await repository.createRoom();
+  const created = await repository.createRoom({ name: 'Ace' });
   assert.deepEqual(created, {
     code: 'K7QX2',
     seed: 12345,
     uid: 'host-user',
     player: {
-      name: 'Jugador',
+      name: 'Ace',
       x: 0,
       ts: dependencies.timestamp,
       ready: false,
@@ -196,6 +196,17 @@ test('createRoom rejects invalid room codes and missing authenticated uid', asyn
   );
 });
 
+test('room creation and joining reject aliases outside the supported length', async () => {
+  const dependencies = createDependencies();
+  const repository = createRoomRepository(dependencies);
+
+  await assert.rejects(repository.createRoom({ name: '   ' }), /Player name must contain/);
+  await assert.rejects(
+    repository.joinRoom('AAAAA', { name: 'This alias is too long' }),
+    /Player name must contain/,
+  );
+});
+
 test('joinRoom validates the room, reserves the player node and normalizes its code', async () => {
   const dependencies = createDependencies();
   dependencies.snapshots.set('rooms/K7QX2/meta', {
@@ -212,12 +223,12 @@ test('joinRoom validates the room, reserves the player node and normalizes its c
     seedFactory: () => 7,
   });
 
-  const joined = await repository.joinRoom(' k7qx2 ');
+  const joined = await repository.joinRoom(' k7qx2 ', { name: 'Pilot' });
 
   assert.equal(joined.code, 'K7QX2');
   assert.equal(joined.meta.hostUid, 'host-user');
   assert.deepEqual(joined.player, {
-    name: 'Jugador',
+    name: 'Pilot',
     x: 0,
     ts: dependencies.timestamp,
     ready: false,

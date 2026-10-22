@@ -7,6 +7,8 @@
  *   onCreateRoom: () => Promise<void>,
  *   onJoinRoom: (code: string) => Promise<void>,
  *   onShowRanking?: () => Promise<void>,
+ *   onLoadAlias?: () => Promise<string>,
+ *   onSaveAlias?: (name: string) => Promise<string>,
  * }} actions
  */
 export function mountMainMenu(container, actions) {
@@ -18,6 +20,14 @@ export function mountMainMenu(container, actions) {
       <p class="main-menu__eyebrow">Arcade cooperativo</p>
       <h1 id="main-menu-title">Space Coop</h1>
       <p class="main-menu__description">Defiende la galaxia. ¿Listo para jugar?</p>
+      <details class="main-menu__alias" hidden>
+        <summary>Alias: <span data-current-alias>Jugador</span></summary>
+        <form class="main-menu__alias-form">
+          <label for="player-alias">Tu alias (máximo 16 caracteres)</label>
+          <input id="player-alias" name="alias" maxlength="16" minlength="1" required />
+          <button class="main-menu__button" type="submit">Guardar alias</button>
+        </form>
+      </details>
       <div class="main-menu__actions">
         <button class="main-menu__button main-menu__button--primary" type="button" data-action="solo">
           Jugar solo
@@ -48,7 +58,11 @@ export function mountMainMenu(container, actions) {
   const message = menu.querySelector('.main-menu__message');
   const joinForm = menu.querySelector('.main-menu__join-form');
   const joinInput = menu.querySelector('#room-code');
-  const runAsyncAction = async (action, button) => {
+  const aliasDetails = menu.querySelector('.main-menu__alias');
+  const aliasForm = menu.querySelector('.main-menu__alias-form');
+  const aliasInput = menu.querySelector('#player-alias');
+  const currentAlias = menu.querySelector('[data-current-alias]');
+  const runAsyncAction = async (action, button, closeOnSuccess = true) => {
     if (typeof action !== 'function') {
       message.textContent = 'Esta opción todavía no está disponible.';
       return;
@@ -57,7 +71,7 @@ export function mountMainMenu(container, actions) {
     message.textContent = 'Conectando con Firebase…';
     try {
       await action();
-      menu.remove();
+      if (closeOnSuccess) menu.remove();
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       message.textContent = `No se pudo completar la acción: ${detail}`;
@@ -96,6 +110,30 @@ export function mountMainMenu(container, actions) {
     const button = joinForm.querySelector('[type="submit"]');
     void runAsyncAction(() => actions.onJoinRoom(joinInput.value), button);
   });
+
+  if (typeof actions.onLoadAlias === 'function' && typeof actions.onSaveAlias === 'function') {
+    aliasDetails.hidden = false;
+    void actions.onLoadAlias()
+      .then((name) => {
+        aliasInput.value = name;
+        currentAlias.textContent = name;
+      })
+      .catch((error) => {
+        const detail = error instanceof Error ? error.message : String(error);
+        message.textContent = `No se pudo cargar tu alias: ${detail}`;
+      });
+
+    aliasForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const button = aliasForm.querySelector('[type="submit"]');
+      void runAsyncAction(async () => {
+        const name = await actions.onSaveAlias(aliasInput.value);
+        aliasInput.value = name;
+        currentAlias.textContent = name;
+        message.textContent = 'Alias guardado.';
+      }, button, false);
+    });
+  }
 
   container.append(menu);
 }

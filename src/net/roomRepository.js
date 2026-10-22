@@ -32,6 +32,13 @@ function generateSeed() {
   return secureRandomBytes(new Uint32Array(1))[0];
 }
 
+function normalizePlayerName(name) {
+  if (typeof name !== 'string' || name.trim().length === 0 || name.trim().length > 16) {
+    throw new Error('Player name must contain 1-16 characters.');
+  }
+  return name.trim();
+}
+
 /**
  * @param {{
  *   rtdb: import('firebase/database').Database,
@@ -65,11 +72,12 @@ export function createRoomRepository({
   seedFactory = generateSeed,
 }) {
   return {
-    async createRoom() {
+    async createRoom({ name = 'Jugador' } = {}) {
       const uid = await authService.signIn();
       if (typeof uid !== 'string' || uid.length === 0) {
         throw new Error('Cannot create a room without an authenticated user.');
       }
+      const playerName = normalizePlayerName(name);
 
       const seed = seedFactory();
       for (let attempt = 0; attempt < ROOM_CREATION_ATTEMPTS; attempt += 1) {
@@ -100,7 +108,7 @@ export function createRoomRepository({
 
         if (result.committed) {
           const player = {
-            name: 'Jugador',
+            name: playerName,
             x: 0,
             ts: databaseApi.serverTimestamp(),
             ready: false,
@@ -122,7 +130,7 @@ export function createRoomRepository({
       throw new Error('Could not create a room after several code generation attempts.');
     },
 
-    async joinRoom(inputCode) {
+    async joinRoom(inputCode, { name = 'Jugador' } = {}) {
       const code = typeof inputCode === 'string' ? inputCode.trim().toUpperCase() : '';
       if (
         code.length !== ROOM_CODE_LENGTH ||
@@ -130,6 +138,7 @@ export function createRoomRepository({
       ) {
         throw new Error('Room code must contain exactly five valid characters.');
       }
+      const playerName = normalizePlayerName(name);
 
       const uid = await authService.signIn();
       if (typeof uid !== 'string' || uid.length === 0) {
@@ -157,7 +166,7 @@ export function createRoomRepository({
       }
 
       const player = {
-        name: 'Jugador',
+        name: playerName,
         x: 0,
         ts: databaseApi.serverTimestamp(),
         ready: false,

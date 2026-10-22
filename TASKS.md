@@ -51,7 +51,7 @@ Estimación total orientativa: 7-8 semanas a media jornada (incluye la Fase 2B).
 - [x] 2.7 `P0 D3` Presencia: `onDisconnect()` y estado `connected` `[sync]`
 - [x] 2.8 `P1 D2` Guardar puntaje en Firestore al terminar partida solo `[fb]` *(su estado se muestra en la pantalla de Resultados: 2B.9)*
 - [x] 2.9 `P1 D2` Pantalla de ranking (top 20) `[fb]`
-- [ ] 2.10 `P1 D2` Alias de jugador (persistido en `users/{uid}`) `[fb]`
+- [x] 2.10 `P1 D2` Alias de jugador (persistido en `users/{uid}`) `[fb]`
 - [ ] 2.11 `P1 D2` Reglas de seguridad de RTDB y Firestore probadas con el emulador o la consola `[fb]`
 
 ## Fase 2B — Pantallas de la app y navegación (≈ 1 semana)

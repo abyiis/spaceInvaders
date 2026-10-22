@@ -21,6 +21,7 @@ ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
 const effects = createEffects({ haptics: Haptics });
 const ui = document.getElementById('ui');
+let playerDisplayName = 'Jugador';
 const hasFirebaseConfig = Object.keys(import.meta.glob('./net/firebaseConfig.js')).length > 0;
 const saveStatus = document.createElement('p');
 saveStatus.className = 'score-save-status';
@@ -34,7 +35,7 @@ async function saveSoloScore(result) {
   saveStatus.textContent = 'Guardando puntaje…';
   try {
     const { scoreRepository } = await import('./net/firebase.js');
-    await scoreRepository.saveSoloScore(result);
+    await scoreRepository.saveSoloScore({ ...result, name: playerDisplayName });
     saveStatus.textContent = 'Puntaje guardado en el ranking';
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -78,12 +79,12 @@ function showMainMenu() {
     },
     onCreateRoom: async () => {
       const firebase = await import('./net/firebase.js');
-      const room = await firebase.roomRepository.createRoom();
+      const room = await firebase.roomRepository.createRoom({ name: playerDisplayName });
       showLobby(firebase, room);
     },
     onJoinRoom: async (code) => {
       const firebase = await import('./net/firebase.js');
-      const room = await firebase.roomRepository.joinRoom(code);
+      const room = await firebase.roomRepository.joinRoom(code, { name: playerDisplayName });
       showLobby(firebase, room);
     },
     onShowRanking: async () => {
@@ -92,6 +93,16 @@ function showMainMenu() {
         loadScores: () => scoreRepository.getTopScores(),
         onBack: showMainMenu,
       });
+    },
+    onLoadAlias: async () => {
+      const { profileRepository } = await import('./net/firebase.js');
+      playerDisplayName = await profileRepository.getDisplayName();
+      return playerDisplayName;
+    },
+    onSaveAlias: async (name) => {
+      const { profileRepository } = await import('./net/firebase.js');
+      playerDisplayName = await profileRepository.saveDisplayName(name);
+      return playerDisplayName;
     },
   });
 }

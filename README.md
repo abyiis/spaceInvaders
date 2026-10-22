@@ -85,6 +85,6 @@ El agente leerá los specs, tomará la siguiente tarea de `TASKS.md`, la impleme
 
 - Specs v1.0 completos.
 - Modo individual jugable (Fase 1, tareas 1.1 – 1.13 hechas (Fase 1 completa); ver `TASKS.md`).
-- Firebase está integrado parcialmente: configuración inicial, autenticación anónima, menú, salas, lobby y presencia (tareas 2.1–2.7); guardado de puntaje y ranking top 20 (2.8–2.9); alias y pruebas de reglas pendientes.
-- Verificado: `npm test` (91 pruebas) y `npm run build`. La conexión de RTDB/Firestore debe probarse con autenticación anónima habilitada, bases creadas y reglas desplegadas.
+- Firebase está integrado parcialmente: configuración inicial, autenticación anónima, menú, salas, lobby y presencia (tareas 2.1–2.7); guardado de puntaje y ranking top 20 (2.8–2.9); alias persistente en Firestore (2.10); quedan pendientes las pruebas de reglas.
+- Verificado: `npm test` (95 pruebas) y `npm run build`. La conexión de RTDB/Firestore debe probarse con autenticación anónima habilitada, bases creadas y reglas desplegadas.
 - La app Capacitor todavía no se ha verificado en un emulador o dispositivo.

@@ -86,6 +86,44 @@ body {
   color: #c2c9e0;
 }
 
+.main-menu__alias {
+  margin: -14px 0 20px;
+  color: #c2c9e0;
+  text-align: left;
+}
+
+.main-menu__alias summary {
+  color: #a9b8ff;
+  cursor: pointer;
+  text-align: center;
+}
+
+.main-menu__alias-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.main-menu__alias-form label {
+  font-size: 0.9rem;
+}
+
+.main-menu__alias-form input {
+  min-height: 48px;
+  border: 1px solid rgba(165, 181, 235, 0.55);
+  border-radius: 10px;
+  padding: 0 14px;
+  background: #10162b;
+  color: #ffffff;
+  font: inherit;
+}
+
+.main-menu__alias-form input:focus-visible {
+  border-color: #9eafff;
+  outline: 2px solid #9eafff;
+  outline-offset: 2px;
+}
+
 .main-menu__actions {
   display: grid;
   gap: 12px;
