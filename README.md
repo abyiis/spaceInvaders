@@ -89,5 +89,5 @@ El agente leerá los specs, tomará la siguiente tarea de `TASKS.md`, la impleme
 - Modo individual jugable (Fase 1, tareas 1.1 – 1.13 hechas (Fase 1 completa); ver `TASKS.md`).
 - Fase 2B: router, Splash, Home, Créditos, Resultados, récord local y pausa implementados (tareas 2B.1 – 2B.12); queda pendiente la revisión manual completa en Android (2B.13).
 - Firebase está integrado parcialmente: configuración inicial, autenticación anónima, menú, salas, lobby y presencia (tareas 2.1–2.7); guardado de puntaje y ranking top 20 (2.8–2.9); alias persistente en Firestore (2.10). Las reglas RTDB/Firestore se verifican con emuladores locales (2.11).
-- Verificado: `npm test`, `npm run test:rules`, `npm run build` y `npm audit` (sin vulnerabilidades conocidas). La conexión a Firebase real todavía requiere prueba con Authentication anónima habilitada, bases creadas y reglas desplegadas.
+- Verificado: `npm test` (137 pruebas), `npm run test:rules`, `npm run build` y `npm audit` (sin vulnerabilidades conocidas). Se desplegaron las reglas RTDB/Firestore; crear una sala funcionó en el navegador y el acceso autenticado al perfil Firestore pasó desde el proceso local. Falta validar el guardado real del ranking desde navegador.
 - La app Capacitor todavía no se ha verificado en un emulador o dispositivo.
