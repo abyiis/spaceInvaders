@@ -3,11 +3,15 @@ import { createPauseController } from '../pauseController.js';
 
 /**
  * @param {HTMLElement} container
- * @param {{ game: import('../../game/Game.js').Game, canvas: HTMLCanvasElement }} params
+ * @param {{
+ *   game: import('../../game/Game.js').Game,
+ *   canvas: HTMLCanvasElement,
+ *   onPauseReady?: (open: (() => boolean) | null) => void,
+ * }} params
  * @param {{ show(name: string): void }} nav
  * @returns {() => void}
  */
-export function mountPlaying(container, { game, canvas }, nav) {
+export function mountPlaying(container, { game, canvas, onPauseReady }, nav) {
   game.startNewGame();
   let detachInput = attachInput(canvas, game);
 
@@ -57,6 +61,7 @@ export function mountPlaying(container, { game, canvas }, nav) {
     onClose: () => pauseMenu.remove(),
     onExit: () => nav.show('home'),
   });
+  onPauseReady?.(controller.open);
   pauseButton.addEventListener('click', controller.open);
 
   if (!game.sync.isCoop) container.append(pauseButton);
@@ -64,6 +69,7 @@ export function mountPlaying(container, { game, canvas }, nav) {
     pauseButton.removeEventListener('click', controller.open);
     pauseMenu.removeEventListener('click', onPauseMenuClick);
     controller.destroy();
+    onPauseReady?.(null);
     pauseButton.remove();
     pauseMenu.remove();
     game.pause();

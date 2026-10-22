@@ -15,6 +15,7 @@ import { mountPlaying } from './ui/screens/playing.js';
 import { mountResults, scheduleResultsNavigation } from './ui/screens/results.js';
 import { mountSplash } from './ui/screens/splash.js';
 import { RESULTS_DELAY_MS } from './ui/uiConstants.js';
+import { attachBackButton } from './ui/backButton.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -31,6 +32,7 @@ let playerDisplayName = 'Jugador';
 const bestScoreStore = createBestScoreStore();
 const hasFirebaseConfig = Object.keys(import.meta.glob('./net/firebaseConfig.js')).length > 0;
 let cancelPendingResults = () => {};
+let openPauseMenu = () => {};
 
 async function saveSoloScore(result) {
   const { scoreRepository } = await import('./net/firebase.js');
@@ -63,6 +65,12 @@ function showLobby(firebase, room) {
 
 const router = createScreenRouter({
   container: ui,
+  backTargets: {
+    credits: 'home',
+    results: 'home',
+    lobby: 'home',
+    ranking: 'home',
+  },
   screens: {
     [SCREENS.SPLASH]: mountSplash,
     [SCREENS.CREDITS]: mountCredits,
@@ -101,7 +109,11 @@ const router = createScreenRouter({
       },
     }),
     [SCREENS.PLAYING]: (container, _params, nav) => {
-      const unmount = mountPlaying(container, { game, canvas }, nav);
+      const unmount = mountPlaying(container, {
+        game,
+        canvas,
+        onPauseReady: (open) => { openPauseMenu = open ?? (() => {}); },
+      }, nav);
       return () => {
         cancelPendingResults();
         unmount();
@@ -123,6 +135,12 @@ const router = createScreenRouter({
 });
 
 router.show(SCREENS.SPLASH);
+attachBackButton(router, {
+  app: App,
+  onPlayingBack: () => {
+    if (!game.sync.isCoop) openPauseMenu();
+  },
+});
 
 let last = performance.now();
 
