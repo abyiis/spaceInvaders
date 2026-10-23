@@ -98,16 +98,16 @@ export function mountResults(container, { result, saveScore, bestScoreStore }, n
   screen.setAttribute('aria-labelledby', 'results-title');
   screen.innerHTML = `
     <div class="results-screen__panel">
-      <p class="main-menu__eyebrow">Partida finalizada</p>
-      <h1 id="results-title">Fin de la partida</h1>
+      <p class="results-screen__signal">Señal de la nave perdida</p>
+      <h1 id="results-title">GAME OVER</h1>
       <p class="results-screen__score" aria-label="Puntaje">
         <span data-result-score></span>
-        <span class="results-screen__score-label">puntos</span>
+        <span class="results-screen__score-label">PUNTAJE</span>
       </p>
       <p class="results-screen__new-best" data-new-best hidden>¡Nuevo récord!</p>
       <dl class="results-screen__details">
-        <div><dt>Oleada alcanzada</dt><dd data-result-wave></dd></div>
-        <div><dt>Tiempo</dt><dd data-result-duration></dd></div>
+        <div><dt>Oleada</dt><dd data-result-wave></dd></div>
+        <div><dt>Tiempo de misión</dt><dd data-result-duration></dd></div>
       </dl>
       <div class="results-screen__save" data-save-area hidden>
         <p role="status" aria-live="polite" data-save-status></p>

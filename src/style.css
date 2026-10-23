@@ -1,11 +1,12 @@
 :root {
-  --bg: #0b0e1a;
-  --ui-bg: #0b0e1a;
-  --ui-panel: #10162b;
-  --ui-accent: #536ce0;
-  --ui-text: #f5f7ff;
-  --ui-muted: #c2c9e0;
-  --ui-border: rgba(165, 181, 235, 0.42);
+  color-scheme: dark;
+  --bg: #050811;
+  --ui-bg: #050811;
+  --ui-panel: #0b1222;
+  --ui-accent: #67f5d5;
+  --ui-text: #e8edf9;
+  --ui-muted: #8e9db5;
+  --ui-border: #293850;
   --screen-fade-ms: 200ms;
   --game-ratio: 360 / 640;
 }
@@ -25,6 +26,10 @@ body {
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  color: var(--ui-text);
 }
 
 #app {
@@ -564,4 +569,572 @@ body {
 .ranking-screen__list li span:last-child {
   color: #a9b8ff;
   font-variant-numeric: tabular-nums;
+}
+
+/* Neon Invaders visual system */
+.main-menu {
+  display: block;
+  padding: max(22px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  background:
+    radial-gradient(ellipse at 50% 28%, rgba(21, 47, 68, 0.34), transparent 48%),
+    radial-gradient(circle at 8% 12%, rgba(214, 234, 255, 0.48) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 84% 25%, rgba(103, 245, 213, 0.6) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 21% 59%, rgba(214, 234, 255, 0.36) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 92% 72%, rgba(214, 234, 255, 0.42) 0 1px, transparent 1.5px),
+    #050811;
+}
+
+.main-menu::after {
+  position: fixed;
+  right: 10%;
+  bottom: -25%;
+  left: 10%;
+  height: 35%;
+  background-image:
+    linear-gradient(rgba(103, 245, 213, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(103, 245, 213, 0.09) 1px, transparent 1px);
+  background-size: 100% 20px, 24px 100%;
+  content: "";
+  opacity: 0.42;
+  pointer-events: none;
+  transform: perspective(160px) rotateX(54deg);
+  transform-origin: top;
+}
+
+.main-menu__panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  width: min(100%, 520px);
+  margin: 0 auto;
+  text-align: left;
+}
+
+.main-menu__header,
+.main-menu__footer,
+.main-menu__score-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.main-menu__header {
+  min-height: 26px;
+  color: var(--ui-muted);
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.main-menu__system-label span {
+  color: var(--ui-accent);
+}
+
+.main-menu__alias {
+  position: relative;
+  margin: 0;
+  text-align: right;
+}
+
+.main-menu__alias summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ui-text);
+}
+
+.main-menu__alias summary span:last-child {
+  color: var(--ui-accent);
+}
+
+.main-menu__alias[open] .main-menu__alias-form {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 2;
+  width: min(260px, 80vw);
+  border: 1px solid var(--ui-border);
+  padding: 12px;
+  background: #0b1222;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+
+.main-menu__alias-form label {
+  color: var(--ui-muted);
+  font-size: 0.8rem;
+}
+
+.main-menu__alias-form input,
+.main-menu__join-form input {
+  min-width: 0;
+  border: 1px solid var(--ui-border);
+  border-radius: 0;
+  background: #050811;
+  color: var(--ui-text);
+  font: 0.9rem ui-monospace, "Courier New", monospace;
+}
+
+.main-menu__alias-form input {
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+.main-menu__brand {
+  margin-top: 14px;
+  text-align: center;
+}
+
+.main-menu__brand h1 {
+  display: flex;
+  justify-content: center;
+  gap: 0.22em;
+  color: var(--ui-text);
+  font: 900 clamp(1.75rem, 7.4vw, 2.9rem)/1 ui-monospace, "Courier New", monospace;
+  letter-spacing: -0.085em;
+  text-shadow: 0 0 18px rgba(224, 240, 255, 0.1);
+  white-space: nowrap;
+}
+
+.main-menu__brand h1 span {
+  color: var(--ui-accent);
+  text-shadow: 0 0 18px rgba(103, 245, 213, 0.25);
+}
+
+.main-menu__tagline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 12px 0 0;
+  color: var(--ui-muted);
+  font: 0.62rem ui-monospace, "Courier New", monospace;
+  letter-spacing: 0.1em;
+}
+
+.main-menu__tagline::before,
+.main-menu__tagline::after {
+  width: 28px;
+  height: 1px;
+  background: var(--ui-border);
+  content: "";
+}
+
+.main-menu__description {
+  margin: 0 0 6px;
+  color: var(--ui-muted);
+  text-align: center;
+}
+
+.main-menu__missions {
+  display: grid;
+  gap: 10px;
+}
+
+.main-menu__mission {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--ui-border);
+  padding: 14px;
+  background: rgba(11, 18, 34, 0.94);
+  text-align: left;
+}
+
+.main-menu__mission::after {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 7px;
+  height: 7px;
+  background: var(--ui-accent);
+  content: "";
+}
+
+.main-menu__mission--solo {
+  grid-template-columns: minmax(0, 1fr) 112px;
+  align-items: center;
+  min-height: 100px;
+  border-color: rgba(103, 245, 213, 0.26);
+}
+
+.main-menu__mission h2 {
+  margin: 0;
+  color: var(--ui-text);
+  font: 700 1.04rem/1.2 ui-monospace, "Courier New", monospace;
+}
+
+.main-menu__mission p {
+  margin: 4px 0 0;
+  color: var(--ui-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.main-menu__mission .main-menu__mission-label {
+  margin: 0;
+  color: #b69cff;
+  font: 0.58rem ui-monospace, "Courier New", monospace;
+  text-transform: uppercase;
+}
+
+.main-menu__mission .main-menu__button {
+  width: 100%;
+}
+
+.main-menu__mission--solo .main-menu__button {
+  min-height: 52px;
+}
+
+.main-menu__button {
+  min-height: 46px;
+  border: 1px solid var(--ui-border);
+  border-radius: 0;
+  background: #0b1222;
+  color: var(--ui-text);
+  font: 700 0.82rem ui-monospace, "Courier New", monospace;
+  letter-spacing: 0.035em;
+}
+
+.main-menu__button:hover,
+.main-menu__button:focus-visible {
+  border-color: var(--ui-accent);
+  background: #122131;
+  outline: 2px solid rgba(103, 245, 213, 0.28);
+  outline-offset: 1px;
+}
+
+.main-menu__button--primary,
+.main-menu__button--primary:hover,
+.main-menu__button--primary:focus-visible {
+  border-color: var(--ui-accent);
+  background: var(--ui-accent);
+  color: #041111;
+}
+
+.main-menu__button--secondary {
+  min-height: 38px;
+  color: var(--ui-muted);
+}
+
+.main-menu__join-form {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.main-menu__join-form[hidden] {
+  display: none;
+}
+
+.main-menu__join-form label,
+.main-menu__join-form p {
+  color: var(--ui-muted);
+  font-size: 0.72rem;
+}
+
+.main-menu__join-form input {
+  min-height: 46px;
+  padding: 0 12px;
+  font-size: 1rem;
+  letter-spacing: 0.2em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.main-menu__join-form input::placeholder {
+  color: #56657d;
+}
+
+.main-menu__join-form input:focus-visible,
+.main-menu__alias-form input:focus-visible {
+  border-color: var(--ui-accent);
+  outline: 2px solid rgba(103, 245, 213, 0.25);
+  outline-offset: 1px;
+}
+
+.main-menu__join-form p {
+  margin: 0;
+  font-size: 0.68rem;
+}
+
+.main-menu__utility-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.main-menu__utility-actions .main-menu__button {
+  flex: 1;
+}
+
+.main-menu__score-strip {
+  min-height: 24px;
+  color: #62728c;
+  font: 0.58rem ui-monospace, "Courier New", monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.main-menu__best-score {
+  margin: 0;
+  color: #ffd274;
+  font: 700 0.88rem ui-monospace, "Courier New", monospace;
+  text-align: center;
+  text-transform: none;
+}
+
+.main-menu__score-strip-note {
+  text-align: right;
+}
+
+.main-menu__message {
+  min-height: 1.2em;
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.main-menu__footer {
+  padding-top: 8px;
+  border-top: 1px solid rgba(41, 56, 80, 0.7);
+  color: #52617a;
+  font: 0.58rem ui-monospace, "Courier New", monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.splash-screen {
+  background:
+    radial-gradient(circle at 14% 16%, rgba(214, 234, 255, 0.38) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 84% 28%, rgba(103, 245, 213, 0.44) 0 1px, transparent 1.5px),
+    #050811;
+}
+
+.splash-screen__ship {
+  filter: drop-shadow(0 0 18px rgba(103, 245, 213, 0.38));
+}
+
+.splash-screen h1 {
+  display: grid;
+  gap: 2px;
+  font: 900 clamp(2.5rem, 11vw, 3.5rem)/0.95 ui-monospace, "Courier New", monospace;
+  letter-spacing: -0.08em;
+  text-shadow: none;
+}
+
+.splash-screen h1 span:first-child {
+  color: var(--ui-accent);
+}
+
+.splash-screen h1 span:last-child {
+  color: var(--ui-text);
+}
+
+.splash-screen p {
+  color: var(--ui-muted);
+  font: 0.65rem ui-monospace, "Courier New", monospace;
+  letter-spacing: 0.1em;
+}
+
+.splash-screen__progress span {
+  background: var(--ui-accent);
+}
+
+.app-screen {
+  background:
+    radial-gradient(circle at 12% 12%, rgba(214, 234, 255, 0.34) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 86% 26%, rgba(103, 245, 213, 0.38) 0 1px, transparent 1.5px),
+    rgba(5, 8, 17, 0.91);
+}
+
+.app-screen .main-menu__eyebrow {
+  color: #b69cff;
+  font: 0.62rem ui-monospace, "Courier New", monospace;
+  letter-spacing: 0.08em;
+}
+
+.credits-screen__panel,
+.results-screen__panel,
+.pause-menu__panel {
+  border: 1px solid var(--ui-border);
+  border-radius: 0;
+  background: rgba(11, 18, 34, 0.97);
+  box-shadow: none;
+}
+
+.credits-screen__panel {
+  width: min(100%, 440px);
+}
+
+.credits-screen__content {
+  padding: 22px;
+}
+
+.credits-screen__content h1,
+.results-screen__panel h1,
+.pause-menu__panel h1 {
+  color: var(--ui-text);
+  font: 800 clamp(1.8rem, 8vw, 2.5rem)/1.1 ui-monospace, "Courier New", monospace;
+  letter-spacing: -0.04em;
+}
+
+.credits-screen__content h1 {
+  margin-bottom: 8px;
+}
+
+.credits-screen__intro {
+  margin: 0 0 20px;
+  color: var(--ui-muted);
+  font-size: 0.88rem;
+}
+
+.credits-screen__content h2 {
+  margin: 18px 0 9px;
+  color: #b69cff;
+  font: 0.66rem ui-monospace, "Courier New", monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.credits-screen__team,
+.credits-screen__technologies {
+  gap: 7px;
+  padding-left: 16px;
+  color: var(--ui-text);
+  font-size: 0.82rem;
+}
+
+.credits-screen__note {
+  margin-top: 18px;
+  color: var(--ui-muted);
+  font-size: 0.78rem;
+}
+
+.credits-screen__footer {
+  border-top-color: var(--ui-border);
+  background: rgba(5, 8, 17, 0.65);
+}
+
+.credits-screen__footer .main-menu__button {
+  width: 100%;
+}
+
+.pause-menu {
+  background: rgba(5, 8, 17, 0.67);
+}
+
+.pause-menu__panel {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 360px);
+  padding: 24px;
+  text-align: center;
+}
+
+.pause-menu__icon {
+  margin: 0;
+  color: var(--ui-accent);
+  font: 800 1.8rem ui-monospace, "Courier New", monospace;
+}
+
+.pause-menu__panel h1 {
+  margin: 0;
+}
+
+.pause-menu__description {
+  margin: 0 0 8px;
+  color: var(--ui-muted);
+  font-size: 0.9rem;
+}
+
+.pause-button {
+  border: 1px solid var(--ui-border);
+  border-radius: 0;
+  background: rgba(11, 18, 34, 0.94);
+  color: var(--ui-accent);
+}
+
+.results-screen {
+  background: rgba(5, 8, 17, 0.72);
+}
+
+.results-screen__panel {
+  width: min(100%, 420px);
+  padding: 24px;
+  text-align: center;
+}
+
+.results-screen__signal {
+  margin: 0 0 10px;
+  color: var(--ui-muted);
+  font: 0.62rem ui-monospace, "Courier New", monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.results-screen__panel h1 {
+  margin: 0 0 22px;
+  color: #ffd21a;
+  font-size: clamp(2.2rem, 10vw, 3rem);
+  text-shadow: 0 0 18px rgba(255, 210, 26, 0.16);
+}
+
+.results-screen__score {
+  margin-bottom: 20px;
+  font-size: clamp(2.7rem, 14vw, 4rem);
+}
+
+.results-screen__score-label {
+  color: var(--ui-muted);
+  font: 0.68rem ui-monospace, "Courier New", monospace;
+  letter-spacing: 0.1em;
+}
+
+.results-screen__details {
+  padding: 12px 0;
+  border-top: 1px solid rgba(41, 56, 80, 0.8);
+  border-bottom: 1px solid rgba(41, 56, 80, 0.8);
+  font-size: 0.82rem;
+}
+
+.results-screen__details dd {
+  color: var(--ui-text);
+}
+
+.results-screen__actions {
+  gap: 10px;
+}
+
+@media (max-height: 720px) {
+  .main-menu {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .main-menu__panel {
+    gap: 8px;
+  }
+
+  .main-menu__brand {
+    margin-top: 4px;
+  }
+
+  .main-menu__mission {
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .main-menu__mission--solo {
+    min-height: 82px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-menu__button {
+    scroll-behavior: auto;
+  }
 }

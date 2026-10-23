@@ -58,11 +58,11 @@ export function mountSplash(container, _params, nav) {
   section.innerHTML = `
     <div class="splash-screen__content">
       <svg class="splash-screen__ship" viewBox="0 0 48 48" aria-hidden="true">
-        <path d="M24 4 42 42 24 34 6 42 24 4Z" fill="#4fc3f7" />
+        <path d="M8 14h8V8h16v6h8v14h-6v8h-8v-6h-4v6h-8v-8H8V14Zm8 6v6h4v-6h-4Zm12 0v6h4v-6h-4Z" fill="#67f5d5" />
         <path d="m24 19 4 10-4-2-4 2 4-10Z" fill="#0b0e1a" />
       </svg>
-      <h1 id="splash-title">SPACE COOP</h1>
-      <p>Arcade cooperativo</p>
+      <h1 id="splash-title"><span>NEON</span><span>INVADERS</span></h1>
+      <p>LA TIERRA ES TU ÚLTIMA LÍNEA</p>
       <div class="splash-screen__progress" aria-hidden="true">
         <span></span>
       </div>

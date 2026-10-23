@@ -128,14 +128,16 @@ test('render en pausa muestra el aviso y en juego normal no', () => {
   assert.ok(paused.texts.includes('Toca para continuar'));
 });
 
-test('render en Game Over oscurece la escena sin dibujar texto de resultados', () => {
+test('render en Game Over oscurece la escena y muestra el resumen de la partida', () => {
   const g = newGame();
   g.triggerGameOver();
   const ctx = fakeCtx();
 
   g.render(ctx);
 
-  assert.equal(ctx.texts.some((text) => /GAME OVER|Puntaje|reiniciar/.test(text)), false);
+  assert.ok(ctx.texts.includes('GAME OVER'));
+  assert.ok(ctx.texts.includes('Puntaje: 0'));
+  assert.ok(ctx.texts.includes('Preparando resultados…'));
 });
 
 test('lifecycle: visibilitychange a hidden pausa y volver a visible no reanuda', () => {

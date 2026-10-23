@@ -181,14 +181,14 @@ export class Game {
 
   #renderHud(ctx) {
     ctx.fillStyle = '#ffffff';
-    ctx.font = '16px system-ui, sans-serif';
-    ctx.textAlign = 'left';
+    ctx.font = 'bold 14px system-ui, sans-serif';
     ctx.textBaseline = 'top';
-    ctx.fillText(
-      `Puntos: ${this.score}   Vidas: ${this.lives}   Oleada: ${this.wave}`,
-      12,
-      12,
-    );
+    ctx.textAlign = 'left';
+    ctx.fillText(`Puntos: ${this.score}`, 12, 12);
+    ctx.textAlign = 'center';
+    ctx.fillText(`Vidas: ${this.lives}`, this.width / 2, 12);
+    ctx.textAlign = 'right';
+    ctx.fillText(`Oleada: ${this.wave}`, this.width - 12, 12);
   }
 
   #renderPaused(ctx) {
@@ -208,5 +208,19 @@ export class Game {
   #renderGameOver(ctx) {
     ctx.fillStyle = 'rgba(11, 14, 26, 0.6)';
     ctx.fillRect(0, 0, this.width, this.height);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffd21a';
+    ctx.font = 'bold 38px system-ui, sans-serif';
+    ctx.fillText('GAME OVER', this.width / 2, this.height / 2 - 30);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px system-ui, sans-serif';
+    ctx.fillText(`Puntaje: ${this.score}`, this.width / 2, this.height / 2 + 16);
+
+    ctx.fillStyle = '#aeb8c9';
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillText('Preparando resultados…', this.width / 2, this.height / 2 + 56);
   }
 }

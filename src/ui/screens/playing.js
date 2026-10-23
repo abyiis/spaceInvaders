@@ -26,12 +26,14 @@ export function mountPlaying(container, { game, canvas, onPauseReady }, nav) {
   pauseMenu.setAttribute('aria-labelledby', 'pause-title');
   pauseMenu.innerHTML = `
     <div class="pause-menu__panel">
-      <h1 id="pause-title">Pausa</h1>
+      <p class="pause-menu__icon" aria-hidden="true">Ⅱ</p>
+      <h1 id="pause-title">PAUSA</h1>
+      <p class="pause-menu__description">La galaxia puede esperar.</p>
       <button class="main-menu__button main-menu__button--primary" type="button" data-action="resume">
-        Continuar
+        Reanudar Partida
       </button>
       <button class="main-menu__button" type="button" data-action="exit">
-        Salir al inicio
+        Abandonar Partida
       </button>
     </div>
   `;
