@@ -55,13 +55,23 @@
             ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
             ".validate": "newData.hasChildren(['type', 'uid', 't'])",
             "type": {
-              ".validate": "newData.val() === 'shot' || newData.val() === 'kill' || newData.val() === 'hit'"
+              ".validate": "newData.val() === 'shot' || newData.val() === 'enemy-shot' || newData.val() === 'kill' || newData.val() === 'hit' || newData.val() === 'revive' || newData.val() === 'life-loss' || newData.val() === 'bonus-kill'"
             },
             "uid": { ".validate": "newData.isString()" },
             "t": { ".validate": "newData.isNumber()" },
             "x": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
+            "y": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
             "wave": { ".validate": "newData.isNumber()" },
             "enemyId": { ".validate": "newData.isNumber()" },
+            "targetUid": { ".validate": "newData.isString()" },
+            "powerUpType": { ".validate": "newData.isString()" },
+            "consumedLife": { ".validate": "newData.isBoolean()" },
+            "damage": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 3" },
+            "vx": { ".validate": "newData.isNumber() && newData.val() >= -200 && newData.val() <= 200" },
+            "vy": { ".validate": "newData.isNumber() && newData.val() >= -500 && newData.val() <= 500" },
+            "color": { ".validate": "newData.isString() && newData.val().length <= 16" },
+            "shipId": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "multiplier": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5" },
             "$other": { ".validate": false }
           }
         }

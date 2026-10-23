@@ -10,8 +10,10 @@ function createDependencies({ committed = true } = {}) {
   const snapshots = new Map();
   const timestamp = { '.sv': 'timestamp' };
   const updates = [];
+  const writes = [];
   const disconnectCalls = [];
   const subscriptions = new Map();
+  let childAddedCallback;
   let valueCallback;
   let errorCallback;
   const databaseApi = {
@@ -20,6 +22,14 @@ function createDependencies({ committed = true } = {}) {
       return {
         exists: () => value !== undefined,
         val: () => value ?? null,
+      };
+    },
+    onChildAdded: (databaseRef, callback, onError) => {
+      childAddedCallback = callback;
+      subscriptions.set(databaseRef.path, { onChildAdded: callback, onError });
+      return () => {
+        subscriptions.delete(databaseRef.path);
+        childAddedCallback = undefined;
       };
     },
     onDisconnect: (databaseRef) => ({
@@ -40,8 +50,12 @@ function createDependencies({ committed = true } = {}) {
         errorCallback = undefined;
       };
     },
+    push: (databaseRef) => ({ path: `${databaseRef.path}/event-1`, key: 'event-1' }),
     ref: (_database, path) => ({ path }),
     serverTimestamp: () => timestamp,
+    set: async (databaseRef, data) => {
+      writes.push({ databaseRef, data });
+    },
     runTransaction: async (roomRef, update, options) => {
       const value = update(null);
       transactionCalls.push({ roomRef, value, options });
@@ -68,6 +82,10 @@ function createDependencies({ committed = true } = {}) {
     timestamp,
     transactionCalls,
     updates,
+    writes,
+    get childAddedCallback() {
+      return childAddedCallback;
+    },
   };
 }
 
@@ -331,6 +349,85 @@ test('setReady writes only the authenticated player ready field', async () => {
     },
   ]);
   await assert.rejects(repository.setReady('AAAAA', 'yes'), /must be a boolean/);
+});
+
+test('startGame exige que el host tenga dos jugadores conectados y listos', async () => {
+  const dependencies = createDependencies();
+  const meta = {
+    hostUid: 'host-user',
+    seed: 17,
+    status: 'lobby',
+    createdAt: dependencies.timestamp,
+  };
+  dependencies.snapshots.set('rooms/AAAAA/meta', meta);
+  dependencies.snapshots.set('rooms/AAAAA/players', {
+    host: { ready: true, connected: true },
+    guest: { ready: true, connected: true },
+  });
+  dependencies.databaseApi.runTransaction = async (_ref, update, options) => {
+    const value = update(meta);
+    dependencies.transactionCalls.push({ value, options });
+    return { committed: true, snapshot: { val: () => value } };
+  };
+  const repository = createRoomRepository(dependencies);
+
+  assert.deepEqual(await repository.startGame('aaaaa'), {
+    code: 'AAAAA',
+    seed: 17,
+    hostUid: 'host-user',
+  });
+  assert.deepEqual(dependencies.transactionCalls[0].value, {
+    ...meta,
+    status: 'playing',
+    startAt: dependencies.timestamp,
+  });
+
+  dependencies.snapshots.set('rooms/AAAAA/players', {
+    host: { ready: true, connected: true },
+    guest: { ready: false, connected: true },
+  });
+  await assert.rejects(repository.startGame('AAAAA'), /Both players must be connected and ready/);
+});
+
+test('watchRoomStatus y watchGameEvents validan datos, entregan eventos y se cancelan', () => {
+  const dependencies = createDependencies();
+  const repository = createRoomRepository(dependencies);
+  const statuses = [];
+  const stopStatus = repository.watchRoomStatus(
+    'aaaaa',
+    (meta) => statuses.push(meta),
+    () => {},
+  );
+  dependencies.valueCallback({ val: () => ({ status: 'playing' }) });
+  assert.deepEqual(statuses, [{ status: 'playing' }]);
+  stopStatus();
+
+  const events = [];
+  const stopEvents = repository.watchGameEvents(
+    'AAAAA',
+    (id, event) => events.push([id, event]),
+    () => {},
+  );
+  dependencies.childAddedCallback({ key: 'event-1', val: () => ({ type: 'shot' }) });
+  assert.deepEqual(events, [['event-1', { type: 'shot' }]]);
+  stopEvents();
+});
+
+test('publishPlayerX y emitGameEvent escriben solo el jugador autenticado', async () => {
+  const dependencies = createDependencies();
+  const repository = createRoomRepository(dependencies);
+  await repository.publishPlayerX('AAAAA', 0.4);
+  await repository.emitGameEvent('AAAAA', { type: 'shot', x: 0.4, t: 2 });
+
+  assert.deepEqual(dependencies.updates[0], {
+    databaseRef: { path: 'rooms/AAAAA/players/host-user' },
+    data: { x: 0.4 },
+  });
+  assert.deepEqual(dependencies.writes[0], {
+    databaseRef: { path: 'rooms/AAAAA/events/event-1', key: 'event-1' },
+    data: { type: 'shot', x: 0.4, t: 2, uid: 'host-user' },
+  });
+  await assert.rejects(repository.publishPlayerX('AAAAA', 1.1), /normalized/);
 });
 
 test('watchPresence registers disconnect state, marks connected, and clears presence on stop', async () => {

@@ -1,0 +1,103 @@
+{
+  "planHash": "1be3912d48c613102f2232703eefdaeb8bc34886c11d20cc1291b0c30e72e097",
+  "phase": "standalone",
+  "recordedAtUtc": "2026-10-23T21:34:54.3758787Z",
+  "retryCount": 0,
+  "resetBaseline": false,
+  "complete": true,
+  "result": {
+    "setupSucceeded": true,
+    "setupDurationMs": 0,
+    "setupFailureOutput": null,
+    "assertions": [
+      {
+        "name": "production-build",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\r\n\u003E space-coop@0.1.0 build\r\n\u003E vite build\r\n\r\n\u001B[36mvite v6.4.4 \u001B[32mbuilding for production...\u001B[36m\u001B[39m\r\ntransforming...\r\n\u001B[32m\u2713\u001B[39m 70 modules transformed.\r\nrendering chunks...\r\ncomputing gzip size...\r\n\u001B[2mdist/\u001B[22m\u001B[32mindex.html                   \u001B[39m\u001B[1m\u001B[2m  0.70 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:   0.43 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[35massets/index-Bvgyr-0m.css    \u001B[39m\u001B[1m\u001B[2m 17.94 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:   3.92 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/web-6Im_yb6d.js       \u001B[39m\u001B[1m\u001B[2m  0.76 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:   0.35 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/web-CsAFfqrm.js       \u001B[39m\u001B[1m\u001B[2m  0.94 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:   0.47 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/index-BUI4PPwb.js     \u001B[39m\u001B[1m\u001B[2m 75.04 kB\u001B[22m\u001B[1m\u001B[22m\u001B[2m \u2502 gzip:  24.03 kB\u001B[22m\r\n\u001B[2mdist/\u001B[22m\u001B[36massets/firebase-ofafGrij.js  \u001B[39m\u001B[1m\u001B[33m673.64 kB\u001B[39m\u001B[22m\u001B[2m \u2502 gzip: 157.23 kB\u001B[22m\r\n\u001B[32m\u2713 built in 3.05s\u001B[39m\r\n\u001B[33m\r\n(!) Some chunks are larger than 500 kB after minification. Consider:\r\n- Using dynamic import() to code-split the application\r\n- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks\r\n- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.\u001B[39m\r\n",
+        "durationMs": 5397
+      },
+      {
+        "name": "tests-pass",
+        "kind": "process",
+        "verificationMethod": "test-results",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\r\n\u003E space-coop@0.1.0 test\r\n\u003E node --test\r\n\r\n\u2714 las formaciones incluyen kamikaze y soporte; el soporte consume escudo antes de vida (6.1977ms)\r\n\u2714 un kamikaze se separa y corrige su trayectoria hacia la posici\u00F3n del jugador (0.5026ms)\r\n\u2714 el soporte del jefe regenera vida peri\u00F3dicamente y puede ser destruido (2.5737ms)\r\n\u2714 la fase bonus dura quince segundos, no dispara y aumenta el multiplicador por combos (0.7297ms)\r\n\u2714 completar la ronda cinco activa bonus y cada nave entrega puntuaci\u00F3n y posibilidad de power-up (0.7811ms)\r\n\u2714 en hitos coincidentes se derrota primero al jefe y luego comienza la fase bonus (0.6488ms)\r\n\u2714 sobrecarga otorga da\u00F1o doble a los proyectiles (0.5837ms)\r\n\u2714 signIn authenticates anonymously and returns the Firebase uid (1.4846ms)\r\n\u2714 signIn reuses the existing authenticated user (0.3695ms)\r\n\u2714 signIn reports a missing uid and propagates Firebase errors (1.0789ms)\r\n\u2714 el bot\u00F3n Atr\u00E1s ignora splash y vuelve desde Cr\u00E9ditos y Resultados (7.4433ms)\r\n\u2714 el bot\u00F3n Atr\u00E1s cierra desde Home y delega en el men\u00FA de pausa al jugar (0.3872ms)\r\n\u2714 attachBackButton registra y limpia el listener de Capacitor (0.5996ms)\r\n\u2714 los errores del plugin se notifican sin romper la inicializaci\u00F3n (1.6517ms)\r\n\u2714 sin r\u00E9cord devuelve null y el primer puntaje se convierte en r\u00E9cord (2.2473ms)\r\n\u2714 solo marca r\u00E9cord cuando supera el puntaje anterior (0.3352ms)\r\n\u2714 storage ausente o que lanza se ignora sin mostrar un r\u00E9cord (1.6098ms)\r\n\u2714 ignora valores almacenados que no son puntajes v\u00E1lidos (0.3159ms)\r\n\u2714 rechaza puntajes inv\u00E1lidos (0.8678ms)\r\n\u2714 cajas superpuestas colisionan (3.1105ms)\r\n\u2714 cajas separadas no colisionan (0.7454ms)\r\n\u2714 bordes que solo se tocan no cuentan (0.4918ms)\r\n\u2714 es sim\u00E9trica y soporta tama\u00F1os distintos (0.4712ms)\r\n\u2714 los disparos de ambos jugadores colisionan y generan un estallido de da\u00F1o en \u00E1rea (11.596ms)\r\n\u2714 la nave ca\u00EDda revive al contacto y consume una vida compartida; a cero no se rescata (3.374ms)\r\n\u2714 en cooperativo el jugador cae durante cinco segundos antes de perderse una vida (0.7358ms)\r\n\u2714 los disparos remotos respetan su posici\u00F3n, propietario y da\u00F1o sincronizados (0.706ms)\r\n\u2714 CoopGateway publica posici\u00F3n y eventos; filtra eventos propios y limpia suscripciones (3.4681ms)\r\n\u2714 CoopGateway conserva eventos recibidos antes de registrar el receptor (1.0828ms)\r\n\u2714 los cr\u00E9ditos del easter egg contin\u00FAan a resultados en lugar del men\u00FA (2.8544ms)\r\n\u2714 los cr\u00E9ditos sin resultado regresan al men\u00FA (0.4251ms)\r\n\u2714 CREDITS incluye al menos un integrante con nombre no vac\u00EDo (1.2597ms)\r\n\u2714 los cr\u00E9ditos contienen los tres nombres entregados por el equipo (1.2793ms)\r\n\u2714 oleada 1 (1.0968ms)\r\n\u2714 oleada 4 (0.2564ms)\r\n\u2714 oleada 10 (0.168ms)\r\n\u2714 respeta los topes en oleadas muy altas (0.1508ms)\r\n\u2714 valores menores que 1 se tratan como oleada 1 (0.9804ms)\r\n\u2714 Game usa NoopEffects por defecto y funciona sin sonido (9.7133ms)\r\n\u2714 el disparo del jugador activa shot (0.6181ms)\r\n\u2714 destruir un enemigo activa kill; un impacto que no destruye no (0.6102ms)\r\n\u2714 perder una vida activa hit; el golpe durante la invulnerabilidad no (0.6825ms)\r\n\u2714 gameOver suena una sola vez aunque se dispare varias veces (0.6378ms)\r\n\u2714 en pausa no suena nada (1.6523ms)\r\n\u2714 createEffects: sin Web Audio ni plugin ning\u00FAn m\u00E9todo lanza (0.8729ms)\r\n\u2714 createEffects: antes del primer gesto no suena nada (0.3978ms)\r\n\u2714 createEffects: unlock crea y reanuda el contexto una sola vez (0.3237ms)\r\n\u2714 createEffects: unlock reanuda un contexto que se volvi\u00F3 a suspender (0.4349ms)\r\n\u2714 createEffects: cada evento crea los osciladores esperados tras desbloquear (0.6676ms)\r\n\u2714 createEffects: hit vibra 150 ms y solo hit vibra (0.5241ms)\r\n\u2714 createEffects: si la vibraci\u00F3n falla (lanza o rechaza) el juego sigue (15.0075ms)\r\n\u2714 createEffects: un AudioContext que falla al crearse no rompe unlock (0.5072ms)\r\n\u2714 resuelve la configuraci\u00F3n exportada por firebaseConfig.js (0.9767ms)\r\n\u2714 indica c\u00F3mo configurar Firebase cuando falta firebaseConfig.js (0.7714ms)\r\n\u2714 rechaza firebaseConfig.js si no exporta un objeto firebaseConfig (0.3513ms)\r\n\u2714 adds Firebase setup guidance to permission-denied errors (1.4426ms)\r\n\u2714 preserves actionable \n\u2026[truncated]",
+        "durationMs": 1712,
+        "testResults": {
+          "testFramework": "unknown",
+          "runnerDetectedFrom": "none",
+          "testsTotal": 0,
+          "testsPassed": 0,
+          "testsFailed": 0,
+          "testsSkipped": 0,
+          "parseFailed": true
+        }
+      },
+      {
+        "name": "home-page-serves",
+        "kind": "http-probe",
+        "verificationMethod": "http-status",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": null,
+        "outputSample": "HTTP 200\n\u003C!doctype html\u003E\n\u003Chtml lang=\u0022es\u0022\u003E\n  \u003Chead\u003E\n    \u003Cscript type=\u0022module\u0022 src=\u0022/@vite/client\u0022\u003E\u003C/script\u003E\n\n    \u003Cmeta charset=\u0022UTF-8\u0022 /\u003E\n    \u003Cmeta\n      name=\u0022viewport\u0022\n      content=\u0022width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover\u0022\n    /\u003E\n    \u003Cmeta name=\u0022theme-color\u0022 content=\u0022#050811\u0022 /\u003E\n    \u003Ctitle\u003ENeon Invaders\u003C/title\u003E\n  \u003C/head\u003E\n  \u003Cbody\u003E\n    \u003Cdiv id=\u0022app\u0022\u003E\n      \u003Ccanvas id=\u0022game\u0022 aria-label=\u0022Juego Neon Invaders\u0022\u003E\u003C/canvas\u003E\n      \u003C!-- Fase 2: aqu\u00ED se montan las pantallas HTML/CSS (men\u00FA, lobby, ranking). --\u003E\n      \u003Cdiv id=\u0022ui\u0022\u003E\u003C/div\u003E\n    \u003C/div\u003E\n    \u003Cscript type=\u0022module\u0022 src=\u0022/src/main.js\u0022\u003E\u003C/script\u003E\n  \u003C/body\u003E\n\u003C/html\u003E\n\n--- server output ---\n\r\n\u003E space-coop@0.1.0 dev\r\n\u003E vite --host 127.0.0.1 --port 4173 --strictPort\r\n\r\n\r\n  \u001B[32m\u001B[1mVITE\u001B[22m v6.4.4\u001B[39m  \u001B[2mready in \u001B[0m\u001B[1m464\u001B[22m\u001B[2m\u001B[0m ms\u001B[22m\r\n\r\n  \u001B[32m\u279C\u001B[39m  \u001B[1mLocal\u001B[22m:   \u001B[36mhttp://127.0.0.1:\u001B[1m4173\u001B[22m/\u001B[39m\r\n",
+        "durationMs": 1616
+      }
+    ],
+    "executions": [
+      {
+        "source": "production-build",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "build"
+        ],
+        "cwd": "C:\\Users\\USUARIO\\Downloads\\spaceInvaders",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "tests-pass",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "test"
+        ],
+        "cwd": "C:\\Users\\USUARIO\\Downloads\\spaceInvaders",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "home-page-serves",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "dev",
+          "--",
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "4173",
+          "--strictPort"
+        ],
+        "cwd": "C:\\Users\\USUARIO\\Downloads\\spaceInvaders",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      }
+    ]
+  }
+}

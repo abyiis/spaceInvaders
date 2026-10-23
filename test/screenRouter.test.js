@@ -91,6 +91,36 @@ test('back usa destinos personalizados', () => {
   assert.equal(router.current, 'home');
 });
 
+test('back resuelve el destino según los parámetros de la pantalla actual', () => {
+  const calls = [];
+  const router = createScreenRouter({
+    container,
+    screens: {
+      home: (_element, params) => {
+        calls.push(['home', params]);
+        return () => {};
+      },
+      credits: (_element, params) => {
+        calls.push(['credits', params]);
+        return () => {};
+      },
+      results: (_element, params) => {
+        calls.push(['results', params]);
+        return () => {};
+      },
+    },
+    backTargets: {
+      credits: (params) => params.result ? 'results' : 'home',
+    },
+  });
+  const result = { wave: 1, score: 100 };
+
+  router.show('credits', { result });
+  assert.equal(router.back(), true);
+  assert.equal(router.current, 'results');
+  assert.deepEqual(calls.at(-1), ['results', { result }]);
+});
+
 test('destroy desmonta la pantalla actual y limpia current', () => {
   let unmounts = 0;
   const router = createScreenRouter({

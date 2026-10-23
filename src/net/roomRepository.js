@@ -1,9 +1,12 @@
 import {
   get,
+  onChildAdded,
   onDisconnect,
   onValue,
+  push,
   ref,
   runTransaction,
+  set,
   serverTimestamp,
   update,
 } from 'firebase/database';
@@ -45,8 +48,10 @@ function normalizePlayerName(name) {
  *   authService: { signIn: () => Promise<string> },
  *   databaseApi?: {
  *     get: typeof get,
+ *     onChildAdded: typeof onChildAdded,
  *     onDisconnect: typeof onDisconnect,
  *     onValue: typeof onValue,
+ *     push: typeof push,
  *     ref: typeof ref,
  *     runTransaction: typeof runTransaction,
  *     serverTimestamp: typeof serverTimestamp,
@@ -61,10 +66,13 @@ export function createRoomRepository({
   authService,
   databaseApi = {
     get,
+    onChildAdded,
     onDisconnect,
     onValue,
+    push,
     ref,
     runTransaction,
+    set,
     serverTimestamp,
     update,
   },
@@ -229,6 +237,130 @@ export function createRoomRepository({
       await databaseApi.update(
         databaseApi.ref(rtdb, `rooms/${code}/players/${uid}`),
         { ready },
+      );
+    },
+
+    async startGame(inputCode) {
+      const code = typeof inputCode === 'string' ? inputCode.trim().toUpperCase() : '';
+      if (
+        code.length !== ROOM_CODE_LENGTH
+        || !Array.from(code).every((character) => ROOM_CODE_CHARACTERS.includes(character))
+      ) {
+        throw new Error('Room code must contain exactly five valid characters.');
+      }
+
+      const uid = await authService.signIn();
+      const [metaSnapshot, playersSnapshot] = await Promise.all([
+        databaseApi.get(databaseApi.ref(rtdb, `rooms/${code}/meta`)),
+        databaseApi.get(databaseApi.ref(rtdb, `rooms/${code}/players`)),
+      ]);
+      const meta = metaSnapshot.val();
+      if (!meta || meta.hostUid !== uid) {
+        throw new Error('Only the room host can start the game.');
+      }
+      const players = Object.values(playersSnapshot.val() ?? {});
+      if (
+        players.length < 2
+        || players.some((player) => player.ready !== true || player.connected !== true)
+      ) {
+        throw new Error('Both players must be connected and ready before starting.');
+      }
+
+      const result = await databaseApi.runTransaction(
+        databaseApi.ref(rtdb, `rooms/${code}/meta`),
+        (currentData) => {
+          if (!currentData || currentData.hostUid !== uid || currentData.status !== 'lobby') {
+            return undefined;
+          }
+          return {
+            ...currentData,
+            status: 'playing',
+            startAt: databaseApi.serverTimestamp(),
+          };
+        },
+        { applyLocally: false },
+      );
+      if (!result.committed) throw new Error('The room could not be started.');
+      return { code, seed: meta.seed, hostUid: uid };
+    },
+
+    watchRoomStatus(inputCode, onStatus, onError) {
+      const code = typeof inputCode === 'string' ? inputCode.trim().toUpperCase() : '';
+      if (
+        code.length !== ROOM_CODE_LENGTH
+        || !Array.from(code).every((character) => ROOM_CODE_CHARACTERS.includes(character))
+      ) {
+        throw new Error('Room code must contain exactly five valid characters.');
+      }
+      if (typeof onStatus !== 'function' || typeof onError !== 'function') {
+        throw new TypeError('Room status callbacks must be functions.');
+      }
+      return databaseApi.onValue(
+        databaseApi.ref(rtdb, `rooms/${code}/meta`),
+        (snapshot) => onStatus(snapshot.val() ?? null),
+        onError,
+      );
+    },
+
+    async publishPlayerX(inputCode, x) {
+      const code = typeof inputCode === 'string' ? inputCode.trim().toUpperCase() : '';
+      if (
+        code.length !== ROOM_CODE_LENGTH
+        || !Array.from(code).every((character) => ROOM_CODE_CHARACTERS.includes(character))
+      ) {
+        throw new Error('Room code must contain exactly five valid characters.');
+      }
+      if (!Number.isFinite(x) || x < 0 || x > 1) {
+        throw new RangeError('Player x position must be normalized between 0 and 1.');
+      }
+      const uid = await authService.signIn();
+      if (typeof uid !== 'string' || uid.length === 0) {
+        throw new Error('Cannot publish a player position without an authenticated user.');
+      }
+      await databaseApi.update(
+        databaseApi.ref(rtdb, `rooms/${code}/players/${uid}`),
+        { x },
+      );
+    },
+
+    async emitGameEvent(inputCode, event) {
+      const code = typeof inputCode === 'string' ? inputCode.trim().toUpperCase() : '';
+      if (
+        code.length !== ROOM_CODE_LENGTH
+        || !Array.from(code).every((character) => ROOM_CODE_CHARACTERS.includes(character))
+      ) {
+        throw new Error('Room code must contain exactly five valid characters.');
+      }
+      if (!event || typeof event !== 'object' || typeof event.type !== 'string') {
+        throw new TypeError('A valid game event is required.');
+      }
+      const uid = await authService.signIn();
+      if (typeof uid !== 'string' || uid.length === 0) {
+        throw new Error('Cannot publish a game event without an authenticated user.');
+      }
+      const eventRef = databaseApi.push(databaseApi.ref(rtdb, `rooms/${code}/events`));
+      await databaseApi.set(eventRef, {
+        ...event,
+        uid,
+        t: Number.isFinite(event.t) ? event.t : 0,
+      });
+    },
+
+    watchGameEvents(inputCode, onEvent, onError) {
+      const code = typeof inputCode === 'string' ? inputCode.trim().toUpperCase() : '';
+      if (
+        code.length !== ROOM_CODE_LENGTH
+        || !Array.from(code).every((character) => ROOM_CODE_CHARACTERS.includes(character))
+      ) {
+        throw new Error('Room code must contain exactly five valid characters.');
+      }
+      if (typeof onEvent !== 'function' || typeof onError !== 'function') {
+        throw new TypeError('Game event callbacks must be functions.');
+      }
+      return databaseApi.onChildAdded(
+        databaseApi.ref(rtdb, `rooms/${code}/events`),
+        (snapshot) => onEvent(snapshot.key, snapshot.val()),
+        onError,
       );
     },
 

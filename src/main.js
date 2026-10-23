@@ -4,6 +4,8 @@ import { App } from '@capacitor/app';
 import { Haptics } from '@capacitor/haptics';
 import { createEffects } from './effects.js';
 import { Game } from './game/Game.js';
+import { CoopGateway } from './game/CoopGateway.js';
+import { NoopSyncGateway } from './game/SyncGateway.js';
 import { attachLifecycle } from './lifecycle.js';
 import { mountLobby } from './ui/lobby.js';
 import { mountMainMenu } from './ui/mainMenu.js';
@@ -34,6 +36,17 @@ const hasFirebaseConfig = Object.keys(import.meta.glob('./net/firebaseConfig.js'
 let cancelPendingResults = () => {};
 let openPauseMenu = () => {};
 
+function seededRandom(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 async function saveSoloScore(result) {
   const { scoreRepository } = await import('./net/firebase.js');
   await scoreRepository.saveSoloScore({ ...result, name: playerDisplayName });
@@ -59,14 +72,15 @@ for (const type of ['pointerdown', 'pointerup', 'keydown']) {
 
 attachLifecycle(game, { app: App });
 
-function showLobby(firebase, room) {
-  router.show('lobby', { firebase, room });
+function showLobby(firebase, room, isHost) {
+  const hostUid = isHost ? room.uid : room.meta.hostUid;
+  router.show('lobby', { firebase, room, isHost, hostUid });
 }
 
 const router = createScreenRouter({
   container: ui,
   backTargets: {
-    credits: 'home',
+    credits: (params) => params.result ? 'results' : 'home',
     results: 'home',
     lobby: 'home',
     ranking: 'home',
@@ -82,16 +96,15 @@ const router = createScreenRouter({
     [SCREENS.HOME]: (container, _params, nav) => mountMainMenu(container, {
       bestScore: bestScoreStore.get(),
       onPlaySolo: () => nav.show(SCREENS.PLAYING),
-      onShowCredits: () => nav.show(SCREENS.CREDITS),
       onCreateRoom: async () => {
         const firebase = await import('./net/firebase.js');
         const room = await firebase.roomRepository.createRoom({ name: playerDisplayName });
-        showLobby(firebase, room);
+        showLobby(firebase, room, true);
       },
       onJoinRoom: async (code) => {
         const firebase = await import('./net/firebase.js');
         const room = await firebase.roomRepository.joinRoom(code, { name: playerDisplayName });
-        showLobby(firebase, room);
+        showLobby(firebase, room, false);
       },
       onShowRanking: async () => {
         const { scoreRepository } = await import('./net/firebase.js');
@@ -108,7 +121,27 @@ const router = createScreenRouter({
         return playerDisplayName;
       },
     }),
-    [SCREENS.PLAYING]: (container, _params, nav) => {
+    [SCREENS.PLAYING]: (container, { coop }, nav) => {
+      let sync;
+      if (coop) {
+        if (!Number.isSafeInteger(coop.seed)) {
+          throw new Error('The room is missing a valid shared game seed.');
+        }
+        sync = new CoopGateway({
+          roomRepository: coop.roomRepository,
+          code: coop.code,
+          uid: coop.uid,
+          hostUid: coop.hostUid,
+          onError: (error) => console.error('Co-op synchronization failed:', error),
+        });
+        game.random = seededRandom(coop.seed);
+        game.hazardsRandom = seededRandom(coop.seed ^ 0x9e3779b9);
+      } else {
+        sync = new NoopSyncGateway();
+        game.random = Math.random;
+        game.hazardsRandom = Math.random;
+      }
+      game.setSyncGateway(sync);
       const unmount = mountPlaying(container, {
         game,
         canvas,
@@ -117,14 +150,30 @@ const router = createScreenRouter({
       return () => {
         cancelPendingResults();
         unmount();
+        game.dispose();
+        game.setSyncGateway(new NoopSyncGateway());
       };
     },
-    lobby: (container, { firebase, room }, nav) => mountLobby(container, {
+    lobby: (container, { firebase, room, isHost, hostUid }, nav) => mountLobby(container, {
       code: room.code,
       uid: room.uid,
+      hostUid,
+      isHost,
       watchPlayers: firebase.roomRepository.watchPlayers,
+      watchRoomStatus: firebase.roomRepository.watchRoomStatus,
       watchPresence: firebase.roomRepository.watchPresence,
       setReady: firebase.roomRepository.setReady,
+      startGame: firebase.roomRepository.startGame,
+      onStart: (meta) => nav.show(SCREENS.PLAYING, {
+        coop: {
+          code: room.code,
+          uid: room.uid,
+          hostUid,
+          isHost,
+          seed: meta.seed ?? room.meta?.seed ?? room.seed,
+          roomRepository: firebase.roomRepository,
+        },
+      }),
       onBack: () => nav.show(SCREENS.HOME),
     }),
     ranking: (container, { scoreRepository }, nav) => mountRanking(container, {

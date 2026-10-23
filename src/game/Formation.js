@@ -19,6 +19,7 @@ export class Formation {
     /** @type {Enemy[]} */
     this.enemies = [];
     this.direction = 1;
+    this.supportTimer = 1.5;
 
     const { rows, columns } = this.params;
     const totalWidth = (columns - 1) * C.ENEMY_SPACING_X;
@@ -32,6 +33,11 @@ export class Formation {
             x: startX + col * C.ENEMY_SPACING_X,
             y: C.FORMATION_TOP + row * C.ENEMY_SPACING_Y,
             row,
+            type: wave >= 2 && row === rows - 1 && col === columns - 1
+              ? 'kamikaze'
+              : wave >= 3 && row === 0 && col === Math.floor(columns / 2)
+                ? 'support'
+                : 'normal',
             // Spec game_loop.md §2: 2 de vida desde la oleada 5 en filas pares.
             hp: wave >= 5 && row % 2 === 0 ? 2 : 1,
           }),
@@ -57,8 +63,48 @@ export class Formation {
     const alive = this.alive;
     if (alive.length === 0) return;
 
-    this.#move(alive, dt);
+    for (const enemy of alive) {
+      enemy.shieldTime = Math.max(0, enemy.shieldTime - dt);
+      if (enemy.type !== 'kamikaze') continue;
+      if (!enemy.diving) {
+        enemy.diveTimer -= dt;
+        if (enemy.diveTimer <= 0) enemy.diving = true;
+      }
+      if (enemy.diving) {
+        const targets = [this.game.player];
+        if (this.game.remotePlayer && !this.game.remotePlayer.eliminated && !this.game.remotePlayer.downedTimer) {
+          targets.push(this.game.remotePlayer);
+        }
+        const target = targets.reduce((closest, candidate) =>
+          Math.abs(candidate.x - enemy.x) < Math.abs(closest.x - enemy.x) ? candidate : closest);
+        const dx = target.x - enemy.x;
+        enemy.x += Math.sign(dx) * Math.min(Math.abs(dx), 95 * dt);
+        enemy.y += 185 * dt;
+        if (enemy.y - enemy.h / 2 > this.game.height) enemy.dead = true;
+      }
+    }
+
+    const formationAlive = alive.filter((enemy) => !enemy.diving);
+    this.#move(formationAlive, dt);
+    this.#shieldNearbyEnemies(formationAlive, dt);
     this.#shoot(alive, dt);
+  }
+
+  #shieldNearbyEnemies(alive, dt) {
+    const support = alive.find((enemy) => enemy.type === 'support');
+    if (!support) return;
+    this.supportTimer -= dt;
+    if (this.supportTimer > 0) return;
+    this.supportTimer = 2.8;
+
+    alive
+      .filter((enemy) => enemy !== support && enemy.type !== 'support')
+      .sort((a, b) => Math.hypot(a.x - support.x, a.y - support.y)
+        - Math.hypot(b.x - support.x, b.y - support.y))
+      .slice(0, 3)
+      .forEach((enemy) => {
+        enemy.shieldTime = Math.max(enemy.shieldTime, 2.4);
+      });
   }
 
   #move(alive, dt) {
@@ -90,13 +136,24 @@ export class Formation {
     this.shootTimer = this.#nextShootDelay();
 
     const shooter = alive[Math.floor(this.game.random() * alive.length)];
+    if (this.game.sync.isCoop && !this.game.sync.isHost) return;
+    const bulletX = shooter.x;
+    const bulletY = shooter.y + C.ENEMY_HEIGHT / 2;
+    const bulletSpeed = C.ENEMY_BULLET_SPEED;
     this.game.bullets.push(
       new Bullet({
-        x: shooter.x,
-        y: shooter.y + C.ENEMY_HEIGHT / 2,
+        x: bulletX,
+        y: bulletY,
         fromPlayer: false,
-        vy: C.ENEMY_BULLET_SPEED,
+        vy: bulletSpeed,
       }),
+    );
+    this.game.sync.emitEnemyShot(
+      this.game.elapsed,
+      bulletX / this.game.width,
+      bulletY / this.game.height,
+      0,
+      bulletSpeed,
     );
   }
 }

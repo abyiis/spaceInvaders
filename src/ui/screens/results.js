@@ -35,7 +35,7 @@ export function scheduleResultsNavigation(router, result, {
   let cancelled = false;
   const timer = setTimeoutFn(() => {
     if (!cancelled && router.current === 'playing') {
-      router.show('results', { result });
+      router.show(result.wave === 1 ? 'credits' : 'results', { result });
     }
   }, delayMs);
 

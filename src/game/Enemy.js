@@ -8,7 +8,7 @@ export class Enemy {
    * @param {{id: number, x: number, y: number, row: number, hp?: number}} opts
    *   `id` es el índice del enemigo en su oleada (`row * columns + col`).
    */
-  constructor({ id, x, y, row, hp = 1 }) {
+  constructor({ id, x, y, row, hp = 1, type = 'normal' }) {
     this.id = id;
     this.x = x;
     this.y = y;
@@ -16,6 +16,10 @@ export class Enemy {
     this.h = C.ENEMY_HEIGHT;
     this.row = row;
     this.hp = hp;
+    this.type = type;
+    this.shieldTime = 0;
+    this.diving = false;
+    this.diveTimer = type === 'kamikaze' ? 4 + (id % 4) * 1.2 : 0;
     this.dead = false;
   }
 
@@ -23,9 +27,13 @@ export class Enemy {
    * Aplica un impacto.
    * @returns {boolean} `true` si este impacto destruyó al enemigo.
    */
-  hit() {
+  hit(damage = 1) {
     if (this.dead) return false;
-    this.hp -= 1;
+    if (this.shieldTime > 0) {
+      this.shieldTime = 0;
+      return false;
+    }
+    this.hp -= damage;
     if (this.hp <= 0) {
       this.dead = true;
       return true;
@@ -33,12 +41,18 @@ export class Enemy {
     return false;
   }
 
+  get color() {
+    if (this.type === 'kamikaze') return '#ff596e';
+    if (this.type === 'support') return '#68f0d2';
+    return ROW_COLORS[this.row % ROW_COLORS.length];
+  }
+
   /** @param {CanvasRenderingContext2D} ctx */
   render(ctx) {
     const left = this.x - this.w / 2;
     const top = this.y - this.h / 2;
 
-    ctx.fillStyle = ROW_COLORS[this.row % ROW_COLORS.length];
+    ctx.fillStyle = this.color;
     ctx.beginPath();
     if (typeof ctx.roundRect === 'function') {
       ctx.roundRect(left, top, this.w, this.h, 5);
@@ -48,11 +62,24 @@ export class Enemy {
     }
     ctx.fill();
 
-    // Un enemigo con 2 de vida muestra un borde para distinguirse.
-    if (this.hp > 1) {
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
+    if (this.hp > 1 || this.shieldTime > 0) {
+      ctx.strokeStyle = this.shieldTime > 0 ? '#a8fff0' : '#ffffff';
+      ctx.lineWidth = this.shieldTime > 0 ? 2.5 : 2;
       ctx.stroke();
+    }
+
+    if (this.type === 'kamikaze') {
+      ctx.fillStyle = '#7c1529';
+      ctx.beginPath();
+      ctx.moveTo(this.x, top + this.h * 0.72);
+      ctx.lineTo(this.x - 4, top + this.h + 5);
+      ctx.lineTo(this.x + 4, top + this.h + 5);
+      ctx.closePath();
+      ctx.fill();
+    } else if (this.type === 'support') {
+      ctx.fillStyle = '#e6fff9';
+      ctx.fillRect(this.x - 2, top + 3, 4, this.h - 6);
+      ctx.fillRect(this.x - 5, top + this.h / 2 - 2, 10, 4);
     }
 
     ctx.fillStyle = '#0b0e1a';

@@ -27,7 +27,7 @@ src/
   effects.js                 Sonido (Web Audio) y vibración
   style.css
   core/                      Lógica pura (constantes, dificultad, colisiones)
-  game/                      Simulación (Game, Player, Enemy, Bullet, Formation, Starfield, input)
+  game/                      Simulación (oleadas, jefes, peligros, bonus, coop, powerUps, Starfield, input)
 test/                        Pruebas con node:test
 ```
 
@@ -37,12 +37,12 @@ Requisitos: **Node ≥ 20**. Para la app Android: Android Studio (iOS requiere m
 
 ```bash
 npm install
-npm test            # 137 pruebas unitarias
+npm test            # 169 pruebas unitarias
 npm run dev         # servidor de desarrollo; ábrelo en el navegador o desde el teléfono (misma Wi-Fi)
 npm run build       # genera dist/
 ```
 
-**Controles:** arrastra el dedo en horizontal (o usa ← → / A D) para mover la nave; dispara sola. Tras el Game Over, Resultados aparece después de 1,2 s; usa «Jugar de nuevo» para empezar otra partida. Pausa con ⏸, Esc o P; desde el menú puedes continuar o salir al inicio. Si la app pasa a segundo plano el juego se pausa; toca la pantalla para continuar. Hay sonidos sintetizados (se activan con el primer toque) y el teléfono vibra al recibir daño. El fondo es un campo de estrellas en parallax.
+**Controles:** arrastra el dedo en horizontal (o usa ← → / A D) para mover la nave; dispara sola. Cada tres rondas aparece un jefe con dos fases; al derrotarlo recibes una vida y dos potenciadores. Cada cinco rondas hay un bonus de 15 segundos con naves inofensivas y combos de puntos. Asteroides, campos magnéticos y apagones alteran temporalmente el combate; kamikazes y unidades soporte se suman a las formaciones. En coop online, ambos pilotos pueden combinar disparos y rescatarse durante 5 segundos consumiendo una vida compartida; no hay rescate si el contador está en cero. Si la partida termina en la primera ronda, los créditos aparecen como un easter egg antes de los resultados. Pausa con ⏸, Esc o P en solo; desde el menú puedes continuar o salir al inicio. Si la app pasa a segundo plano el juego se pausa; toca la pantalla para continuar. Hay sonidos sintetizados (se activan con el primer toque) y el teléfono vibra al recibir daño. El fondo es un campo de estrellas en parallax.
 
 ### Empaquetar como app Android
 

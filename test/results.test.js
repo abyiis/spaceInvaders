@@ -120,6 +120,21 @@ test('muestra resultados tras 1,2 segundos solo si aún se está jugando', () =>
   assert.equal(calls.length, 1);
 });
 
+test('la primera ronda muestra los créditos antes del resultado', () => {
+  const timer = fakeTimer();
+  const calls = [];
+  const router = {
+    current: 'playing',
+    show: (...args) => calls.push(args),
+  };
+  const result = { mode: 'solo', score: 100, wave: 1, durationSeconds: 12 };
+
+  scheduleResultsNavigation(router, result, timer);
+  timer.fire();
+
+  assert.deepEqual(calls, [['credits', { result }]]);
+});
+
 test('cancelar impide la navegación y limpia el temporizador', () => {
   const timer = fakeTimer();
   const calls = [];

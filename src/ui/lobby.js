@@ -5,9 +5,14 @@
  * @param {{
  *   code: string,
  *   uid: string,
+ *   hostUid?: string,
+ *   isHost?: boolean,
  *   watchPlayers: (code: string, onPlayers: (players: Record<string, object>) => void, onError: (error: Error) => void) => () => void,
+ *   watchRoomStatus: (code: string, onStatus: (meta: object | null) => void, onError: (error: Error) => void) => () => void,
  *   watchPresence: (code: string, uid: string, onError: (error: Error) => void) => () => Promise<void>,
  *   setReady: (code: string, ready: boolean) => Promise<void>,
+ *   startGame: (code: string) => Promise<object>,
+ *   onStart: (meta: object) => void,
  *   onBack: () => void,
  * }} options
  * @returns {() => void}
@@ -15,9 +20,14 @@
 export function mountLobby(container, {
   code,
   uid,
+  hostUid,
+  isHost = uid === hostUid,
   watchPlayers,
+  watchRoomStatus,
   watchPresence,
   setReady,
+  startGame,
+  onStart,
   onBack,
 }) {
   const lobby = document.createElement('section');
@@ -32,6 +42,9 @@ export function mountLobby(container, {
       <button class="main-menu__button main-menu__button--primary" type="button" data-action="ready">
         Listo
       </button>
+      <button class="main-menu__button main-menu__button--primary" type="button" data-action="start" hidden disabled>
+        Iniciar partida
+      </button>
       <button class="main-menu__button" type="button" data-action="back">
         Volver al inicio
       </button>
@@ -42,6 +55,7 @@ export function mountLobby(container, {
   const codeLabel = lobby.querySelector('.room-lobby__code');
   const playersList = lobby.querySelector('.room-lobby__players');
   const readyButton = lobby.querySelector('[data-action="ready"]');
+  const startButton = lobby.querySelector('[data-action="start"]');
   const backButton = lobby.querySelector('[data-action="back"]');
   const message = lobby.querySelector('.main-menu__message');
   codeLabel.textContent = code;
@@ -49,6 +63,9 @@ export function mountLobby(container, {
   let ready = false;
   let disposed = false;
   let savingReady = false;
+  let starting = false;
+  let startHandled = false;
+  startButton.hidden = !isHost;
 
   const renderPlayers = (players) => {
     if (disposed) return;
@@ -71,10 +88,15 @@ export function mountLobby(container, {
     const othersReady = Object.entries(players)
       .filter(([playerUid]) => playerUid !== uid)
       .every(([, player]) => player.ready === true);
+    const allReady = Object.keys(players).length === 2
+      && Object.values(players).every((player) => player.ready === true && player.connected === true);
+    startButton.disabled = !isHost || !allReady || starting;
     message.textContent = Object.keys(players).length < 2
       ? 'Esperando a otro jugador…'
       : ready && othersReady
-        ? 'Todos están listos. Esperando que el host inicie la partida.'
+        ? isHost
+          ? 'Todos están listos. Inicia la partida cuando quieras.'
+          : 'Todos están listos. Esperando que el host inicie la partida.'
         : 'Marca «Listo» cuando estés preparado.';
   };
 
@@ -87,6 +109,13 @@ export function mountLobby(container, {
       }
     },
   );
+  const unsubscribeStatus = watchRoomStatus(code, (meta) => {
+    if (disposed || startHandled || meta?.status !== 'playing') return;
+    startHandled = true;
+    onStart(meta);
+  }, (error) => {
+    if (!disposed) message.textContent = `No se pudo actualizar la sala: ${error.message}`;
+  });
   const stopPresence = watchPresence(code, uid, (error) => {
     if (!disposed) {
       message.textContent = `No se pudo actualizar la presencia: ${error.message}`;
@@ -108,6 +137,21 @@ export function mountLobby(container, {
         const detail = error instanceof Error ? error.message : String(error);
         message.textContent = `No se pudo cerrar la presencia de la sala: ${detail}`;
         backButton.disabled = false;
+      }
+      return;
+    }
+    if (button.dataset.action === 'start') {
+      if (!isHost || startButton.disabled || starting) return;
+      starting = true;
+      startButton.disabled = true;
+      message.textContent = 'Iniciando partida…';
+      try {
+        await startGame(code);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        message.textContent = `No se pudo iniciar la partida: ${detail}`;
+        starting = false;
+        startButton.disabled = false;
       }
       return;
     }
@@ -134,6 +178,7 @@ export function mountLobby(container, {
     if (disposed) return;
     disposed = true;
     unsubscribe();
+    unsubscribeStatus();
     try {
       await stopPresence();
       lobby.remove();

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { C } from '../src/core/constants.js';
+import { Boss } from '../src/game/Boss.js';
 import { Game } from '../src/game/Game.js';
 import { Bullet } from '../src/game/Bullet.js';
 
@@ -36,6 +37,220 @@ test('una bala del jugador destruye a un enemigo y suma puntos', () => {
 
   assert.equal(enemy.dead, true);
   assert.equal(g.score, C.SCORE_PER_ENEMY);
+});
+
+test('los power ups aparecen solo con la probabilidad rara y se recogen al tocar la nave', () => {
+  const g = newGame();
+  const enemy = g.formation.enemies[0];
+  g.random = () => 0.5;
+  g.bullets.push(new Bullet({ x: enemy.x, y: enemy.y, fromPlayer: true, vy: -C.PLAYER_BULLET_SPEED }));
+  g.update(0.001);
+  assert.equal(g.powerUps.length, 0);
+
+  g.random = () => 0;
+  const nextEnemy = g.formation.enemies[1];
+  g.bullets.push(new Bullet({
+    x: nextEnemy.x,
+    y: nextEnemy.y,
+    fromPlayer: true,
+    vy: -C.PLAYER_BULLET_SPEED,
+  }));
+  g.update(0.001);
+
+  assert.equal(g.powerUps.length, 1);
+  assert.equal(g.powerUps[0].type, 'shield');
+
+  g.powerUps[0].x = g.player.x;
+  g.powerUps[0].y = g.player.y;
+  g.update(0.001);
+
+  assert.equal(g.powerUps.length, 0);
+  assert.equal(g.player.shieldPowerUp, 5);
+  assert.equal(g.player.isInvulnerable, true);
+});
+
+test('los potenciadores protegen, aceleran y multiplican los disparos temporalmente', () => {
+  const g = newGame();
+
+  assert.equal(g.player.activatePowerUp('shield'), true);
+  assert.equal(g.player.activatePowerUp('rapidFire'), true);
+  assert.equal(g.player.activatePowerUp('tripleShot'), true);
+  assert.equal(g.player.activatePowerUp('unknown'), false);
+  assert.equal(g.player.shieldPowerUp, 5);
+  assert.equal(g.player.hit(), false);
+  assert.equal(g.lives, C.STARTING_LIVES);
+
+  g.player.fireCooldown = 0;
+  g.player.update(0.001);
+  assert.equal(g.bullets.length, 3);
+  assert.ok(g.bullets[0].vx < 0);
+  assert.equal(g.bullets[1].vx, 0);
+  assert.ok(g.bullets[2].vx > 0);
+  assert.equal(g.player.fireCooldown, C.PLAYER_FIRE_INTERVAL * 0.55);
+
+  g.player.update(2);
+  assert.ok(Math.abs(g.player.shieldPowerUp - 3) < 0.01);
+  assert.ok(Math.abs(g.player.rapidFire - 5) < 0.01);
+  assert.ok(Math.abs(g.player.tripleShot - 5) < 0.01);
+});
+
+test('aparece un jefe al completar cada tercera ronda y detiene la formación normal', () => {
+  const g = newGame();
+  g.player.fireCooldown = 1e9;
+
+  while (g.wave < 3) {
+    for (const enemy of g.formation.enemies) enemy.dead = true;
+    g.update(0.001);
+  }
+  for (const enemy of g.formation.enemies) enemy.dead = true;
+  g.update(0.001);
+
+  assert.equal(g.wave, 3);
+  assert.ok(g.boss instanceof Boss);
+  assert.equal(g.boss.maxHealth, 24);
+  assert.equal(g.formation.alive.length, 0);
+
+  let formationUpdates = 0;
+  g.formation.update = () => { formationUpdates += 1; };
+  g.update(0.1);
+  assert.equal(formationUpdates, 0);
+
+  const nextBoss = new Boss(g, 6);
+  const thirdBoss = new Boss(g, 9);
+  assert.equal(nextBoss.maxHealth, 48);
+  assert.equal(thirdBoss.maxHealth, 72);
+  assert.notEqual(g.boss.name, nextBoss.name);
+  assert.notEqual(nextBoss.name, thirdBoss.name);
+});
+
+test('el jefe cambia de fase, dispara hacia abajo y usa patrones especiales', () => {
+  const g = newGame();
+  const boss = new Boss(g, 3);
+
+  boss.update(1.01);
+  assert.equal(g.bullets.length, 1);
+  assert.equal(g.bullets[0].vx, 0);
+  assert.ok(g.bullets[0].vy > 0);
+  assert.equal(boss.phase, 1);
+
+  boss.health = 11;
+  g.random = () => 0;
+  boss.attackTimer = 0.001;
+  boss.update(0.01);
+
+  assert.equal(boss.phase, 2);
+  assert.equal(g.bullets.length, 6);
+  assert.equal(g.bullets[1].color, boss.color);
+  assert.ok(g.bullets.slice(1).some((bullet) => bullet.vx < 0));
+  assert.ok(g.bullets.slice(1).some((bullet) => bullet.vx > 0));
+});
+
+test('la barra muestra diseño, fase y salud actual del jefe', () => {
+  const game = newGame();
+  const boss = new Boss(game, 3);
+  boss.health = 10;
+
+  const texts = [];
+  const bars = [];
+  let fillStyle;
+  const ctx = new Proxy({}, {
+    get(_target, property) {
+      if (property === 'fillRect') {
+        return (...args) => bars.push({ args, fillStyle });
+      }
+      if (property === 'fillText') return (text) => texts.push(text);
+      if (property === 'fillStyle') return fillStyle;
+      return () => {};
+    },
+    set(_target, property, value) {
+      if (property === 'fillStyle') fillStyle = value;
+      return true;
+    },
+  });
+
+  boss.render(ctx);
+  boss.renderHealthBar(ctx, game.width);
+
+  assert.ok(texts.includes('JEFE 1 · VANGUARD · FASE 2 · 10/24'));
+  assert.ok(bars.some(({ args }) => args[2] === 260 * (10 / 24)));
+});
+
+test('derrotar al jefe da una vida y dos potenciadores distintos y avanza la ronda', () => {
+  const g = newGame();
+  g.player.fireCooldown = 1e9;
+  while (g.wave < 3) {
+    for (const enemy of g.formation.enemies) enemy.dead = true;
+    g.update(0.001);
+  }
+  for (const enemy of g.formation.enemies) enemy.dead = true;
+  g.update(0.001);
+
+  const livesBeforeBoss = g.lives;
+  const scoreBeforeBoss = g.score;
+  const defeatedBoss = g.boss;
+  defeatedBoss.health = 1;
+  g.random = () => 0.25;
+  g.bullets.push(new Bullet({
+    x: defeatedBoss.x,
+    y: defeatedBoss.y,
+    fromPlayer: true,
+    vy: 0,
+  }));
+  g.bullets.push(new Bullet({
+    x: 20,
+    y: 200,
+    fromPlayer: false,
+    vy: C.ENEMY_BULLET_SPEED,
+  }));
+  g.update(0.001);
+
+  assert.equal(g.boss, null);
+  assert.equal(g.wave, 4);
+  assert.equal(g.formation.alive.length, 24);
+  assert.equal(g.lives, livesBeforeBoss + 1);
+  assert.equal(g.score, scoreBeforeBoss + 100);
+  assert.equal(g.player.shieldPowerUp, 5);
+  assert.equal(g.player.rapidFire, 7);
+  assert.equal(g.bullets.some((bullet) => !bullet.fromPlayer), false);
+});
+
+test('al destruir un enemigo aparece un efecto visual breve que luego desaparece', () => {
+  const g = newGame();
+  const enemy = g.formation.enemies[0];
+  g.bullets.push(new Bullet({ x: enemy.x, y: enemy.y, fromPlayer: true, vy: -C.PLAYER_BULLET_SPEED }));
+  g.update(0.001);
+
+  assert.equal(g.killEffects.length, 1);
+  assert.equal(g.killEffects[0].color, enemy.color);
+  assert.equal(g.killEffects[0].age, 0);
+
+  const particles = [];
+  let fillStyle;
+  let globalAlpha;
+  const ctx = new Proxy({}, {
+    get(_target, property) {
+      if (property === 'fillRect') {
+        return (...args) => particles.push({ args, fillStyle, globalAlpha });
+      }
+      if (property === 'globalAlpha') return globalAlpha;
+      if (property === 'fillStyle') return fillStyle;
+      return () => {};
+    },
+    set(_target, property, value) {
+      if (property === 'fillStyle') fillStyle = value;
+      if (property === 'globalAlpha') globalAlpha = value;
+      return true;
+    },
+  });
+
+  g.render(ctx);
+  assert.equal(particles.filter((particle) => particle.fillStyle === enemy.color).length, 7);
+  assert.equal(globalAlpha, 1);
+
+  g.update(0.12);
+  assert.equal(g.killEffects.length, 1);
+  g.update(0.13);
+  assert.equal(g.killEffects.length, 0);
 });
 
 test('una bala enemiga quita una vida y la invulnerabilidad evita un segundo golpe', () => {

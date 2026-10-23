@@ -10,7 +10,6 @@ import { formatFirebaseError } from './firebaseErrorMessage.js';
  *   onCreateRoom: () => Promise<void>,
  *   onJoinRoom: (code: string) => Promise<void>,
  *   onShowRanking?: () => Promise<void>,
- *   onShowCredits?: () => void,
  *   onLoadAlias?: () => Promise<string>,
  *   onSaveAlias?: (name: string) => Promise<string>,
  *   bestScore?: number | null,
@@ -71,9 +70,6 @@ export function mountMainMenu(container, actions) {
         <button class="main-menu__button main-menu__button--secondary" type="button" data-action="ranking">
           Ranking
         </button>
-        <button class="main-menu__button main-menu__button--secondary" type="button" data-action="credits">
-          Créditos
-        </button>
       </div>
       <div class="main-menu__score-strip">
         <span>Récord personal</span>
@@ -130,9 +126,6 @@ export function mountMainMenu(container, actions) {
         break;
       case 'ranking':
         void runAsyncAction(actions.onShowRanking, button);
-        break;
-      case 'credits':
-        actions.onShowCredits?.();
         break;
       default:
         break;

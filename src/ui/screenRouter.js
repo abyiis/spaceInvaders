@@ -5,6 +5,7 @@ const DEFAULT_BACK_TARGETS = Object.freeze({
 
 /**
  * @typedef {(container: HTMLElement, params: object, nav: ScreenRouter) => (() => void)} ScreenMount
+ * @typedef {string | ((params: object) => string)} BackTarget
  * @typedef {{ show(name: string, params?: object): void, back(): boolean,
  *             readonly current: string | null, destroy(): void }} ScreenRouter
  */
@@ -13,7 +14,7 @@ const DEFAULT_BACK_TARGETS = Object.freeze({
  * @param {{
  *   container: HTMLElement,
  *   screens: Record<string, ScreenMount>,
- *   backTargets?: Record<string, string>,
+ *   backTargets?: Record<string, BackTarget>,
  * }} options
  * @returns {ScreenRouter}
  */
@@ -26,6 +27,7 @@ export function createScreenRouter({ container, screens, backTargets = DEFAULT_B
   }
 
   let current = null;
+  let currentParams = {};
   let unmountCurrent = null;
 
   const router = {
@@ -49,16 +51,23 @@ export function createScreenRouter({ container, screens, backTargets = DEFAULT_B
 
       unmountCurrent = nextUnmount;
       current = name;
+      currentParams = params;
     },
 
     back() {
-      const target = Object.prototype.hasOwnProperty.call(backTargets, current)
+      const backTarget = Object.prototype.hasOwnProperty.call(backTargets, current)
         ? backTargets[current]
         : null;
-      if (!target) {
+      if (!backTarget) {
         return false;
       }
-      router.show(target);
+      const target = typeof backTarget === 'function'
+        ? backTarget(currentParams)
+        : backTarget;
+      if (typeof target !== 'string' || !target) return false;
+
+      const params = typeof backTarget === 'function' ? currentParams : {};
+      router.show(target, params);
       return true;
     },
 
@@ -70,6 +79,7 @@ export function createScreenRouter({ container, screens, backTargets = DEFAULT_B
       const unmount = unmountCurrent;
       unmountCurrent = null;
       current = null;
+      currentParams = {};
       if (unmount) {
         unmount();
       }

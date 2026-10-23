@@ -8,7 +8,7 @@ const TECHNOLOGIES = ['HTML5 Canvas', 'JavaScript', 'Vite', 'Capacitor', 'Fireba
  * @param {{ show(name: string): void }} nav
  * @returns {() => void}
  */
-export function mountCredits(container, _params, nav) {
+export function mountCredits(container, { result }, nav) {
   const section = document.createElement('section');
   section.className = 'app-screen credits-screen screen-enter';
   section.setAttribute('aria-labelledby', 'credits-title');
@@ -27,7 +27,9 @@ export function mountCredits(container, _params, nav) {
         </p>
       </div>
       <footer class="credits-screen__footer">
-        <button class="main-menu__button" type="button" data-action="back">Volver al Menú</button>
+        <button class="main-menu__button" type="button" data-action="back">
+          ${result ? 'Continuar' : 'Volver al Menú'}
+        </button>
       </footer>
     </div>
   `;
@@ -47,7 +49,10 @@ export function mountCredits(container, _params, nav) {
   }
 
   const backButton = section.querySelector('[data-action="back"]');
-  backButton.addEventListener('click', () => nav.show('home'));
+  backButton.addEventListener('click', () => {
+    if (result) nav.show('results', { result });
+    else nav.show('home');
+  });
   container.append(section);
   backButton.focus();
 
