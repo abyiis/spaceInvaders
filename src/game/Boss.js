@@ -55,6 +55,7 @@ export class Boss {
     this.age = 0;
     this.attackTimer = 1;
     this.burstDirection = 1;
+    this.lastSpecialAttack = null;
     this.support = {
       x: this.x,
       y: this.y + this.h,
@@ -139,7 +140,17 @@ export class Boss {
   }
 
   #specialAttack() {
-    const attack = Math.floor(this.game.random() * 3);
+    // Seleccionar aleatoriamente entre los ataques especiales disponibles en segunda fase:
+    // 0: Abanico (spread) de 5 proyectiles
+    // 1: Disparo teledirigido directamente al jugador
+    // 2: Ráfaga triple alternante
+    // Filtramos el último ataque ejecutado para asegurar variedad y alternancia dinámica.
+    const candidates = [0, 1, 2].filter((candidate) => candidate !== this.lastSpecialAttack);
+    const pool = candidates.length > 0 ? candidates : [0, 1, 2];
+    const rng = typeof this.game?.random === 'function' ? this.game.random : Math.random;
+    const attack = pool[Math.floor(rng() * pool.length)];
+    this.lastSpecialAttack = attack;
+
     const originY = this.y + this.h / 2;
 
     if (attack === 0) {

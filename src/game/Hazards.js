@@ -1,14 +1,17 @@
-const HAZARD_TYPES = Object.freeze(['asteroids', 'magnetic', 'darkness']);
+const HAZARD_TYPES = Object.freeze(['asteroids', 'magnetic']);
 const MIN_EVENT_DELAY = 20;
 const EVENT_DELAY_RANGE = 16;
 const MIN_EVENT_DURATION = 8;
 const EVENT_DURATION_RANGE = 5;
+const WARNING_DURATION = 3;
 
 export class Hazards {
   constructor(game, random = Math.random) {
     this.game = game;
     this.random = random;
     this.active = null;
+    /** Tipo del próximo evento, anunciado durante la fase de alerta. */
+    this.pendingType = null;
     this.asteroids = [];
     this.nextEventIn = this.#nextEventDelay();
     this.asteroidTimer = 0;
@@ -18,10 +21,26 @@ export class Hazards {
     return MIN_EVENT_DELAY + this.random() * EVENT_DELAY_RANGE;
   }
 
+  /** Segundos restantes de la alerta previa al evento, o 0 si no hay. */
+  get warningRemaining() {
+    if (!this.pendingType) return 0;
+    return Math.max(0, this.nextEventIn);
+  }
+
   update(dt) {
     let startedEvent = false;
     if (!this.active) {
       this.nextEventIn -= dt;
+
+      // Cuando queden WARNING_DURATION segundos, elegir el tipo y mostrar alerta
+      if (this.pendingType === null && this.nextEventIn <= WARNING_DURATION) {
+        const index = Math.min(
+          HAZARD_TYPES.length - 1,
+          Math.floor(this.random() * HAZARD_TYPES.length),
+        );
+        this.pendingType = HAZARD_TYPES[index];
+      }
+
       if (this.nextEventIn <= 0) {
         this.#startEvent();
         startedEvent = true;
@@ -38,6 +57,7 @@ export class Hazards {
         this.active = null;
         this.asteroidTimer = 0;
         this.nextEventIn = this.#nextEventDelay();
+        this.pendingType = null;
       }
     }
 
@@ -53,15 +73,12 @@ export class Hazards {
   }
 
   #startEvent() {
-    const index = Math.min(
-      HAZARD_TYPES.length - 1,
-      Math.floor(this.random() * HAZARD_TYPES.length),
-    );
     this.active = {
-      type: HAZARD_TYPES[index],
+      type: this.pendingType,
       age: 0,
       remaining: MIN_EVENT_DURATION + this.random() * EVENT_DURATION_RANGE,
     };
+    this.pendingType = null;
   }
 
   #spawnAsteroids(dt) {

@@ -24,52 +24,46 @@ const BOSS_SCORE_REWARD = 100;
 const BONUS_SHIP_SCORE = 50;
 const BONUS_POWER_UP_DROP_CHANCE = 0.3;
 
+/**
+ * Dibuja un ícono pixel-art retro para el power-up dado.
+ * Cada pixel se dibuja en cuadrícula para una estética arcade 8-bit.
+ */
 function drawPowerUpGlyph(ctx, type, x, y, size) {
-  const scale = size / 16;
+  const px = Math.max(1, Math.round(size / 8));
   ctx.save();
   ctx.translate(x, y);
-  ctx.scale(scale, scale);
-  ctx.strokeStyle = '#07101c';
+
+  const dot = (col, row) => ctx.fillRect(col * px - px / 2, row * px - px / 2, px, px);
+
   ctx.fillStyle = '#07101c';
-  ctx.lineWidth = 2.4;
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
 
   if (type === 'shield') {
-    ctx.beginPath();
-    ctx.moveTo(0, -10);
-    ctx.lineTo(8, -7);
-    ctx.lineTo(7, 1);
-    ctx.quadraticCurveTo(5, 7, 0, 10);
-    ctx.quadraticCurveTo(-5, 7, -7, 1);
-    ctx.lineTo(-8, -7);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(-3, 0);
-    ctx.lineTo(-1, 3);
-    ctx.lineTo(4, -3);
-    ctx.stroke();
-  } else if (type === 'rapidFire' || type === 'overdrive') {
-    ctx.beginPath();
-    ctx.moveTo(2, -10);
-    ctx.lineTo(-6, 1);
-    ctx.lineTo(-1, 1);
-    ctx.lineTo(-3, 10);
-    ctx.lineTo(6, -2);
-    ctx.lineTo(1, -2);
-    ctx.closePath();
-    ctx.fill();
+    // Escudo pixel art: contorno y núcleo
+    for (const [c, r] of [
+      [-2,-3],[-1,-3],[0,-3],[1,-3],[2,-3],
+      [-3,-2],[3,-2], [-3,-1],[3,-1], [-3,0],[3,0],
+      [-2,1],[2,1], [-1,2],[0,2],[1,2],
+      [-1,0],[0,1],[1,-1],
+    ]) dot(c, r);
+  } else if (type === 'rapidFire') {
+    // Rayo zigzag pixel art
+    for (const [c, r] of [
+      [1,-3],[0,-2],[-1,-1],[0,-1],[-1,0],[-2,1],[-1,2],[0,2],[1,2],
+      [0,1],[1,0],[0,0],
+    ]) dot(c, r);
+  } else if (type === 'overdrive') {
+    // Doble rayo enérgico pixel art
+    for (const [c, r] of [
+      [-1,-3],[0,-2],[-2,-1],[-1,-1],[-2,0],[-3,1],[-2,2],[-1,2],
+      [2,-3],[3,-2],[1,-1],[2,-1],[1,0],[0,1],[1,2],[2,2],
+    ]) dot(c, r);
   } else {
-    for (const offset of [-5, 0, 5]) {
-      ctx.beginPath();
-      ctx.moveTo(offset, 7);
-      ctx.lineTo(offset, -4);
-      ctx.moveTo(offset - 2, -1);
-      ctx.lineTo(offset, -5);
-      ctx.lineTo(offset + 2, -1);
-      ctx.stroke();
-    }
+    // tripleShot: tres flechas de disparo arcade
+    for (const [c, r] of [
+      [-3,-2],[-4,-1],[-3,-1],[-2,-1],[-3,0],[-3,1],
+      [0,-3],[-1,-2],[0,-2],[1,-2],[0,-1],[0,0],[0,1],
+      [3,-2],[2,-1],[3,-1],[4,-1],[3,0],[3,1],
+    ]) dot(c, r);
   }
 
   ctx.restore();
@@ -478,11 +472,6 @@ export class Game {
           continue;
         }
 
-        if (this.bonusStage) {
-          bullet.dead = true;
-          continue;
-        }
-
         const enemies = this.formation.alive;
         for (const enemy of enemies) {
           if (enemy.dead || !boxesOverlap(bullet, enemy)) continue;
@@ -667,17 +656,11 @@ export class Game {
 
   /** @param {CanvasRenderingContext2D} ctx */
   render(ctx) {
-    const darkness = this.hazards.active?.type === 'darkness';
-    ctx.fillStyle = darkness ? '#000000' : '#0b0e1a';
+    ctx.fillStyle = '#0b0e1a';
     ctx.fillRect(0, 0, this.width, this.height);
 
-    if (!darkness) this.starfield.render(ctx);
+    this.starfield.render(ctx);
     this.#renderHazards(ctx);
-    if (darkness) {
-      ctx.save();
-      ctx.shadowBlur = 14;
-      ctx.shadowColor = '#8bd5ff';
-    }
     for (const enemy of this.formation.alive) enemy.render(ctx);
     if (this.bonusStage) this.#renderBonusShips(ctx);
     if (this.boss) this.boss.render(ctx);
@@ -687,7 +670,6 @@ export class Game {
     this.player.render(ctx);
     this.#renderRemotePlayer(ctx);
     this.#renderSynergyEffects(ctx);
-    if (darkness) ctx.restore();
 
     this.#renderHud(ctx);
     if (this.boss) this.boss.renderHealthBar(ctx, this.width);
@@ -768,18 +750,60 @@ export class Game {
   #renderHazards(ctx) {
     if (this.hazards.active?.type === 'magnetic') {
       const center = this.hazards.magneticCenter;
+      const age = this.hazards.active.age;
+      const cx = center;
+      const cy = this.height * 0.48;
       ctx.save();
-      ctx.globalAlpha = 0.28;
-      ctx.fillStyle = '#57a8ff';
+
+      // Aura central con gradiente radial pulsante
+      const pulseR = 84 + Math.sin(age * 2.5) * 10;
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, pulseR * 1.3);
+      grad.addColorStop(0, 'rgba(87, 168, 255, 0.24)');
+      grad.addColorStop(0.5, 'rgba(80, 140, 255, 0.12)');
+      grad.addColorStop(1, 'rgba(80, 140, 255, 0)');
+      ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.ellipse(center, this.height * 0.48, 94, this.height * 0.42, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, pulseR * 1.3, this.height * 0.44, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.globalAlpha = 0.7;
-      ctx.strokeStyle = '#8bd5ff';
-      ctx.lineWidth = 2;
+
+      // Anillos orbitales animados inclinados
+      for (let ring = 0; ring < 3; ring += 1) {
+        const ringPhase = age * (1.2 + ring * 0.4) + ring * (Math.PI * 2 / 3);
+        const rx = 58 + ring * 18 + Math.sin(ringPhase) * 6;
+        const ry = (this.height * 0.18) + ring * 15;
+        const tilt = ringPhase * 0.35;
+        ctx.save();
+        ctx.globalAlpha = 0.55 - ring * 0.12;
+        ctx.strokeStyle = ring === 0 ? '#a8d8ff' : ring === 1 ? '#6ab8ff' : '#4494e8';
+        ctx.lineWidth = 1.6 - ring * 0.3;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, tilt, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Partículas y chispas de energía rotando en el campo
+      ctx.globalAlpha = 0.85;
+      for (let p = 0; p < 8; p += 1) {
+        const pAngle = age * 1.6 + (Math.PI * 2 * p) / 8;
+        const pr = 62 + Math.sin(age * 2 + p) * 14;
+        const px = cx + Math.cos(pAngle) * pr;
+        const py = cy + Math.sin(pAngle) * pr * 0.28;
+        const brightness = 0.4 + Math.sin(age * 3 + p * 1.3) * 0.4;
+        ctx.fillStyle = `rgba(138, 213, 255, ${brightness.toFixed(2)})`;
+        ctx.fillRect(px - 1, py - 1, 2, 2);
+      }
+
+      // Línea central de resonancia magnética punteada
+      ctx.globalAlpha = 0.35 + Math.sin(age * 4) * 0.15;
+      ctx.strokeStyle = '#c8e8ff';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 6]);
       ctx.beginPath();
-      ctx.ellipse(center, this.height * 0.48, 94, this.height * 0.42, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, 42 + Math.sin(age * 1.8) * 6, this.height * 0.12, 0, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.setLineDash([]);
+
       ctx.restore();
     }
 
@@ -835,52 +859,59 @@ export class Game {
   #renderPowerUps(ctx) {
     for (const powerUp of this.powerUps) {
       const definition = POWER_UPS[powerUp.type];
-      const bob = Math.sin(this.elapsed * 4 + powerUp.x * 0.08) * 2;
-      const x = powerUp.x;
-      const y = powerUp.y + bob;
-      const rotation = Math.sin(this.elapsed * 2.5 + powerUp.x * 0.04) * 0.12;
-      const pulse = 1 + Math.sin(this.elapsed * 6 + powerUp.y * 0.03) * 0.06;
+      // Animación retro con saltos discretos de 2px
+      const bob = Math.floor(this.elapsed * 3 + powerUp.x * 0.05) % 2 === 0 ? 0 : -2;
+      const x = Math.round(powerUp.x);
+      const y = Math.round(powerUp.y) + bob;
+      const blink = Math.floor(this.elapsed * 5) % 2 === 0;
 
       ctx.save();
       ctx.translate(x, y);
-      ctx.rotate(rotation);
-      ctx.scale(pulse, pulse);
+
+      // Resplandor exterior retro
       ctx.shadowColor = definition.color;
-      ctx.shadowBlur = 12;
-      ctx.fillStyle = '#07101c';
+      ctx.shadowBlur = blink ? 12 : 6;
+
+      // Caja retro pixel-art: cuerpo oscuro sólido
+      const S = 13;
+      ctx.fillStyle = '#060e1c';
+      ctx.fillRect(-S, -S, S * 2, S * 2);
+
+      // Marco de color arcade
+      ctx.shadowBlur = 0;
       ctx.strokeStyle = definition.color;
       ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let vertex = 0; vertex < 8; vertex += 1) {
-        const angle = (Math.PI * 2 * vertex) / 8 - Math.PI / 2;
-        const radius = vertex % 2 === 0 ? 15 : 12;
-        const pointX = Math.cos(angle) * radius;
-        const pointY = Math.sin(angle) * radius;
-        if (vertex === 0) ctx.moveTo(pointX, pointY);
-        else ctx.lineTo(pointX, pointY);
-      }
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+      ctx.strokeRect(-S + 1, -S + 1, S * 2 - 2, S * 2 - 2);
 
-      ctx.shadowBlur = 0;
+      // Esquinas pixeladas de alto contraste (estilo 8-bit)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-S + 2, -S + 2, 2, 2);
+      ctx.fillRect(S - 4, -S + 2, 2, 2);
+      ctx.fillRect(-S + 2, S - 4, 2, 2);
+      ctx.fillRect(S - 4, S - 4, 2, 2);
+
+      // Fondo del glifo en color de power-up
       ctx.fillStyle = definition.color;
-      ctx.beginPath();
-      ctx.arc(0, 0, 8.5, 0, Math.PI * 2);
-      ctx.fill();
-      drawPowerUpGlyph(ctx, powerUp.type, 0, 0, 13);
+      ctx.fillRect(-8, -8, 16, 16);
+
+      // Ícono pixel-art centrado
+      drawPowerUpGlyph(ctx, powerUp.type, 0, 0, 12);
+
       ctx.restore();
 
-      const glint = Math.sin(this.elapsed * 8 + powerUp.x) > 0.8;
-      if (glint) {
+      // Chispas exteriores estilo retro arcade
+      if (blink) {
         ctx.save();
-        ctx.globalAlpha = 0.8;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(x + 10, y - 13, 2, 2);
-        ctx.fillRect(x - 13, y + 9, 2, 2);
+        ctx.fillStyle = definition.color;
+        ctx.globalAlpha = 0.7;
+        ctx.fillRect(x + S + 2, y - 1, 2, 2);
+        ctx.fillRect(x - S - 4, y - 1, 2, 2);
+        ctx.fillRect(x - 1, y - S - 4, 2, 2);
+        ctx.globalAlpha = 1;
         ctx.restore();
       }
     }
+    ctx.globalAlpha = 1;
   }
 
   #renderHud(ctx) {
@@ -894,11 +925,26 @@ export class Game {
     ctx.textAlign = 'right';
     ctx.fillText(`Oleada: ${this.wave}`, this.width - 12, 12);
 
-    if (this.hazards.active) {
+    const hazardWarning = this.hazards.warningRemaining;
+    if (hazardWarning > 0) {
+      const warningLabels = {
+        asteroids: '⚠ LLUVIA DE ASTEROIDES',
+        magnetic: '⚠ CAMPO MAGNÉTICO',
+      };
+      const pulse = Math.floor(hazardWarning * 4) % 2 === 0;
+      ctx.fillStyle = pulse ? '#ff4444' : '#ff9944';
+      ctx.font = 'bold 10px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(
+        `${warningLabels[this.hazards.pendingType] ?? '⚠ PELIGRO'} · EN ${Math.ceil(hazardWarning)}s`,
+        this.width / 2,
+        32,
+      );
+    } else if (this.hazards.active) {
       const labels = {
         asteroids: 'LLUVIA DE ASTEROIDES',
         magnetic: 'CAMPO MAGNÉTICO',
-        darkness: 'MODO OSCURIDAD',
       };
       ctx.fillStyle = this.hazards.active.type === 'asteroids' ? '#ffb36c' : '#8bd5ff';
       ctx.font = 'bold 10px ui-monospace, monospace';
