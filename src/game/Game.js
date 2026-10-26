@@ -932,6 +932,7 @@ export class Game {
       random: streamFor(this.seed, STREAM_SALT.BONUS_STAGE + this.wave),
     });
     this.pendingBonusStage = false;
+    this.showBanner('FASE BONUS', 'bonus');
   }
 
   #resolveAsteroidCollisions() {

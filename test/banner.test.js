@@ -61,3 +61,51 @@ test('la franja no avanza en pausa', () => {
   assert.ok(game.banner);
   assert.equal(game.banner.age, 0);
 });
+
+test('al iniciar una fase bonus la franja es dorada y dice FASE BONUS', () => {
+  const game = new Game({ random: () => 0.5 });
+  game.wave = 5;
+  game.formation.enemies.forEach((enemy) => { enemy.dead = true; });
+  game.update(0.01);
+  assert.ok(game.bonusStage);
+  assert.deepEqual({ text: game.banner.text, kind: game.banner.kind }, { text: 'FASE BONUS', kind: 'bonus' });
+
+  const sets = [];
+  const ctx = new Proxy({}, {
+    get: (_t, name) => (...args) => { if (name === 'fillText') sets.push(['text', args[0]]); },
+    set: (_t, name, value) => { sets.push([name, value]); return true; },
+  });
+  drawBanner(ctx, game.banner, 0.5, { width: 360, height: 640 });
+  assert.ok(sets.some(([name, value]) => name === 'fillStyle' && value === VISUALS.BANNER_STYLES.bonus.edge));
+  assert.ok(sets.some(([name, value]) => name === 'fillStyle' && value === '#ffd166'));
+  assert.equal(VISUALS.BANNER_STYLES.bonus.edge, '#ffd166');
+});
+
+test('al terminar la fase bonus vuelve la franja azul de la siguiente oleada', () => {
+  const game = new Game({ random: () => 0.5 });
+  game.wave = 5;
+  game.formation.enemies.forEach((enemy) => { enemy.dead = true; });
+  game.update(0.01);
+  game.bonusStage.remaining = 0;
+  game.update(0.01);
+  assert.equal(game.wave, 6);
+  assert.deepEqual({ text: game.banner.text, kind: game.banner.kind }, { text: 'OLEADA 6', kind: 'wave' });
+});
+
+test('el invitado también ve la franja dorada cuando el host anuncia la fase bonus', () => {
+  const handlers = {};
+  class Sync {
+    get isCoop() { return true; }
+    get isHost() { return false; }
+    get hostUid() { return 'host'; }
+    get uid() { return 'g'; }
+    get remoteUid() { return 'host'; }
+    setHandlers(h) { handlers.h = h; }
+    publishPlayerX() {}
+    dispose() {}
+  }
+  const game = new Game({ sync: new Sync(), random: () => 0.5 });
+  game.wave = 5;
+  handlers.h.onEvent('p', { type: 'phase', uid: 'host', kind: 'bonus', wave: 5, t: 1, score: 10, lives: 3 });
+  assert.equal(game.banner.kind, 'bonus');
+});
