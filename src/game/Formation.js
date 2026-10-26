@@ -4,6 +4,7 @@ import { formationOffset, formationRange } from '../core/formationPath.js';
 import { createShotSchedule, pickShooter } from '../core/shotSchedule.js';
 import { Bullet } from './Bullet.js';
 import { Enemy } from './Enemy.js';
+import { entranceProgress } from './visuals.js';
 
 /**
  * Controlador de una oleada: crea y mueve el grupo de enemigos
@@ -37,6 +38,8 @@ export class Formation {
       }),
       stepDown: C.FORMATION_STEP_DOWN,
     };
+    /** `false` desactiva la animación de entrada (las pruebas de combate la apagan). */
+    this.entranceEnabled = true;
     this.appliedDx = 0;
     this.appliedDy = 0;
 
@@ -71,6 +74,7 @@ export class Formation {
     });
     this.nextShot = this.schedule.next();
     this.#follow(this.enemies);
+    this.#updateEntrance();
   }
 
   /** Enemigos que siguen vivos. */
@@ -81,6 +85,7 @@ export class Formation {
   /** @param {number} dt */
   update(dt) {
     this.time += dt;
+    this.#updateEntrance();
     const alive = this.alive;
     if (alive.length === 0) return;
 
@@ -125,6 +130,17 @@ export class Formation {
       });
   }
 
+  /** Entrada escalonada desde arriba (`visual_feedback.md` §4), según el tiempo de la oleada. */
+  #updateEntrance() {
+    const { columns } = this.params;
+    for (const enemy of this.enemies) {
+      enemy.entrance = this.entranceEnabled
+        ? entranceProgress(this.time, enemy.row, enemy.id % columns)
+        : 1;
+      enemy.reducedMotion = this.game.reducedMotion === true;
+    }
+  }
+
   /**
    * Coloca la formación según su posición analítica en el instante `time`. Se aplica la
    * diferencia con lo ya aplicado (no se reescriben posiciones absolutas) para respetar los
@@ -154,7 +170,7 @@ export class Formation {
       const shooter = pickShooter(
         this.enemies,
         pick,
-        (enemy) => !enemy.dead && !enemy.diving,
+        (enemy) => !enemy.dead && !enemy.diving && enemy.entrance >= 1,
       );
       if (!shooter) continue;
       this.game.bullets.push(

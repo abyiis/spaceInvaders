@@ -76,6 +76,7 @@ test('el disparo del jugador se notifica con tiempo de juego y x normalizada', (
 test('destruir un enemigo emite kill con oleada e id; un impacto que no destruye no emite', () => {
   const sync = recordingGateway();
   const g = new Game({ random: constantRandom, sync });
+  g.formation.entranceEnabled = false; // sin animación de entrada: los enemigos ya son golpeables
   g.player.fireCooldown = 1e9;
   const enemy = g.formation.enemies[7];
   enemy.hp = 2;

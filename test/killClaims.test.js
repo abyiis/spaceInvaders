@@ -68,6 +68,7 @@ test('un reclamo de otra oleada se ignora', () => {
 
 test('mi baja se publica una vez; el reclamo posterior del compañero sobre el mismo enemigo no suma', () => {
   const { game, sync } = newGame();
+  game.formation.entranceEnabled = false; // sin animación de entrada: los enemigos ya son golpeables
   const enemy = game.formation.enemies[0];
   shootAt(game, enemy, 'a');
   assert.equal(game.score, C.SCORE_PER_ENEMY);
@@ -81,6 +82,7 @@ test('mi baja se publica una vez; el reclamo posterior del compañero sobre el m
 
 test('si la bala del compañero mata en mi simulación, la baja se acredita a él y no la reclamo yo', () => {
   const { game, sync } = newGame();
+  game.formation.entranceEnabled = false; // sin animación de entrada: los enemigos ya son golpeables
   const enemy = game.formation.enemies[1];
   shootAt(game, enemy, 'b');
 
@@ -107,6 +109,7 @@ test('el potenciador de una baja del compañero llega con su evento, una sola ve
 
 test('mi propio potenciador no se duplica si el compañero reclama la misma baja con otro', () => {
   const { game, sync } = newGame();
+  game.formation.entranceEnabled = false; // sin animación de entrada: los enemigos ya son golpeables
   const enemy = game.formation.enemies[2];
   shootAt(game, enemy, 'a');
   assert.equal(game.powerUps.length, 1);

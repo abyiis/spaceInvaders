@@ -87,6 +87,7 @@ test('el disparo del jugador activa shot', () => {
 test('destruir un enemigo activa kill; un impacto que no destruye no', () => {
   const effects = recordingEffects();
   const g = new Game({ random: constantRandom, effects });
+  g.formation.entranceEnabled = false; // sin animación de entrada: los enemigos ya son golpeables
   g.player.fireCooldown = 1e9;
   const enemy = g.formation.enemies[0];
   enemy.hp = 2;

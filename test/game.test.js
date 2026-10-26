@@ -30,6 +30,7 @@ test('estado inicial', () => {
 
 test('una bala del jugador destruye a un enemigo y suma puntos', () => {
   const g = newGame();
+  g.formation.entranceEnabled = false; // sin animación de entrada: los enemigos ya son golpeables
   const enemy = g.formation.enemies[0];
   g.bullets.push(new Bullet({ x: enemy.x, y: enemy.y, fromPlayer: true, vy: -C.PLAYER_BULLET_SPEED }));
 
@@ -41,6 +42,7 @@ test('una bala del jugador destruye a un enemigo y suma puntos', () => {
 
 test('los power ups aparecen solo con la probabilidad rara y se recogen al tocar la nave', () => {
   const g = newGame();
+  g.formation.entranceEnabled = false; // sin animación de entrada: los enemigos ya son golpeables
   const enemy = g.formation.enemies[0];
   g.random = () => 0.5;
   g.bullets.push(new Bullet({ x: enemy.x, y: enemy.y, fromPlayer: true, vy: -C.PLAYER_BULLET_SPEED }));
@@ -216,6 +218,7 @@ test('derrotar al jefe da una vida y dos potenciadores distintos y avanza la ron
 
 test('al destruir un enemigo aparece un efecto visual breve que luego desaparece', () => {
   const g = newGame();
+  g.formation.entranceEnabled = false; // sin animación de entrada: los enemigos ya son golpeables
   const enemy = g.formation.enemies[0];
   g.bullets.push(new Bullet({ x: enemy.x, y: enemy.y, fromPlayer: true, vy: -C.PLAYER_BULLET_SPEED }));
   g.update(0.001);
@@ -381,6 +384,7 @@ test('desde la oleada 5 las filas pares tienen 2 de vida', () => {
 
 test('un enemigo de 2 de vida necesita dos impactos', () => {
   const g = newGame();
+  g.formation.entranceEnabled = false; // sin animación de entrada: los enemigos ya son golpeables
   const enemy = g.formation.enemies[0];
   enemy.hp = 2;
   const fire = () =>

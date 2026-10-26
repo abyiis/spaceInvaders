@@ -133,6 +133,7 @@ test('en hitos coincidentes se derrota primero al jefe y luego comienza la fase 
 
 test('sobrecarga otorga daño doble a los proyectiles', () => {
   const game = new Game({ random: constantRandom });
+  game.formation.entranceEnabled = false; // sin animación de entrada: los enemigos ya son golpeables
   const enemy = game.formation.enemies[0];
   enemy.hp = 2;
   game.bullets.push(new Bullet({

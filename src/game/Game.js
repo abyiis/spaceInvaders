@@ -745,7 +745,7 @@ export class Game {
 
         const enemies = this.formation.alive;
         for (const enemy of enemies) {
-          if (enemy.dead || !boxesOverlap(bullet, enemy)) continue;
+          if (enemy.dead || enemy.entrance < 1 || !boxesOverlap(bullet, enemy)) continue;
           if (enemy.hit(bullet.damage)) {
             this.#defeatEnemy(enemy, { ownerUid: bullet.ownerUid });
           }

@@ -1,4 +1,5 @@
 import { C } from '../core/constants.js';
+import { easeOutCubic, VISUALS } from './visuals.js';
 
 const ROW_COLORS = ['#66bb6a', '#ab47bc', '#ff7043', '#26c6da', '#ec407a', '#ffca28'];
 
@@ -22,6 +23,9 @@ export class Enemy {
     /** Segundos de oleada a partir de los cuales el kamikaze abandona la formación. */
     this.diveAt = type === 'kamikaze' ? 4 + (id % 4) * 1.2 : Infinity;
     this.dead = false;
+    /** Progreso de la entrada (0..1); mientras sea < 1 no recibe ni dispara balas. */
+    this.entrance = 1;
+    this.reducedMotion = false;
   }
 
   /**
@@ -50,6 +54,19 @@ export class Enemy {
 
   /** @param {CanvasRenderingContext2D} ctx */
   render(ctx) {
+    if (this.entrance < 1) {
+      const eased = easeOutCubic(this.entrance);
+      ctx.save();
+      ctx.globalAlpha = eased;
+      if (!this.reducedMotion) ctx.translate(0, -(1 - eased) * VISUALS.ENTRANCE_DROP);
+      this.#draw(ctx);
+      ctx.restore();
+      return;
+    }
+    this.#draw(ctx);
+  }
+
+  #draw(ctx) {
     const left = this.x - this.w / 2;
     const top = this.y - this.h / 2;
 

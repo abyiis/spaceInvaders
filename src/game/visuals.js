@@ -3,6 +3,11 @@
 export const VISUALS = Object.freeze({
   BANNER_DURATION: 0.5,
   BANNER_HEIGHT: 56,
+  /** Entrada de los enemigos: duración por enemigo, escalonado por rejilla y altura de partida. */
+  ENTRANCE_DURATION: 0.5,
+  ENTRANCE_ROW_DELAY: 0.08,
+  ENTRANCE_COLUMN_DELAY: 0.04,
+  ENTRANCE_DROP: 220,
   /** Paleta de las franjas centrales. */
   BANNER_STYLES: Object.freeze({
     wave: Object.freeze({ fill: 'rgba(11, 26, 58, 0.88)', edge: '#67f5d5', text: '#ffffff' }),
@@ -13,6 +18,17 @@ export const VISUALS = Object.freeze({
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
 export const easeOutCubic = (t) => 1 - (1 - clamp01(t)) ** 3;
 export const easeInCubic = (t) => clamp01(t) ** 3;
+
+/**
+ * Progreso (0..1) de la entrada de un enemigo `time` segundos después de empezar la oleada.
+ * @param {number} time
+ * @param {number} row
+ * @param {number} column
+ */
+export function entranceProgress(time, row, column) {
+  const delay = row * VISUALS.ENTRANCE_ROW_DELAY + column * VISUALS.ENTRANCE_COLUMN_DELAY;
+  return clamp01((time - delay) / VISUALS.ENTRANCE_DURATION);
+}
 
 /**
  * Posición de la franja en el instante `progress` (0..1) de su animación: entra por la izquierda
