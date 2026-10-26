@@ -89,6 +89,7 @@ export class CoopGateway {
       onError,
     ) ?? (() => {});
     this.stopPresence = roomRepository.watchPresence(code, uid, onError);
+    this.presenceStopped = null;
   }
 
   get isCoop() {
@@ -218,6 +219,18 @@ export class CoopGateway {
     });
   }
 
+  /**
+   * Abandona la sala a mitad de partida: libera la presencia (queda desconectado) y dice si el
+   * compañero sigue conectado, para decidir si hay que borrar la sala.
+   * @returns {Promise<{ peerOnline: boolean }>}
+   */
+  async leave() {
+    const peerOnline = this.currentPlayers[this.remoteUid]?.connected === true;
+    this.dispose();
+    await this.presenceStopped;
+    return { peerOnline };
+  }
+
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
@@ -227,7 +240,7 @@ export class CoopGateway {
     this.unsubscribeOffset();
     this.unsubscribePlayers();
     this.unsubscribeEvents();
-    this.stopPresence().catch(this.onError);
+    this.presenceStopped = this.stopPresence().catch(this.onError);
   }
 
   /** Alimenta el monitor con la presencia del compañero y con cada señal nueva suya. */

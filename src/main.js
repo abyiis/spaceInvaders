@@ -50,6 +50,20 @@ function cleanUpCoopRoom(result) {
     .catch((error) => console.warn('No se pudo borrar la sala:', error));
 }
 
+/**
+ * Abandono voluntario de una partida coop: se libera la presencia y, si el compañero ya no está
+ * conectado, se borra la sala (si sigue conectado, él asume el rol de host y la conserva).
+ */
+async function leaveCoopMatch() {
+  const room = activeCoopRoom;
+  activeCoopRoom = null;
+  const { peerOnline } = (await game.sync.leave?.()) ?? { peerOnline: true };
+  if (room && !peerOnline) {
+    await room.roomRepository.deleteRoom(room.code)
+      .catch((error) => console.warn('No se pudo borrar la sala:', error));
+  }
+}
+
 /** Solo el host guarda el puntaje del equipo, una vez (`multiplayer_sync.md` §6). */
 async function saveCoopScore(result) {
   const { scoreRepository } = await import('./net/firebase.js');
@@ -170,6 +184,7 @@ const router = createScreenRouter({
         game,
         canvas,
         onPauseReady: (open) => { openPauseMenu = open ?? (() => {}); },
+        onLeaveCoop: leaveCoopMatch,
       }, nav);
       return () => {
         cancelPendingResults();
@@ -212,9 +227,7 @@ const router = createScreenRouter({
 router.show(SCREENS.SPLASH);
 attachBackButton(router, {
   app: App,
-  onPlayingBack: () => {
-    if (!game.sync.isCoop) openPauseMenu();
-  },
+  onPlayingBack: () => openPauseMenu(),
 });
 
 let last = performance.now();

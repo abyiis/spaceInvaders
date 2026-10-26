@@ -232,7 +232,7 @@ No hay récord personal en coop. Al salir de Resultados (por el botón o por «A
 - Mientras el menú está abierto **el input del juego está desactivado** (se quita y se vuelve a enganchar al continuar), de modo que Espacio/Enter solo activan el botón enfocado y no reanudan el juego por detrás.
 - **Pausa por segundo plano** (`attachLifecycle`): no cambia. El canvas muestra «PAUSA · Toca para continuar» y un toque reanuda. Si el jugador abre el menú, manda el menú.
 - El botón se oculta cuando la partida termina (`isGameOver`), para no interferir con los 1,2 s previos a Resultados.
-- **Coop:** `pause()` no aplica en coop (`architecture.md` §3.2). Ahí el botón será «Salir», con la confirmación «¿Salir de la partida?», y abandonará la sala. Se define en la tarea 3.16; hasta entonces el botón no se muestra en coop.
+- **Coop:** `pause()` no aplica en coop (`architecture.md` §3.2). En lugar del botón ⏸ hay un botón **✕** (`aria-label="Salir"`) en la misma esquina. Al pulsarlo (o con Esc o «Atrás» de Android) aparece, **sobre la partida que sigue en marcha**, el diálogo «¿Salir de la partida?» con **Seguir jugando** (principal, recibe el foco) y **Salir**. Salir abandona la sala (la presencia pasa a desconectado, ver `multiplayer_sync.md` §5), borra la sala si ya no queda nadie y vuelve al Home. El compañero recibe «Compañero desconectado» y, si es el invitado, asume el rol de host. No hay resultado ni ranking para quien sale. Lógica en `src/ui/leaveController.js` (`open`, `stay`, `toggle`, `leave`).
 - La lógica vive en `src/ui/pauseController.js`, con el juego y el enganche del input inyectados, para probarla en Node: `open()`, `resume()` y `exit()`.
 
 | Elemento | Texto |
@@ -240,6 +240,8 @@ No hay récord personal en coop. Al salir de Resultados (por el botón o por «A
 | Botón de pausa (accesibilidad) | «Pausar» |
 | Título del menú | «Pausa» |
 | Botones | «Continuar», «Salir al inicio» |
+| Botón de salida en coop (accesibilidad) | «Salir» |
+| Diálogo de salida en coop | «¿Salir de la partida?», «Seguir jugando», «Salir» |
 
 ## 10. Integración con el juego
 
@@ -274,7 +276,7 @@ Se escucha el evento `backButton` del plugin `@capacitor/app` (ya es dependencia
 | `splash` | Se ignora |
 | `home` | Cierra la app (`App.exitApp()`) |
 | `credits`, `results` | Vuelve a `home` (`router.back()`) |
-| `playing` | Abre el menú de pausa (§9) en solo; en coop se ignora hasta la tarea 3.16 |
+| `playing` | Abre el menú de pausa (§9) en solo; en coop abre o cierra el diálogo «¿Salir de la partida?» |
 
 El mapa de destinos es lógica pura y se prueba en Node con el plugin inyectado, igual que `attachLifecycle`.
 
@@ -288,6 +290,7 @@ El mapa de destinos es lógica pura y se prueba en Node con el plugin inyectado,
 - `Game.onGameOver`: se llama una vez con `{ mode, score, wave, durationSeconds }`; no se repite en `update()` posteriores ni al llamar otra vez a `triggerGameOver()`; se rearma tras `startNewGame()`; `mode` es `'coop'` con un gateway cuyo `isCoop` es `true`.
 - Splash: avance automático a 2,5 s; la omisión antes de 0,8 s se ignora y después funciona (temporizadores inyectados).
 - Forma de `CREDITS` (§7): al menos un integrante y cada `name` no vacío.
+- Salida en coop (`leaveController`): `open()` solo en coop y antes del Game Over; `stay()` cierra; `leave()` ejecuta la salida una sola vez y, si falla, deja el diálogo abierto; Esc alterna el diálogo.
 - Menú de pausa (`pauseController`): `open()` pausa el juego y quita el input; `resume()` reanuda y lo vuelve a enganchar; `exit()` llama a la salida y **no** dispara `onGameOver`; `open()` no hace nada tras el Game Over ni en coop.
 - Récord local: primera partida, récord superado, puntaje menor, `storage` que lanza.
 - Mapa de destinos del botón «Atrás».
