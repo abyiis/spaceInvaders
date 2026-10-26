@@ -78,7 +78,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 
 - [x] 3.1 `P0 D3` PRNG determinista propio (`src/core/prng.js`, mulberry32) con pruebas `[sync]`
 - [x] 3.2 `P0 D4` Reloj compartido: `.info/serverTimeOffset` y cuenta atrás hasta `startAt` `[sync]`
-- [ ] 3.3 `P0 D5` Refactor de `Formation` a movimiento determinista `f(seed, wave, t)` con pruebas de igualdad entre dos instancias `[sync][loop]`
+- [x] 3.3 `P0 D5` Refactor de `Formation` a movimiento determinista `f(seed, wave, t)` con pruebas de igualdad entre dos instancias `[sync][loop]`
 - [ ] 3.4 `P0 D3` Disparos enemigos deterministas desde la semilla `[sync]`
 - [ ] 3.5 `P0 D3` `syncService.js`: publicar posición propia a 10 Hz solo si cambió `[sync]`
 - [ ] 3.6 `P0 D4` Nave del compañero con buffer de interpolación (100 ms) `[sync]`
@@ -129,4 +129,5 @@ Matchmaking aleatorio, chat, compras, anti-trampas, más de 4 jugadores, reconex
 | 2026-10-22 | ui_screens | v1.1: créditos solo con nombres (sin roles, curso ni institución); récord local y botón «Atrás» dejan de ser opcionales; nuevo §9 menú de pausa y salida al Home (botón ⏸, `pauseController`); secciones 9-14 pasan a 10-15 | Supuestos confirmados por el equipo |
 | 2026-10-22 | architecture | v1.6: `pauseController.js` en el árbol de `ui/`; `playing` ya no es una pantalla sin interfaz (lleva el botón de pausa); input fuera mientras el menú de pausa está abierto; salir a mitad de partida es un abandono | Supuestos confirmados por el equipo |
 | 2026-10-22 | game_loop | v1.4: `PAUSED → HOME` por «Salir al inicio» (partida abandonada, sin `onGameOver`); `PAUSED` se alcanza también con el botón ⏸ | Supuestos confirmados por el equipo |
+| 2026-10-26 | game_loop | v1.5: §4.1 movimiento de la formación como función pura del tiempo de oleada, con los límites de la rejilla completa | Tarea 3.3 |
 | 2026-10-25 | multiplayer_sync | v1.1: modelo coop realmente implementado (reloj bloqueado al servidor con cuenta atrás, PRNG por flujo, formación y disparos deterministas, host autoritativo mediante eventos `phase`/`state`/`game-over`, relevo de host, avisos de conexión); ADR-13 | Tareas 3.1 – 3.16 |

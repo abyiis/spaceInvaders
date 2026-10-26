@@ -1,6 +1,6 @@
 # game_loop.md — Lógica del arcade infinito
 
-> Estado: **v1.4**. Valores numéricos viven en `src/core/constants.js` o en el controlador de la mecánica correspondiente y deben coincidir con las tablas de este documento.
+> Estado: **v1.5**. Valores numéricos viven en `src/core/constants.js` o en el controlador de la mecánica correspondiente y deben coincidir con las tablas de este documento.
 
 ## 0. Resolución lógica
 
@@ -18,7 +18,7 @@ El juego encadena **oleadas** (waves) indefinidamente. Cada oleada normal es má
 | `Enemy` | 28 × 20 | Forma parte de una `Formation`; incluye kamikazes y naves soporte. 1 punto de vida en las oleadas 1-4; 2 puntos desde la oleada 5 (en filas pares). |
 | `Boss` | Variable | Aparece tras completar las oleadas 3, 6, 9…; tiene salud proporcional a la ronda, dos fases y diseños alternados. Mientras está activo no se generan enemigos normales. |
 | `Bullet` | 4 × 12 | Del jugador (sube) o enemiga (baja). Se elimina al salir de pantalla o al colisionar. |
-| `Formation` | — | Controlador (no visible) que mueve el grupo de enemigos, gestiona disparos enemigos y detecta fin de oleada. |
+| `Formation` | — | Controlador (no visible) que mueve el grupo de enemigos, gestiona disparos enemigos y detecta fin de oleada. Su movimiento es una función pura del tiempo de oleada (§4.1). |
 | `PowerUp` | 16 × 16 | Recogible que cae al destruir un enemigo con 6 % de probabilidad. El jefe derrotado otorga dos potenciadores distintos de inmediato; la fase bonus puede soltar Sobrecarga, que duplica el daño temporalmente. |
 | `Hazards` | — | Alterna eventos temporales de asteroides, campo magnético y oscuridad. |
 | `BonusStage` | — | Oleadas inofensivas de naves rápidas durante 15 s después de cada cinco rondas completadas. |
@@ -77,6 +77,14 @@ El juego encadena **oleadas** (waves) indefinidamente. Cada oleada normal es má
 - Los valores viven en `src/core/constants.js` (`STAR_LAYERS`).
 
 ## 4. Fórmulas de dificultad (oleada `w`, empieza en 1)
+
+### 4.1 Movimiento de la formación (v1.5)
+
+El desplazamiento de la rejilla es una **función pura** del tiempo `t` desde el inicio de la oleada (`formationOffset`, `src/core/formationPath.js`), no una integración frame a frame: así dos clientes coop con el mismo `t` colocan igual a todos los enemigos (`multiplayer_sync.md` §3).
+
+- La rejilla parte centrada. Recorre `range / 2` hasta la primera pared y, a partir de ahí, `range` entre paredes; en cada rebote baja `FORMATION_STEP_DOWN` (14 px).
+- `range = ancho − 2·FORMATION_SIDE_MARGIN − anchoRejilla` (108 px con 6 columnas en 360 px) y el recorrido usa siempre los límites de la **rejilla completa**: matar enemigos de los extremos ya no adelanta el rebote.
+- La velocidad es `speed(w)` de la tabla siguiente. Los kamikazes en picado salen de la rejilla y se mueven por su cuenta; abandonan la formación cuando `t ≥ 4 + (id mod 4)·1,2 s`.
 
 | Parámetro | Fórmula | Tope |
 |---|---|---|

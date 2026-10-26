@@ -19,7 +19,8 @@ export class Enemy {
     this.type = type;
     this.shieldTime = 0;
     this.diving = false;
-    this.diveTimer = type === 'kamikaze' ? 4 + (id % 4) * 1.2 : 0;
+    /** Segundos de oleada a partir de los cuales el kamikaze abandona la formación. */
+    this.diveAt = type === 'kamikaze' ? 4 + (id % 4) * 1.2 : Infinity;
     this.dead = false;
   }
 

@@ -1,5 +1,6 @@
 import { C } from '../core/constants.js';
 import { waveParams } from '../core/difficulty.js';
+import { formationOffset, formationRange } from '../core/formationPath.js';
 import { Bullet } from './Bullet.js';
 import { Enemy } from './Enemy.js';
 
@@ -11,8 +12,10 @@ export class Formation {
   /**
    * @param {import('./Game.js').Game} game
    * @param {number} wave Número de oleada (empieza en 1).
+   * @param {{ startElapsed?: number }} [options] `startElapsed`: tiempo de juego en que empezó la
+   *   oleada. En coop lo fija el host (evento `phase`); por defecto es el instante actual.
    */
-  constructor(game, wave) {
+  constructor(game, wave, { startElapsed = game.elapsed } = {}) {
     this.game = game;
     this.wave = wave;
     this.params = waveParams(wave);
@@ -20,6 +23,21 @@ export class Formation {
     this.enemies = [];
     this.direction = 1;
     this.supportTimer = 1.5;
+    /** Segundos desde que empezó la oleada (con la ventaja de un inicio anunciado por el host). */
+    this.time = Math.max(0, game.elapsed - startElapsed);
+    this.path = {
+      speed: this.params.speed,
+      range: formationRange({
+        width: game.width,
+        margin: C.FORMATION_SIDE_MARGIN,
+        columns: this.params.columns,
+        spacingX: C.ENEMY_SPACING_X,
+        enemyWidth: C.ENEMY_WIDTH,
+      }),
+      stepDown: C.FORMATION_STEP_DOWN,
+    };
+    this.appliedDx = 0;
+    this.appliedDy = 0;
 
     const { rows, columns } = this.params;
     const totalWidth = (columns - 1) * C.ENEMY_SPACING_X;
@@ -46,6 +64,7 @@ export class Formation {
     }
 
     this.shootTimer = this.#nextShootDelay();
+    this.#follow(this.enemies);
   }
 
   /** Variación de ±50 % alrededor del intervalo medio. */
@@ -60,16 +79,14 @@ export class Formation {
 
   /** @param {number} dt */
   update(dt) {
+    this.time += dt;
     const alive = this.alive;
     if (alive.length === 0) return;
 
     for (const enemy of alive) {
       enemy.shieldTime = Math.max(0, enemy.shieldTime - dt);
       if (enemy.type !== 'kamikaze') continue;
-      if (!enemy.diving) {
-        enemy.diveTimer -= dt;
-        if (enemy.diveTimer <= 0) enemy.diving = true;
-      }
+      if (!enemy.diving && this.time >= enemy.diveAt) enemy.diving = true;
       if (enemy.diving) {
         const targets = [this.game.player];
         if (this.game.remotePlayer && !this.game.remotePlayer.eliminated && !this.game.remotePlayer.downedTimer) {
@@ -85,7 +102,7 @@ export class Formation {
     }
 
     const formationAlive = alive.filter((enemy) => !enemy.diving);
-    this.#move(formationAlive, dt);
+    this.#follow(formationAlive);
     this.#shieldNearbyEnemies(formationAlive, dt);
     this.#shoot(alive, dt);
   }
@@ -107,26 +124,21 @@ export class Formation {
       });
   }
 
-  #move(alive, dt) {
-    const dx = this.direction * this.params.speed * dt;
-    const halfW = C.ENEMY_WIDTH / 2;
-    const margin = C.FORMATION_SIDE_MARGIN;
-
-    let minX = Infinity;
-    let maxX = -Infinity;
-    for (const e of alive) {
-      minX = Math.min(minX, e.x);
-      maxX = Math.max(maxX, e.x);
-    }
-
-    const hitsRight = this.direction > 0 && maxX + halfW + dx > this.game.width - margin;
-    const hitsLeft = this.direction < 0 && minX - halfW + dx < margin;
-
-    if (hitsRight || hitsLeft) {
-      this.direction = -this.direction;
-      for (const e of alive) e.y += C.FORMATION_STEP_DOWN;
-    } else {
-      for (const e of alive) e.x += dx;
+  /**
+   * Coloca la formación según su posición analítica en el instante `time`. Se aplica la
+   * diferencia con lo ya aplicado (no se reescriben posiciones absolutas) para respetar los
+   * desplazamientos externos; los kamikazes en picado quedan fuera.
+   */
+  #follow(members) {
+    const { dx, dy, direction } = formationOffset(this.path, this.time);
+    const stepX = dx - this.appliedDx;
+    const stepY = dy - this.appliedDy;
+    this.appliedDx = dx;
+    this.appliedDy = dy;
+    this.direction = direction;
+    for (const enemy of members) {
+      enemy.x += stepX;
+      enemy.y += stepY;
     }
   }
 
