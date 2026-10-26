@@ -1,5 +1,6 @@
 import './style.css';
 import { C } from './core/constants.js';
+import { mulberry32 } from './core/prng.js';
 import { App } from '@capacitor/app';
 import { Haptics } from '@capacitor/haptics';
 import { createEffects } from './effects.js';
@@ -35,17 +36,6 @@ const bestScoreStore = createBestScoreStore();
 const hasFirebaseConfig = Object.keys(import.meta.glob('./net/firebaseConfig.js')).length > 0;
 let cancelPendingResults = () => {};
 let openPauseMenu = () => {};
-
-function seededRandom(seed) {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let value = state;
-    value = Math.imul(value ^ (value >>> 15), value | 1);
-    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
-    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 async function saveSoloScore(result) {
   const { scoreRepository } = await import('./net/firebase.js');
@@ -134,8 +124,8 @@ const router = createScreenRouter({
           hostUid: coop.hostUid,
           onError: (error) => console.error('Co-op synchronization failed:', error),
         });
-        game.random = seededRandom(coop.seed);
-        game.hazardsRandom = seededRandom(coop.seed ^ 0x9e3779b9);
+        game.random = mulberry32(coop.seed);
+        game.hazardsRandom = mulberry32(coop.seed ^ 0x9e3779b9);
       } else {
         sync = new NoopSyncGateway();
         game.random = Math.random;
