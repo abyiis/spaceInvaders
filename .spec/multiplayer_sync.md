@@ -1,89 +1,113 @@
-# multiplayer_sync.md — Modelo de sincronización cooperativa
+# multiplayer_sync.md — Modelo de sincronización cooperativo
 
-> Estado: **v1.0**. Aplica solo al modo coop (2 jugadores, extensible a 4).
+> Estado: **v1.1**. Aplica solo al modo coop (2 jugadores, extensible a 4). La v1.1 describe el modelo realmente implementado (ver §10, ADR-13) y sustituye al nodo `state` de la v1.0 por eventos del host.
 
 ## 1. Principios
 
 1. **Mínimo tráfico**: se sincroniza lo que no se puede derivar; lo demás se simula localmente.
-2. **Host autoritativo**: un jugador (el creador de la sala) decide vidas, puntaje, oleada y fin de partida.
-3. **Cada cliente es dueño de su nave**: solo él escribe su posición.
-4. **Tolerancia a desviaciones pequeñas**: es cooperativo; una diferencia visual de ~100 ms no cambia el resultado.
+2. **Host autoritativo**: un jugador (el creador de la sala, o quien lo releva, §5) decide el fin de cada oleada, la oleada siguiente, las vidas compartidas y el fin de partida, y publica el puntaje oficial.
+3. **Cada cliente es dueño de su nave**: solo él escribe su posición y detecta los impactos que recibe.
+4. **Simulación atada al reloj del servidor**: ambos clientes avanzan la partida hasta el mismo tiempo de juego `t`, en pasos fijos, de modo que lo derivable de `(semilla, oleada, t)` coincide sin enviar nada.
+5. **Tolerancia a desviaciones pequeñas**: es cooperativo; una diferencia visual de ~100 ms no cambia el resultado.
 
 ## 2. Reloj compartido
 
-- Cada cliente lee `.info/serverTimeOffset` y calcula `serverNow = Date.now() + offset`.
-- `meta/startAt` (ms, hora del servidor) es el instante cero de la partida. Todos arrancan cuando `serverNow >= startAt`.
-- `t` (tiempo de juego en segundos) = `(serverNow - startAt) / 1000`.
+- Cada cliente escucha `.info/serverTimeOffset` y calcula `serverNow = Date.now() + offset`.
+- Al iniciar, el host fija `meta/startAt = serverNow + 3000` (ms, hora del servidor) y `status = playing`. Es el instante cero de la partida.
+- Mientras `serverNow < startAt` la pantalla de juego muestra la **cuenta atrás 3-2-1** y la simulación no avanza.
+- `t` (tiempo de juego, s) = `(serverNow - startAt) / 1000`. Cada frame el juego avanza en **pasos fijos de 1/60 s** (el último paso es el resto, ≤ 1/30 s) hasta que `elapsed` alcanza `t`; con un tope de 30 pasos por frame para no bloquear un teléfono lento, que seguirá poniéndose al día en los frames siguientes. En coop el `dt` del `requestAnimationFrame` se ignora.
+- La lógica de tiempo es pura (`src/core/gameClock.js`) y se prueba sin red.
 
 ## 3. Qué se simula localmente (determinista)
 
-La **formación enemiga** es una función de `(seed, wave, t)`:
+Aleatoriedad: **todo lo sincronizado usa el PRNG propio** `mulberry32` de `src/core/prng.js`; `Math.random()` solo se usa en lo que cada jugador vive por separado (caída de potenciadores, recompensa del jefe, estrellas). Cada flujo tiene su propia secuencia, derivada con `deriveSeed(seed, sal)`, para que lo que consume un cliente no altere a otro:
 
-- Posición de cada enemigo = función pura del tiempo desde el inicio de su oleada (movimiento lateral + escalones calculados, no integrados frame a frame).
-- Disparos enemigos: generador pseudoaleatorio con `seed + wave` produce la secuencia `(tiempo, enemigoId)`. Todos los clientes generan la misma secuencia.
-- Requisito de implementación: usar un PRNG propio (p. ej. `mulberry32`) en `src/core/prng.js`. **No** usar `Math.random()` para lo sincronizado.
-- El movimiento debe calcularse con el tiempo del servidor, no con `dt` acumulado, para evitar deriva.
+| Flujo | Sal | Consumidor |
+|---|---|---|
+| Disparos de la formación de la oleada `w` | `w` | `Formation` |
+| Naves de la fase bonus de la oleada `w` | `0x1000 + w` | `BonusStage` |
+| Peligros ambientales | `0x4000` | `Hazards` |
+
+**Formación enemiga.** La posición de un enemigo es una función pura del tiempo desde el inicio de su oleada (`formationOffset`, en `src/core/formationPath.js`): barrido lateral + escalón vertical en cada rebote, calculados con los **límites de la rejilla completa** (no dependen de qué enemigos siguen vivos). El tiempo de la oleada es `elapsed - waveStartT`; `waveStartT` es el `t` del evento `phase` del host (§4.3). Los kamikazes abandonan la formación en un instante determinista y después persiguen localmente a la nave más cercana (diferencias visuales pequeñas; el daño lo decide cada víctima).
+
+**Disparos de la formación.** `createShotSchedule({ seed, wave, interval })` produce la secuencia `(tiempo, índice de rejilla)`: el intervalo varía ±50 % y, si el enemigo elegido ya murió, se toma el siguiente vivo de la rejilla. Todos los clientes generan la misma secuencia, por lo que **no hay eventos de disparo enemigo de la formación**. Los disparos del **jefe** sí los emite el host (`enemy-shot`) porque su patrón apunta a la nave del host.
 
 ## 4. Qué se sincroniza
 
 ### 4.1 Estado continuo — posición del jugador
 - Ruta: `rooms/{code}/players/{uid}`.
-- Campos: `x` (normalizado 0..1), `ts` (ms servidor), `connected`.
-- Frecuencia: **10 Hz** y **solo si `x` cambió** más de 0,002. Usar `update()` parcial, nunca reescribir el nodo completo.
-- Receptor: interpola entre los dos últimos estados con 100 ms de retraso de render (buffer de interpolación).
+- Campos: `x` (normalizado 0..1), `ts` (ms del servidor, `ServerValue.TIMESTAMP`), `connected`.
+- Frecuencia: **10 Hz** y **solo si `x` cambió** más de 0,002 desde el último valor publicado (`createPositionPublisher`, pura). Se usa `update()` parcial, nunca reescribir el nodo.
+- Receptor: guarda las muestras `(ts, x)` en un buffer y dibuja la nave del compañero **100 ms atrás** del reloj del servidor, interpolando entre las dos muestras que la rodean (`createInterpolationBuffer`, puro). Si el buffer se queda sin futuro mantiene la última posición (no extrapola).
 
 ### 4.2 Eventos discretos
-- Ruta: `rooms/{code}/events/{pushId}` (push IDs ordenados por tiempo).
-- Tipos:
+- Ruta: `rooms/{code}/events/{pushId}` (los push IDs dan un orden total por tiempo).
+- Cada cliente ignora sus propios eventos y aplica los del compañero en orden.
 
 | `type` | Emisor | Campos | Significado |
 |---|---|---|---|
-| `shot` | jugador | `uid, t, x` | Disparó en el tiempo de juego `t` desde `x`. Solo cosmético para el compañero (la bala se simula localmente). |
-| `kill` | jugador | `uid, wave, enemyId, t` | Reclama haber destruido ese enemigo. |
-| `hit` | jugador | `uid, t` | Su nave recibió una bala enemiga. |
+| `shot` | jugador | `t, x, vx, damage` | Disparó. El compañero simula la bala localmente (así ve las mismas colisiones y la sinergia de disparos). |
+| `enemy-shot` | host | `t, x, y, vx, vy, color?` | Disparo del jefe. |
+| `kill` | jugador | `wave, enemyId, t, powerUpType?` | Reclama haber destruido ese enemigo. |
+| `bonus-kill` | jugador | `wave, shipId, multiplier, t, powerUpType?` | Reclama una nave de la fase bonus. |
+| `hit` | jugador | `t` | Su nave cayó (5 s de emergencia). |
+| `revive` | jugador | `targetUid, t` | Rescató a su compañero y gastó una vida compartida. |
+| `life-loss` | jugador | `t, consumedLife` | Su emergencia venció: nave eliminada. |
+| `phase` | host | `kind, wave, t, score, lives, bossDefeated?` | Transición de fase (§4.3). |
+| `state` | host | `t, score, lives, wave` | Vidas compartidas oficiales tras un rescate o una eliminación. |
+| `game-over` | host | `t, score, wave` | Fin de la partida. |
 
-- El cliente **no** descarga eventos antiguos: escucha con `limitToLast(1)` / `startAt(lastKey)` y descarta eventos con `t` anterior a la oleada actual.
+### 4.3 Autoridad del host
+No hay nodo `state`: el estado oficial viaja en los eventos del host, que heredan el orden de los push IDs (un `phase` llega siempre después de los `kill` que lo causaron).
 
-### 4.3 Estado autoritativo (solo escribe el host)
-- Ruta: `rooms/{code}/state`.
-- Campos: `wave`, `score`, `status` (`lobby|playing|finished`), `lives/{uid}`, `killed/{wave}/{enemyId}: true`.
-- El host procesa los eventos:
-  - `kill`: si `killed/{wave}/{enemyId}` no existe → lo marca, suma 10 al `score`. **El primero en llegar gana**; reclamos duplicados se ignoran.
-  - `hit`: resta una vida a `lives/{uid}` (respetando invulnerabilidad de 1,5 s).
-  - Si no quedan enemigos sin marcar en la oleada → incrementa `wave` y suma bonus.
-  - Si ambos sin vidas o formación alcanza la línea → `status = finished`.
-- Los clientes **eliminan un enemigo visualmente** cuando ven `killed/{wave}/{enemyId}` (y de forma optimista en su propio disparo).
+- **Reclamos de baja (`kill`, `bonus-kill`).** Quien dispara destruye al enemigo de forma optimista y emite el reclamo. El host mantiene un libro (`createHostLedger`, puro): **el primero en llegar gana**, los duplicados se ignoran y no suman puntaje.
+- **Fin de oleada.** Solo el host detecta que no quedan enemigos (o que el jefe/fase bonus terminó), suma el bonus, decide el siguiente paso (jefe cada 3 oleadas, fase bonus cada 5, si no oleada normal) y emite `phase { kind: 'wave' | 'boss' | 'bonus', wave, t, score, lives }`. Los clientes no inician transiciones: esperan el evento, adoptan `score` y `lives` oficiales y arrancan la fase con `waveStartT = t`. Si el jefe cae, `phase` lleva `bossDefeated: true` y cada cliente aplica su recompensa.
+- **Vidas.** Los eventos `hit`, `revive` y `life-loss` los aplican ambos clientes; tras un rescate o una eliminación el host publica `state` con las vidas oficiales y el compañero las adopta. Solo se puede rescatar si queda al menos una vida.
+- **Fin de partida.** El host decide (ambos pilotos eliminados o la formación alcanza la línea), cierra la sala (`meta/status = finished`) y emite `game-over { score, wave }`; el compañero muestra esos valores en Resultados.
+- Los clientes **eliminan un enemigo visualmente** al ver el `kill` (y de forma optimista en su propio disparo).
 
 ## 5. Conexión y presencia
 
-- Al unirse: `onDisconnect().update({connected:false})` sobre `players/{uid}`.
-- Desconexión del compañero: se muestra aviso; si no vuelve en 10 s, su nave se desactiva.
-- **Desconexión del host**: el otro jugador detecta `connected:false` del host y asume el rol (`meta/hostUid = su uid`) leyendo el último `state`. Si no es posible, `status = finished` y se guarda el puntaje.
-- Si un cliente tarda > 5 s sin recibir cambios de `players/{peer}`, se muestra “conexión inestable”.
+- Al unirse: `onDisconnect().update({connected:false})` sobre `players/{uid}`; al reconectar se vuelve a `true`.
+- Cada cliente sigue `meta` (`hostUid`, `status`), `players` y `.info/connected` mediante un `ConnectionMonitor` puro que produce un aviso en pantalla:
+  - propia conexión caída → «Conexión inestable»;
+  - compañero con `connected:false` → «Compañero desconectado»;
+  - si no vuelve en **10 s** su nave se desactiva («Compañero fuera de la partida») y el que queda sigue jugando.
+- **Desconexión del host:** el otro jugador (el de menor `uid` entre los conectados) lo releva escribiendo `meta/hostUid = su uid`. Las reglas solo lo permiten si el host actual figura con `connected:false`. Desde ese instante es el host: decide fases y fin de partida a partir de su estado local y emite los eventos del host.
+- No hay reconexión a mitad de partida tras cerrar la app (fuera de alcance).
 
 ## 6. Ciclo de vida de una sala
 
 1. Host: crea `rooms/{code}` con `meta` (hostUid, seed, status=lobby, createdAt) y su nodo en `players`.
 2. Invitado: introduce el código → lee `meta` → se agrega a `players/{uid}`.
 3. Ambos marcan `ready`; el host fija `meta/startAt = serverNow + 3000` y `status = playing`.
-4. Juego (sección 3-4).
-5. Fin: host escribe `status = finished`; ambos clientes guardan el puntaje en Firestore (`leaderboard`) **solo el host**, una vez.
-6. Limpieza: el host borra `rooms/{code}` al salir de los resultados; salas con `createdAt` > 24 h pueden eliminarse manualmente (no hay Cloud Functions).
+4. Juego (§3-4), con cuenta atrás hasta `startAt`.
+5. Fin: el host escribe `status = finished` y guarda el puntaje en Firestore (`leaderboard`, `mode: 'coop'`, `players`) **solo el host**, una vez.
+6. Limpieza: el host borra `rooms/{code}` al salir de Resultados o al abandonar la partida si ya no queda nadie conectado; salas con `createdAt` > 24 h pueden eliminarse manualmente (no hay Cloud Functions).
+7. «Salir» a mitad de partida (tarea 3.16): confirmación «¿Salir de la partida?»; abandonar equivale a desconectarse (§5).
 
 ## 7. Presupuesto de tráfico (2 jugadores, 10 min)
 
 | Flujo | Cálculo | Total aprox. |
 |---|---|---|
-| Posiciones | 2 jug × 10 Hz × ~80 B × 600 s | ~1 MB |
+| Posiciones | 2 jug × 10 Hz × ~80 B × 600 s (solo si se mueven) | ≤ 1 MB |
 | Eventos shot | 2 jug × ~3/s × ~90 B × 600 s | ~0,3 MB |
-| Eventos kill/hit + estado | ~0,5 /s | ~0,1 MB |
+| Eventos kill/hit/phase/state + disparos del jefe | ~0,5 /s | ~0,1 MB |
 | **Total** | | **~1,5 MB por partida** |
 
-Muy por debajo de los límites del plan Spark; el riesgo real son los **bucles de escritura por frame** y escuchar nodos grandes (ver `firebase_schema.md`).
+Muy por debajo de los límites del plan Spark; el riesgo real son los **bucles de escritura por frame** y escuchar nodos grandes (ver `firebase_schema.md`). El contador de tráfico de `?debug` (tarea 4.3) mide el real.
 
 ## 8. Pruebas esperadas
 
-- Unitarias: PRNG determinista (misma semilla → misma secuencia), `formationPositionAt(seed, wave, t)` idéntica en dos instancias.
-- Unitarias: lógica del host con eventos duplicados de `kill` (solo suma una vez).
-- Manual: dos dispositivos reales con redes distintas (Wi‑Fi y datos móviles).
-- Manual: cortar la red de uno de los jugadores 5 s y restablecerla.
+- Unitarias: PRNG determinista (misma semilla → misma secuencia); `formationOffset` y `createShotSchedule` idénticas en dos instancias e independientes de las bajas.
+- Unitarias: libro del host con reclamos duplicados de `kill` (solo suma una vez); reloj compartido; publicador de posición; buffer de interpolación; monitor de conexión.
+- Integración en Node: dos `Game` conectados por un repositorio de salas en memoria con el mismo reloj avanzan oleadas, puntaje y fin de partida en sincronía.
+- Manual (`docs/pruebas-coop.md`): dos dispositivos reales con redes distintas (Wi‑Fi y datos móviles); cortar la red de uno de los jugadores 5 s y restablecerla.
+
+## 9. Fuera de alcance
+
+Reconexión tras cierre de la app, anti-trampas (un cliente malicioso puede falsear `kill`; ver `firebase_schema.md`), más de 2 jugadores en el MVP.
+
+## 10. Decisiones
+
+**ADR-13 — Estado autoritativo en eventos del host, no en un nodo `state`.** Los eventos ya tienen orden total y los consumen ambos clientes con una sola suscripción; un nodo `state` obligaría a otra suscripción y a coordinar el orden entre `events` y `state` (una oleada podría anunciarse antes que la última baja). Se descarta reescribir la formación como función pura de `(semilla, oleada, t)` para jefes, kamikazes y peligros: se mantiene la simulación local con el reloj bloqueado al servidor y se sincronizan las decisiones del host.
