@@ -121,7 +121,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 
 Spec: `.spec/visual_feedback.md` v1.0. Todo en el canvas, sin red; las fases (franjas, jefe, entrada) se calculan con el tiempo de juego para que en coop se vean a la vez.
 
-- [ ] 5.1 `P1 D2` Franja de oleada: 0,5 s en el centro con «OLEADA N», animada de izquierda a derecha `[vf]`
+- [x] 5.1 `P1 D2` Franja de oleada: 0,5 s en el centro con «OLEADA N», animada de izquierda a derecha `[vf]`
 - [ ] 5.2 `P1 D3` Animación de entrada de las naves enemigas (desde arriba, escalonada, sin impactos mientras entran) `[vf]`
 - [ ] 5.3 `P1 D3` Aviso del jefe: 2 s de icono de advertencia intermitente antes de que aparezca; coherente en coop `[vf][sync]`
 - [ ] 5.4 `P1 D2` Pila de textos de estado sin superposiciones y barra del jefe debajo `[vf]`

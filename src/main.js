@@ -98,6 +98,7 @@ const game = new Game({
   },
 });
 game.pause();
+game.reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
 // Los WebViews bloquean el audio hasta un gesto del usuario. Se prueba en varios eventos porque
 // en pantallas táctiles solo `pointerup` cuenta como activación; `unlock()` es idempotente.

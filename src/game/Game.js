@@ -10,6 +10,7 @@ import { Player } from './Player.js';
 import { Starfield } from './Starfield.js';
 import { asteroidOverlapsBox, Hazards } from './Hazards.js';
 import { NoopEffects } from './Effects.js';
+import { drawBanner, VISUALS } from './visuals.js';
 import { NoopSyncGateway } from './SyncGateway.js';
 import {
   POWER_UP_DROP_CHANCE,
@@ -116,6 +117,8 @@ export class Game {
     this.onGameOver = onGameOver;
     this.starfield = new Starfield({ width, height, random: starsRandom });
     this.hazardsRandom = hazardsRandom;
+    /** Sin desplazamientos ni temblores (`prefers-reduced-motion`); lo fija `main.js`. */
+    this.reducedMotion = false;
     this.startNewGame();
     this.#registerSyncHandlers();
   }
@@ -138,6 +141,8 @@ export class Game {
     this.officialKills = null;
     /** @type {{ text: string, remaining: number } | null} */
     this.notice = null;
+    /** Franja central animada (oleada, fase bonus); `null` si no hay. */
+    this.banner = null;
     /** Aviso de conexión del coop (`null` si todo va bien). */
     this.connection = null;
     this.#assignSeed();
@@ -207,6 +212,7 @@ export class Game {
   /** @param {{ startElapsed?: number }} [options] Tiempo de juego en que arranca la oleada. */
   #nextWave({ startElapsed = this.elapsed } = {}) {
     this.wave += 1;
+    this.showBanner(`OLEADA ${this.wave}`, 'wave');
     this.ledger.startWave(this.wave);
     this.formation = new Formation(this, this.wave, { startElapsed });
   }
@@ -300,6 +306,10 @@ export class Game {
     if (this.notice) {
       this.notice.remaining -= dt;
       if (this.notice.remaining <= 0) this.notice = null;
+    }
+    if (this.banner) {
+      this.banner.age += dt;
+      if (this.banner.age >= VISUALS.BANNER_DURATION) this.banner = null;
     }
     this.#updateConnection();
     if (this.isGameOver) return;
@@ -419,6 +429,11 @@ export class Game {
       this.remotePlayer.revivePending = false;
       this.#checkCoopGameOver();
     }
+  }
+
+  /** Lanza la franja central de 0,5 s; una nueva sustituye a la anterior. */
+  showBanner(text, kind) {
+    this.banner = { text, kind, age: 0 };
   }
 
   /** Mensaje temporal al pie de la pantalla. */
@@ -972,6 +987,13 @@ export class Game {
 
     this.#renderHud(ctx);
     this.#renderNotice(ctx);
+    if (this.banner) {
+      drawBanner(ctx, this.banner, this.banner.age / VISUALS.BANNER_DURATION, {
+        width: this.width,
+        height: this.height,
+        reducedMotion: this.reducedMotion,
+      });
+    }
     if (this.boss) this.boss.renderHealthBar(ctx, this.width);
     if (this.syncingClock || this.countdown > 0) this.#renderCountdown(ctx);
     if (this.isGameOver) this.#renderGameOver(ctx);
