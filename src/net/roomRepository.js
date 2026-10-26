@@ -311,6 +311,34 @@ export function createRoomRepository({
       );
     },
 
+    /**
+     * Relevo de host: pasa `meta/hostUid` de `previousHostUid` al jugador autenticado. Las reglas
+     * solo lo permiten si el host anterior figura desconectado. Devuelve `true` si lo consiguió.
+     */
+    async claimHost(inputCode, previousHostUid) {
+      const code = typeof inputCode === 'string' ? inputCode.trim().toUpperCase() : '';
+      if (
+        code.length !== ROOM_CODE_LENGTH
+        || !Array.from(code).every((character) => ROOM_CODE_CHARACTERS.includes(character))
+      ) {
+        throw new Error('Room code must contain exactly five valid characters.');
+      }
+      if (typeof previousHostUid !== 'string' || previousHostUid.length === 0) {
+        throw new TypeError('The previous host uid is required to claim the host role.');
+      }
+      const uid = await authService.signIn();
+      if (typeof uid !== 'string' || uid.length === 0) {
+        throw new Error('Cannot claim the host role without an authenticated user.');
+      }
+      const result = await databaseApi.runTransaction(
+        databaseApi.ref(rtdb, `rooms/${code}/meta/hostUid`),
+        // `null` es un valor local aún desconocido: se propone el cambio y el servidor lo valida.
+        (currentUid) => (currentUid === previousHostUid || currentUid === null ? uid : undefined),
+        { applyLocally: false },
+      );
+      return result.committed;
+    },
+
     async publishPlayerX(inputCode, x) {
       const code = typeof inputCode === 'string' ? inputCode.trim().toUpperCase() : '';
       if (

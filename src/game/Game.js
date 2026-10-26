@@ -134,6 +134,8 @@ export class Game {
     this.elapsed = 0;
     this.isGameOver = false;
     this.paused = false;
+    /** @type {{ text: string, remaining: number } | null} */
+    this.notice = null;
     this.#assignSeed();
     /** Bajas y puntos por jugador; el del host es el oficial (`multiplayer_sync.md` §4.3). */
     this.ledger = createHostLedger();
@@ -194,6 +196,7 @@ export class Game {
   #registerSyncHandlers() {
     this.sync.setHandlers?.({
       onEvent: (_eventId, event) => this.#applyRemoteEvent(event),
+      onHostChange: () => this.#handleHostChange(),
     });
   }
 
@@ -294,6 +297,10 @@ export class Game {
   /** Avanza la simulación `dt` segundos. */
   #step(dt) {
     this.#updateKillEffects(dt);
+    if (this.notice) {
+      this.notice.remaining -= dt;
+      if (this.notice.remaining <= 0) this.notice = null;
+    }
     if (this.isGameOver) return;
 
     this.elapsed += dt;
@@ -388,6 +395,18 @@ export class Game {
   /** `true` si este cliente decide la partida: siempre en solo, el host en coop. */
   get isAuthority() {
     return !this.sync.isCoop || this.sync.isHost === true;
+  }
+
+  /** El host cambió (relevo): si ahora me toca a mí, asumo las decisiones de la partida. */
+  #handleHostChange() {
+    if (!this.sync.isCoop || !this.isAuthority) return;
+    this.showNotice('Ahora eres el host de la partida', 4);
+    this.#checkCoopGameOver();
+  }
+
+  /** Mensaje temporal al pie de la pantalla. */
+  showNotice(text, seconds = 3) {
+    this.notice = { text, remaining: seconds };
   }
 
   /** Los eventos del host solo valen si los firma el host actual. */
@@ -914,6 +933,7 @@ export class Game {
     this.#renderSynergyEffects(ctx);
 
     this.#renderHud(ctx);
+    this.#renderNotice(ctx);
     if (this.boss) this.boss.renderHealthBar(ctx, this.width);
     if (this.syncingClock || this.countdown > 0) this.#renderCountdown(ctx);
     if (this.isGameOver) this.#renderGameOver(ctx);
@@ -1244,6 +1264,15 @@ export class Game {
         );
       });
     }
+  }
+
+  #renderNotice(ctx) {
+    if (!this.notice) return;
+    ctx.fillStyle = '#ffd274';
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(this.notice.text, this.width / 2, this.height - 14);
   }
 
   #renderCountdown(ctx) {

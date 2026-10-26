@@ -20,7 +20,8 @@
  * @property {string | null} uid Identificador del jugador local.
  * @property {string | null} remoteUid Identificador del compañero.
  * @property {number | null} remoteX Posición horizontal del compañero normalizada.
- * @property {(handlers: object) => void} setHandlers Registra receptores de eventos remotos.
+ * @property {(handlers: { onEvent?: (id: string, event: object) => void, onHostChange?: (hostUid: string) => void }) => void} setHandlers
+ *   Registra receptores de eventos remotos y del relevo de host.
  * @property {(targetUid: string, t: number) => void} emitRevive Publica un rescate cooperativo.
  * @property {(t: number, consumedLife: boolean) => void} emitLifeLoss Publica una eliminación definitiva.
  * @property {boolean} isHost `true` si este jugador es el host (autoridad de la partida).

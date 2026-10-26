@@ -470,6 +470,28 @@ test('watchPresence registers disconnect state, marks connected, and clears pres
   assert.deepEqual(errors, []);
 });
 
+test('claimHost transfiere meta/hostUid solo desde el host anterior y avisa si no lo consigue', async () => {
+  const dependencies = createDependencies();
+  const seen = [];
+  dependencies.databaseApi.runTransaction = async (databaseRef, update, options) => {
+    seen.push({ path: databaseRef.path, options, current: update('old-host'), unknown: update(null), other: update('someone') });
+    return { committed: true };
+  };
+  const repository = createRoomRepository(dependencies);
+
+  assert.equal(await repository.claimHost('aaaaa', 'old-host'), true);
+  assert.equal(seen[0].path, 'rooms/AAAAA/meta/hostUid');
+  assert.equal(seen[0].current, 'host-user');
+  assert.equal(seen[0].unknown, 'host-user');
+  assert.equal(seen[0].other, undefined);
+  assert.deepEqual(seen[0].options, { applyLocally: false });
+
+  dependencies.databaseApi.runTransaction = async () => ({ committed: false });
+  assert.equal(await repository.claimHost('AAAAA', 'old-host'), false);
+  await assert.rejects(repository.claimHost('bad', 'old-host'), /five valid characters/);
+  await assert.rejects(repository.claimHost('AAAAA', ''), /previous host uid/);
+});
+
 test('watchServerOffset entrega el desfase del servidor y se cancela', () => {
   const dependencies = createDependencies();
   const repository = createRoomRepository(dependencies);

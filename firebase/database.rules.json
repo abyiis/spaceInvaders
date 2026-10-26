@@ -7,7 +7,7 @@
         ".read": "auth != null",
 
         "meta": {
-          ".write": "auth != null && (!data.exists() || data.child('hostUid').val() === auth.uid)",
+          ".write": "auth != null && (!data.exists() || data.child('hostUid').val() === auth.uid || (root.child('rooms').child($roomId).child('players').child(data.child('hostUid').val()).child('connected').val() === false && root.child('rooms').child($roomId).child('players').child(auth.uid).exists() && newData.child('hostUid').val() === auth.uid && newData.child('seed').val() === data.child('seed').val()))",
           ".validate": "newData.hasChildren(['hostUid', 'seed', 'status', 'createdAt'])",
           "hostUid": { ".validate": "newData.isString()" },
           "seed": { ".validate": "newData.isNumber()" },

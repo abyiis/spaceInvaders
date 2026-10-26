@@ -52,7 +52,7 @@ rooms/
 |---|---|---|
 | `rooms` (listado) | ❌ nunca | ❌ |
 | `rooms/{code}` | usuario autenticado (el código actúa como secreto) | — |
-| `rooms/{code}/meta` | autenticado | crear: cualquier autenticado si no existe; modificar: solo `hostUid` |
+| `rooms/{code}/meta` | autenticado | crear: cualquier autenticado si no existe; modificar: solo `hostUid`, o un jugador de la sala que pase a ser `hostUid` mientras el host figura con `connected: false` (relevo; la semilla no puede cambiar) |
 | `rooms/{code}/players/{uid}` | autenticado | solo `auth.uid == uid` |
 | `rooms/{code}/state` | autenticado | solo `meta/hostUid` |
 | `rooms/{code}/events/{id}` | autenticado | autenticado con `uid == auth.uid` (solo crear, no editar); los tipos `state`, `phase`, `game-over` y `enemy-shot` solo los puede firmar `meta/hostUid` |

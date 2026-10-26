@@ -218,6 +218,45 @@ describe('Firebase security rules', { skip: !emulatorAvailable }, () => {
     ));
   });
 
+  it('Realtime Database permite relevar al host solo si figura desconectado y quien lo releva está en la sala', async () => {
+    const hostDatabase = testEnvironment.authenticatedContext('host').database();
+    const guestDatabase = testEnvironment.authenticatedContext('guest').database();
+    const strangerDatabase = testEnvironment.authenticatedContext('stranger').database();
+    await setRtdb(rtdbRef(hostDatabase, 'rooms/ABCDE/meta'), {
+      hostUid: 'host',
+      seed: 123,
+      status: 'playing',
+      createdAt: 1,
+      startAt: 5,
+      maxPlayers: 2,
+    });
+    const player = { name: 'P', x: 0.5, ts: 1, ready: true, connected: true };
+    await setRtdb(rtdbRef(hostDatabase, 'rooms/ABCDE/players/host'), player);
+    await setRtdb(rtdbRef(guestDatabase, 'rooms/ABCDE/players/guest'), { ...player, name: 'G' });
+
+    const guestRepository = createRoomRepository({
+      rtdb: guestDatabase,
+      authService: { signIn: async () => 'guest' },
+    });
+    assert.equal(await guestRepository.claimHost('ABCDE', 'host').catch(() => false), false);
+    assert.equal((await getRtdb(rtdbRef(hostDatabase, 'rooms/ABCDE/meta/hostUid'))).val(), 'host');
+
+    await updateRtdb(rtdbRef(hostDatabase, 'rooms/ABCDE/players/host'), { connected: false });
+    await assertFails(updateRtdb(rtdbRef(strangerDatabase, 'rooms/ABCDE/meta'), { hostUid: 'stranger' }));
+    await assertFails(updateRtdb(rtdbRef(guestDatabase, 'rooms/ABCDE/meta'), { hostUid: 'guest', seed: 1 }));
+    assert.equal(await guestRepository.claimHost('ABCDE', 'host'), true);
+    assert.equal((await getRtdb(rtdbRef(hostDatabase, 'rooms/ABCDE/meta/hostUid'))).val(), 'guest');
+
+    await assertSucceeds(setRtdb(
+      rtdbRef(guestDatabase, 'rooms/ABCDE/events/phase-9'),
+      { type: 'phase', uid: 'guest', kind: 'wave', wave: 2, t: 9, score: 50, lives: 3 },
+    ));
+    await assertFails(setRtdb(
+      rtdbRef(hostDatabase, 'rooms/ABCDE/events/phase-10'),
+      { type: 'phase', uid: 'host', kind: 'wave', wave: 3, t: 19, score: 90, lives: 3 },
+    ));
+  });
+
   it('Firestore profiles are private to their owner', async () => {
     const owner = testEnvironment.authenticatedContext('owner').firestore();
     const otherUser = testEnvironment.authenticatedContext('other').firestore();

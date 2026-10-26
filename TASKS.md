@@ -86,7 +86,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 - [x] 3.8 `P0 D4` Eventos `kill`: reclamo por el jugador, adjudicación por el host (primero gana) con pruebas de la lógica pura `[sync]`
 - [x] 3.9 `P0 D4` Eventos `hit` y vidas por jugador escritas por el host `[sync]`
 - [x] 3.10 `P0 D3` Fin de oleada y de partida decididos por el host (`state`) `[sync][loop]`
-- [ ] 3.11 `P1 D4` Reasignación del rol de host si el host se desconecta `[sync]`
+- [x] 3.11 `P1 D4` Reasignación del rol de host si el host se desconecta `[sync]`
 - [ ] 3.12 `P1 D3` Avisos de "conexión inestable" y compañero desconectado `[sync]`
 - [ ] 3.13 `P1 D2` Resultados de partida coop (reutiliza la pantalla de Resultados de 2B.8 con desglose por jugador y «Volver al lobby») y guardado en ranking (solo host) `[fb][ui]`
 - [ ] 3.14 `P1 D2` Limpieza de la sala al finalizar `[sync]`

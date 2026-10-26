@@ -96,8 +96,35 @@ export function createFakeRoom({ clock, latencyMs = 60 }) {
   };
 }
 
+/** Temporizadores sobre el reloj virtual de la prueba. */
+export function createVirtualTimers(clock) {
+  const pending = new Map();
+  let nextId = 1;
+  return {
+    setTimeout: (callback, delay) => {
+      const id = nextId;
+      nextId += 1;
+      pending.set(id, { due: clock.now + delay, callback });
+      return id;
+    },
+    clearTimeout: (id) => { pending.delete(id); },
+    /** Ejecuta los temporizadores vencidos. */
+    tick() {
+      for (const [id, timer] of [...pending]) {
+        if (timer.due <= clock.now) {
+          pending.delete(id);
+          timer.callback();
+        }
+      }
+    },
+    get size() {
+      return pending.size;
+    },
+  };
+}
+
 /** Crea un cliente coop completo (juego + pasarela) conectado a la sala falsa. */
-export function createClient({ room, clock, uid, hostUid, seed, startAt, randomSeed, onGameOver }) {
+export function createClient({ room, clock, uid, hostUid, seed, startAt, randomSeed, onGameOver, timers }) {
   const gateway = new CoopGateway({
     roomRepository: room.repositoryFor(uid),
     code: 'ABCDE',
@@ -106,6 +133,8 @@ export function createClient({ room, clock, uid, hostUid, seed, startAt, randomS
     seed,
     startAt,
     now: () => clock.now,
+    setTimeoutFn: timers?.setTimeout,
+    clearTimeoutFn: timers?.clearTimeout,
     onError: (error) => { throw error; },
   });
   const game = new Game({

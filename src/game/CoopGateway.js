@@ -1,15 +1,30 @@
 import { createGameClock } from '../core/gameClock.js';
 import { createInterpolationBuffer } from '../core/interpolationBuffer.js';
+import { HOST_TAKEOVER_GRACE_MS, shouldTakeOverHost } from '../core/hostElection.js';
 import { createPositionPublisher } from '../core/positionPublisher.js';
 
 export class CoopGateway {
   /**
    * @param {{ roomRepository: object, code: string, uid: string, hostUid: string,
-   *   seed?: number, startAt?: number, now?: () => number, onError?: (error: Error) => void }} options
+   *   seed?: number, startAt?: number, now?: () => number, onError?: (error: Error) => void,
+   *   setTimeoutFn?: typeof setTimeout, clearTimeoutFn?: typeof clearTimeout,
+   *   takeoverGraceMs?: number }} options
    *   `seed` es la semilla de la sala (de ella derivan todos los flujos de azar sincronizados).
    *   `startAt` es el instante cero de la partida (ms del servidor); `now` es el reloj local.
    */
-  constructor({ roomRepository, code, uid, hostUid, seed = null, startAt = null, now = Date.now, onError = console.error }) {
+  constructor({
+    roomRepository,
+    code,
+    uid,
+    hostUid,
+    seed = null,
+    startAt = null,
+    now = Date.now,
+    onError = console.error,
+    setTimeoutFn = setTimeout,
+    clearTimeoutFn = clearTimeout,
+    takeoverGraceMs = HOST_TAKEOVER_GRACE_MS,
+  }) {
     if (!roomRepository || typeof roomRepository.watchPlayers !== 'function') {
       throw new TypeError('A room repository is required for co-op synchronization.');
     }
@@ -19,6 +34,11 @@ export class CoopGateway {
     this.hostUid = hostUid;
     this.seed = seed;
     this.onError = onError;
+    this.setTimeoutFn = setTimeoutFn;
+    this.clearTimeoutFn = clearTimeoutFn;
+    this.takeoverGraceMs = takeoverGraceMs;
+    this.takeoverTimer = null;
+    this.roomStatus = null;
     this.clock = createGameClock({ now });
     this.clock.setStartAt(startAt);
     this.handlers = null;
@@ -42,6 +62,7 @@ export class CoopGateway {
       (players) => {
         this.currentPlayers = players;
         this.#bufferRemotePosition();
+        this.#evaluateTakeover();
       },
       onError,
     );
@@ -54,6 +75,11 @@ export class CoopGateway {
       },
       onError,
     );
+    this.unsubscribeMeta = roomRepository.watchRoomStatus?.(
+      code,
+      (meta) => this.#applyRoomMeta(meta),
+      onError,
+    ) ?? (() => {});
     this.stopPresence = roomRepository.watchPresence(code, uid, onError);
   }
 
@@ -175,10 +201,57 @@ export class CoopGateway {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    this.#cancelTakeover();
+    this.unsubscribeMeta();
     this.unsubscribeOffset();
     this.unsubscribePlayers();
     this.unsubscribeEvents();
     this.stopPresence().catch(this.onError);
+  }
+
+  /** Sigue `meta`: el host puede cambiar durante la partida (relevo) y la sala puede cerrarse. */
+  #applyRoomMeta(meta) {
+    if (this.disposed || !meta) return;
+    this.roomStatus = typeof meta.status === 'string' ? meta.status : this.roomStatus;
+    if (typeof meta.hostUid === 'string' && meta.hostUid !== this.hostUid) {
+      this.hostUid = meta.hostUid;
+      this.handlers?.onHostChange?.(meta.hostUid);
+    }
+    this.#evaluateTakeover();
+  }
+
+  /** Si el host se cae y me toca, lo releva tras un margen para ignorar cortes breves. */
+  #evaluateTakeover() {
+    if (this.disposed) return;
+    const should = shouldTakeOverHost({
+      players: this.currentPlayers,
+      hostUid: this.hostUid,
+      myUid: this.localUid,
+      status: this.roomStatus,
+    });
+    if (!should) {
+      this.#cancelTakeover();
+      return;
+    }
+    if (this.takeoverTimer !== null) return;
+    const previousHostUid = this.hostUid;
+    this.takeoverTimer = this.setTimeoutFn(() => {
+      this.takeoverTimer = null;
+      if (this.disposed || this.hostUid !== previousHostUid) return;
+      this.roomRepository.claimHost?.(this.code, previousHostUid)
+        .then((claimed) => {
+          if (!claimed || this.disposed || this.hostUid === this.localUid) return;
+          this.hostUid = this.localUid;
+          this.handlers?.onHostChange?.(this.localUid);
+        })
+        .catch(this.onError);
+    }, this.takeoverGraceMs);
+  }
+
+  #cancelTakeover() {
+    if (this.takeoverTimer === null) return;
+    this.clearTimeoutFn(this.takeoverTimer);
+    this.takeoverTimer = null;
   }
 
   #bufferRemotePosition() {
