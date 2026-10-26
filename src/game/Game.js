@@ -1,4 +1,5 @@
 import { C } from '../core/constants.js';
+import { STREAM_SALT, streamFor } from '../core/prng.js';
 import { boxesOverlap } from '../core/collision.js';
 import { Boss } from './Boss.js';
 import { BonusStage } from './BonusStage.js';
@@ -130,6 +131,7 @@ export class Game {
     this.elapsed = 0;
     this.isGameOver = false;
     this.paused = false;
+    this.#assignSeed();
     /** Segundos que faltan para empezar la partida coop; 0 una vez en marcha. */
     this.countdown = 0;
     /** `true` mientras un cliente coop espera conocer el reloj del servidor. */
@@ -143,7 +145,10 @@ export class Game {
     this.killEffects = [];
     this.synergyEffects = [];
     this.powerUps = [];
-    this.hazards = new Hazards(this, this.hazardsRandom);
+    this.hazards = new Hazards(
+      this,
+      this.sync.isCoop ? streamFor(this.seed, STREAM_SALT.HAZARDS) : this.hazardsRandom,
+    );
     this.player = new Player(this);
     this.remotePlayer = this.sync.isCoop
       ? {
@@ -162,6 +167,17 @@ export class Game {
       this.remotePlayer.x = this.sync.isHost ? this.width * 0.65 : this.width * 0.35;
     }
     this.#nextWave();
+  }
+
+  /**
+   * Semilla de la partida: la de la sala en coop (todo lo sincronizado deriva de ella) y una
+   * nueva en cada partida en solitario.
+   */
+  #assignSeed() {
+    const shared = this.sync.isCoop ? this.sync.seed : undefined;
+    this.seed = Number.isSafeInteger(shared)
+      ? shared >>> 0
+      : Math.floor(this.random() * 4294967296) >>> 0;
   }
 
   setSyncGateway(sync) {
@@ -631,7 +647,9 @@ export class Game {
   }
 
   #startBonusStage() {
-    this.bonusStage = new BonusStage(this);
+    this.bonusStage = new BonusStage(this, {
+      random: streamFor(this.seed, STREAM_SALT.BONUS_STAGE + this.wave),
+    });
     this.pendingBonusStage = false;
   }
 

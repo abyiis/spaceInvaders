@@ -5,8 +5,14 @@ const SHIP_SPEED_RANGE = 90;
 const COMBO_WINDOW = 1.8;
 
 export class BonusStage {
-  constructor(game) {
+  /**
+   * @param {import('./Game.js').Game} game
+   * @param {{ random?: () => number }} [options] Flujo de azar de la fase; en coop es el de la
+   *   oleada, derivado de la semilla de la sala, para que ambos clientes vean las mismas naves.
+   */
+  constructor(game, { random = game.random } = {}) {
     this.game = game;
+    this.random = random;
     this.remaining = DURATION_SECONDS;
     this.spawnTimer = 0;
     this.ships = [];
@@ -34,13 +40,13 @@ export class BonusStage {
   }
 
   #spawnShip() {
-    const direction = this.game.random() < 0.5 ? 1 : -1;
-    const speed = MIN_SHIP_SPEED + this.game.random() * SHIP_SPEED_RANGE;
+    const direction = this.random() < 0.5 ? 1 : -1;
+    const speed = MIN_SHIP_SPEED + this.random() * SHIP_SPEED_RANGE;
     const width = 24;
     this.ships.push({
       id: this.nextShipId,
       x: direction > 0 ? -width : this.game.width + width,
-      y: 82 + this.game.random() * Math.min(180, this.game.height * 0.3),
+      y: 82 + this.random() * Math.min(180, this.game.height * 0.3),
       w: width,
       h: 16,
       vx: direction * speed,

@@ -3,10 +3,11 @@ import { createGameClock } from '../core/gameClock.js';
 export class CoopGateway {
   /**
    * @param {{ roomRepository: object, code: string, uid: string, hostUid: string,
-   *   startAt?: number, now?: () => number, onError?: (error: Error) => void }} options
+   *   seed?: number, startAt?: number, now?: () => number, onError?: (error: Error) => void }} options
+   *   `seed` es la semilla de la sala (de ella derivan todos los flujos de azar sincronizados).
    *   `startAt` es el instante cero de la partida (ms del servidor); `now` es el reloj local.
    */
-  constructor({ roomRepository, code, uid, hostUid, startAt = null, now = Date.now, onError = console.error }) {
+  constructor({ roomRepository, code, uid, hostUid, seed = null, startAt = null, now = Date.now, onError = console.error }) {
     if (!roomRepository || typeof roomRepository.watchPlayers !== 'function') {
       throw new TypeError('A room repository is required for co-op synchronization.');
     }
@@ -14,6 +15,7 @@ export class CoopGateway {
     this.code = code;
     this.localUid = uid;
     this.hostUid = hostUid;
+    this.seed = seed;
     this.onError = onError;
     this.clock = createGameClock({ now });
     this.clock.setStartAt(startAt);

@@ -1,6 +1,5 @@
 import './style.css';
 import { C } from './core/constants.js';
-import { mulberry32 } from './core/prng.js';
 import { App } from '@capacitor/app';
 import { Haptics } from '@capacitor/haptics';
 import { createEffects } from './effects.js';
@@ -125,15 +124,12 @@ const router = createScreenRouter({
           code: coop.code,
           uid: coop.uid,
           hostUid: coop.hostUid,
+          seed: coop.seed,
           startAt: coop.startAt,
           onError: (error) => console.error('Co-op synchronization failed:', error),
         });
-        game.random = mulberry32(coop.seed);
-        game.hazardsRandom = mulberry32(coop.seed ^ 0x9e3779b9);
       } else {
         sync = new NoopSyncGateway();
-        game.random = Math.random;
-        game.hazardsRandom = Math.random;
       }
       game.setSyncGateway(sync);
       const unmount = mountPlaying(container, {

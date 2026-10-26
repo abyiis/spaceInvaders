@@ -31,6 +31,15 @@ export function deriveSeed(seed, salt) {
   return (value ^ (value >>> 16)) >>> 0;
 }
 
+/**
+ * Sales de los flujos de la sala (`.spec/multiplayer_sync.md` §3). Los disparos de la
+ * formación usan el número de oleada como sal, por eso las demás empiezan muy por encima.
+ */
+export const STREAM_SALT = Object.freeze({
+  BONUS_STAGE: 0x1000,
+  HAZARDS: 0x4000,
+});
+
 /** Atajo: generador de un flujo concreto de la sala. */
 export function streamFor(seed, salt) {
   return mulberry32(deriveSeed(seed, salt));

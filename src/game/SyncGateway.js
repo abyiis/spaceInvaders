@@ -16,6 +16,7 @@
  *   Un impacto local destruyó al enemigo `enemyId` de la oleada `wave`.
  * @property {(t: number) => void} emitHit
  *   La nave local perdió una vida en el tiempo de juego `t` (s).
+ * @property {number | null} [seed] Solo coop: semilla compartida de la sala.
  * @property {string | null} uid Identificador del jugador local.
  * @property {string | null} remoteUid Identificador del compañero.
  * @property {number | null} remoteX Posición horizontal del compañero normalizada.

@@ -1,6 +1,7 @@
 import { C } from '../core/constants.js';
 import { waveParams } from '../core/difficulty.js';
 import { formationOffset, formationRange } from '../core/formationPath.js';
+import { createShotSchedule, pickShooter } from '../core/shotSchedule.js';
 import { Bullet } from './Bullet.js';
 import { Enemy } from './Enemy.js';
 
@@ -63,13 +64,13 @@ export class Formation {
       }
     }
 
-    this.shootTimer = this.#nextShootDelay();
+    this.schedule = createShotSchedule({
+      seed: game.seed,
+      wave,
+      interval: this.params.shootInterval,
+    });
+    this.nextShot = this.schedule.next();
     this.#follow(this.enemies);
-  }
-
-  /** Variación de ±50 % alrededor del intervalo medio. */
-  #nextShootDelay() {
-    return this.params.shootInterval * (0.5 + this.game.random());
   }
 
   /** Enemigos que siguen vivos. */
@@ -104,7 +105,7 @@ export class Formation {
     const formationAlive = alive.filter((enemy) => !enemy.diving);
     this.#follow(formationAlive);
     this.#shieldNearbyEnemies(formationAlive, dt);
-    this.#shoot(alive, dt);
+    this.#shoot();
   }
 
   #shieldNearbyEnemies(alive, dt) {
@@ -142,30 +143,28 @@ export class Formation {
     }
   }
 
-  #shoot(alive, dt) {
-    this.shootTimer -= dt;
-    if (this.shootTimer > 0) return;
-    this.shootTimer = this.#nextShootDelay();
-
-    const shooter = alive[Math.floor(this.game.random() * alive.length)];
-    if (this.game.sync.isCoop && !this.game.sync.isHost) return;
-    const bulletX = shooter.x;
-    const bulletY = shooter.y + C.ENEMY_HEIGHT / 2;
-    const bulletSpeed = C.ENEMY_BULLET_SPEED;
-    this.game.bullets.push(
-      new Bullet({
-        x: bulletX,
-        y: bulletY,
-        fromPlayer: false,
-        vy: bulletSpeed,
-      }),
-    );
-    this.game.sync.emitEnemyShot(
-      this.game.elapsed,
-      bulletX / this.game.width,
-      bulletY / this.game.height,
-      0,
-      bulletSpeed,
-    );
+  /**
+   * Dispara según el calendario de la oleada. Cada cliente coop lo recorre por su cuenta y
+   * obtiene los mismos disparos, así que no se envían por la red.
+   */
+  #shoot() {
+    for (let fired = 0; fired < 8 && this.time >= this.nextShot.time; fired += 1) {
+      const { pick } = this.nextShot;
+      this.nextShot = this.schedule.next();
+      const shooter = pickShooter(
+        this.enemies,
+        pick,
+        (enemy) => !enemy.dead && !enemy.diving,
+      );
+      if (!shooter) continue;
+      this.game.bullets.push(
+        new Bullet({
+          x: shooter.x,
+          y: shooter.y + C.ENEMY_HEIGHT / 2,
+          fromPlayer: false,
+          vy: C.ENEMY_BULLET_SPEED,
+        }),
+      );
+    }
   }
 }
