@@ -131,3 +131,15 @@ test('el invitado no decide el fin de partida por su cuenta', () => {
   assert.equal(guest.game.isGameOver, false);
   assert.equal(host.game.isGameOver, false);
 });
+
+test('el tráfico estimado de una partida coop queda por debajo de 5 KB/s por jugador', () => {
+  const { host, guest, run } = setup();
+  run(180);
+  for (const { gateway } of [host, guest]) {
+    const snapshot = gateway.traffic.snapshot();
+    const perSecond = snapshot.averageSentPerSecond + snapshot.averageReceivedPerSecond;
+    assert.ok(perSecond < 5 * 1024, `${(perSecond / 1024).toFixed(2)} KB/s`);
+    assert.ok(snapshot.byLabel.posición.sent > 0);
+    assert.ok(snapshot.byLabel.eventos.received > 0);
+  }
+});

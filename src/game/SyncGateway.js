@@ -19,6 +19,7 @@
  * @property {{ kind: string, message: string, secondsLeft?: number }} [connectionStatus]
  *   Solo coop: estado de la conexión propia y del compañero (`ok`, `unstable`, `peer-offline`, `peer-gone`).
  * @property {Record<string, string>} [playerNames] Solo coop: alias de los jugadores por uid.
+ * @property {{ snapshot(): object }} [traffic] Solo coop: contador estimado de tráfico (panel de depuración).
  * @property {number | null} [seed] Solo coop: semilla compartida de la sala.
  * @property {string | null} uid Identificador del jugador local.
  * @property {string | null} remoteUid Identificador del compañero.

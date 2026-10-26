@@ -90,10 +90,12 @@ No hay nodo `state`: el estado oficial viaja en los eventos del host, que hereda
 
 | Flujo | Cálculo | Total aprox. |
 |---|---|---|
-| Posiciones | 2 jug × 10 Hz × ~80 B × 600 s (solo si se mueven) | ≤ 1 MB |
-| Eventos shot | 2 jug × ~3/s × ~90 B × 600 s | ~0,3 MB |
-| Eventos kill/hit/phase/state + disparos del jefe | ~0,5 /s | ~0,1 MB |
-| **Total** | | **~1,5 MB por partida** |
+| Posiciones | 2 jug × 10 Hz × ~75 B × 600 s (solo si se mueven, más un latido cada 2 s) | ≤ 1 MB |
+| Eventos shot | 2 jug × ~3,5/s × ~90 B × 600 s (hasta 3 por disparo con el triple disparo) | ~0,4 MB |
+| Eventos kill/bonus-kill/hit/phase/state + disparos del jefe | ~2 /s | ~0,5 MB |
+| **Total** | | **~1,5 – 2 MB por partida** |
+
+Medición en el simulador de dos clientes (piloto automático moviéndose sin parar, 10 min, 21 oleadas): ~1,0 MB enviados y ~0,9 MB recibidos por cliente (1,7 KB/s de subida y 1,5 KB/s de bajada), es decir ~1,9 MB de descarga en total, con las posiciones aportando ~0,5 MB por cliente. Es el peor caso razonable y deja un margen de ~3× sobre el límite de 5 KB/s por jugador.
 
 Muy por debajo de los límites del plan Spark; el riesgo real son los **bucles de escritura por frame** y escuchar nodos grandes (ver `firebase_schema.md`). El contador de tráfico de `?debug` (tarea 4.3) mide el real.
 

@@ -248,7 +248,10 @@ let unmountDebugOverlay = null;
 function setDebugOverlay(visible) {
   if (visible && !unmountDebugOverlay) {
     unmountDebugOverlay = mountDebugOverlay(document.body, {
-      getStats: () => ({ frames: frameStats.snapshot() }),
+      getStats: () => ({
+        frames: frameStats.snapshot(),
+        traffic: game.sync.isCoop ? game.sync.traffic?.snapshot() ?? null : null,
+      }),
     });
   } else if (!visible && unmountDebugOverlay) {
     unmountDebugOverlay();

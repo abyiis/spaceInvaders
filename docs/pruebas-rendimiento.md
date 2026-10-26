@@ -40,3 +40,36 @@ La app trae un panel (arriba a la izquierda) con FPS, duración media de frame, 
 | Fecha | Teléfono (modelo, Android) | Modo | FPS medios | Peor frame | % lentos | Tirones notados | Veredicto |
 |---|---|---|---|---|---|---|---|
 | _pendiente_ | | | | | | | |
+
+## 2. Tráfico de red (tarea 4.3)
+
+**Objetivo** (`multiplayer_sync.md` §7 y `architecture.md` §6): unos **1,5 MB por partida de 10 minutos con 2 jugadores** y menos de **5 KB/s por jugador**.
+
+### 2.1 Presupuesto de referencia
+
+| Flujo | Cálculo (`multiplayer_sync.md` §7) | Total aprox. |
+|---|---|---|
+| Posiciones | 2 jug × 10 Hz × ~75 B × 600 s (solo si se mueven, más un latido cada 2 s) | ≤ 1 MB |
+| Eventos `shot` | 2 jug × ~3,5/s × ~90 B × 600 s | ~0,4 MB |
+| Eventos de bajas, golpes, fases y estado, y disparos del jefe | ~2 /s | ~0,5 MB |
+| **Total** | | **~1,5 – 2 MB** (~3 KB/s por jugador entre subida y bajada) |
+
+**Medición en el simulador** (dos clientes con piloto automático moviéndose sin parar durante 10 min, 21 oleadas, `CoopGateway.traffic`): cada cliente envía ~1,0 MB y recibe ~0,9 MB (1,7 KB/s ↑ y 1,5 KB/s ↓; posiciones ~0,5 MB y eventos ~0,5 MB por cliente). El total descargado entre ambos ronda 1,9 MB: dentro del rango del presupuesto y ~3× por debajo del límite de 5 KB/s por jugador. La prueba automática `coopIntegration.test.js` vigila el límite de 5 KB/s.
+
+### 2.2 Estimación en la propia app
+
+En coop, el panel de depuración (sección 1.2) añade dos líneas con el tráfico **estimado** por el cliente (ruta + carga JSON + 16 B de protocolo): tasa reciente (10 s) enviada y recibida, y totales. El contador desglosa por categoría (`posición`, `eventos`); la estimación subestima el protocolo real, así que la cifra oficial es la de la consola.
+
+### 2.3 Procedimiento con la consola de Firebase
+
+1. Antes de la prueba, abrir la consola → *Realtime Database* → pestaña **Usage** y anotar los valores actuales de **Downloads** (bytes descargados) y **Connections**.
+2. Jugar una partida coop de 10 minutos con dos teléfonos (`docs/pruebas-coop.md`), con el panel activo, y anotar al terminar el total estimado de cada teléfono.
+3. Esperar unos minutos (la consola tarda en actualizar) y anotar la diferencia de **Downloads** respecto al paso 1. Es el tráfico real de la partida, ya que las descargas de RTDB incluyen lo que recibe cada cliente.
+4. Comparar: descargas reales de la partida vs. ~1,5 MB; tasa media por jugador vs. 5 KB/s. Si se superan, revisar primero qué categoría pesa más en el desglose del panel.
+5. Revisar en *Firestore* → *Usage* que la partida generó 1 escritura (la entrada del ranking del host).
+
+### 2.4 Resultados
+
+| Fecha | Duración | Estimado A (↑/↓ KB) | Estimado B (↑/↓ KB) | Descargas RTDB reales (KB) | Presupuesto (KB) | Veredicto |
+|---|---|---|---|---|---|---|
+| _pendiente_ | | | | | 1.500 – 2.000 | |

@@ -3,6 +3,7 @@ import { createGameClock } from '../core/gameClock.js';
 import { createInterpolationBuffer } from '../core/interpolationBuffer.js';
 import { HOST_TAKEOVER_GRACE_MS, shouldTakeOverHost } from '../core/hostElection.js';
 import { createPositionPublisher } from '../core/positionPublisher.js';
+import { createTrafficMeter, estimateMessageBytes } from '../core/trafficMeter.js';
 
 export class CoopGateway {
   /**
@@ -42,6 +43,8 @@ export class CoopGateway {
     this.roomStatus = null;
     this.clock = createGameClock({ now });
     this.monitor = createConnectionMonitor({ now });
+    /** Estimación del tráfico enviado y recibido, para el panel de depuración (tarea 4.3). */
+    this.traffic = createTrafficMeter({ now });
     this.lastPeerTs = null;
     this.clock.setStartAt(startAt);
     this.handlers = null;
@@ -49,6 +52,11 @@ export class CoopGateway {
     this.positionPublisher = createPositionPublisher({
       now,
       publish: (x) => {
+        this.traffic.record(
+          'sent',
+          estimateMessageBytes(`rooms/${this.code}/players/${this.localUid}`, { x, ts: now() }),
+          'posición',
+        );
         this.roomRepository.publishPlayerX(this.code, x).catch(this.onError);
       },
     });
@@ -63,6 +71,7 @@ export class CoopGateway {
     this.unsubscribePlayers = roomRepository.watchPlayers(
       code,
       (players) => {
+        this.#recordPlayersTraffic(players);
         this.currentPlayers = players;
         this.#bufferRemotePosition();
         this.#trackPeerConnection();
@@ -74,6 +83,7 @@ export class CoopGateway {
       code,
       (eventId, event) => {
         if (!event || event.uid === this.localUid || this.disposed) return;
+        this.traffic.record('received', estimateMessageBytes(`rooms/${this.code}/events/${eventId}`, event), 'eventos');
         if (this.handlers) this.handlers.onEvent?.(eventId, event);
         else this.pendingEvents.push([eventId, event]);
       },
@@ -243,6 +253,24 @@ export class CoopGateway {
     this.presenceStopped = this.stopPresence().catch(this.onError);
   }
 
+  /** Cuenta lo que Firebase descarga del compañero: solo los campos que cambiaron. */
+  #recordPlayersTraffic(players) {
+    for (const [uid, player] of Object.entries(players ?? {})) {
+      if (uid === this.localUid || !player) continue;
+      const before = this.currentPlayers[uid] ?? {};
+      const changed = Object.fromEntries(
+        Object.entries(player).filter(([key, value]) => before[key] !== value),
+      );
+      if (Object.keys(changed).length > 0) {
+        this.traffic.record(
+          'received',
+          estimateMessageBytes(`rooms/${this.code}/players/${uid}`, changed),
+          'posición',
+        );
+      }
+    }
+  }
+
   /** Alimenta el monitor con la presencia del compañero y con cada señal nueva suya. */
   #trackPeerConnection() {
     const peer = this.currentPlayers[this.remoteUid];
@@ -310,6 +338,11 @@ export class CoopGateway {
 
   #publish(event) {
     if (this.disposed) return;
+    this.traffic.record(
+      'sent',
+      estimateMessageBytes(`rooms/${this.code}/events/-Nxxxxxxxxxxxxxxxxxx`, { ...event, uid: this.localUid }),
+      'eventos',
+    );
     this.roomRepository.emitGameEvent(this.code, event).catch(this.onError);
   }
 }
