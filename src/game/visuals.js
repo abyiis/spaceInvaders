@@ -3,6 +3,11 @@
 export const VISUALS = Object.freeze({
   BANNER_DURATION: 0.5,
   BANNER_HEIGHT: 56,
+  /** Escudo hexagonal: radio, color, giro (rad/s) y ventana final de parpadeo (s). */
+  SHIELD_RADIUS: 26,
+  SHIELD_COLOR: '#67f5d5',
+  SHIELD_SPIN: 0.6,
+  SHIELD_BLINK_WINDOW: 1.5,
   /** Margen derecho del «Oleada: N» del HUD: deja libre el botón de pausa/salida (48 px + 8 px). */
   HUD_WAVE_RIGHT_MARGIN: 64,
   /** Pila de textos de estado bajo el HUD: primera `y` y alto de cada renglón. */
@@ -135,4 +140,41 @@ export function layoutStatusStack(lines) {
   }));
   const bottom = VISUALS.STATUS_TOP + lines.length * VISUALS.STATUS_LINE_HEIGHT;
   return { lines: placed, bottom, bossBarY: bottom + VISUALS.BOSS_BAR_GAP };
+}
+
+/**
+ * Escudo hexagonal alrededor de la nave (`visual_feedback.md` §5): trazo y relleno suave en el
+ * color del potenciador, rotación lenta y pulso; parpadea en el último 1,5 s.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {{ x: number, y: number, remaining: number, time: number, reducedMotion?: boolean }} shield
+ *   `time`: tiempo de juego (s) que mueve la rotación y el pulso.
+ * @returns {boolean} `true` si se dibujó (el hexágono puede estar en la fase "apagada" del parpadeo).
+ */
+export function drawShieldHexagon(ctx, { x, y, remaining, time, reducedMotion = false }) {
+  if (remaining <= 0) return false;
+  if (remaining <= VISUALS.SHIELD_BLINK_WINDOW && Math.floor(remaining * 8) % 2 === 0) return false;
+  const rotation = reducedMotion ? 0 : time * VISUALS.SHIELD_SPIN;
+  const pulse = reducedMotion ? 1 : 0.85 + 0.15 * Math.sin(time * 6);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rotation);
+  ctx.beginPath();
+  for (let vertex = 0; vertex < 6; vertex += 1) {
+    const angle = (Math.PI / 3) * vertex;
+    const px = Math.cos(angle) * VISUALS.SHIELD_RADIUS;
+    const py = Math.sin(angle) * VISUALS.SHIELD_RADIUS;
+    if (vertex === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.globalAlpha = 0.14 * pulse;
+  ctx.fillStyle = VISUALS.SHIELD_COLOR;
+  ctx.fill();
+  ctx.globalAlpha = pulse;
+  ctx.strokeStyle = VISUALS.SHIELD_COLOR;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  ctx.restore();
+  return true;
 }

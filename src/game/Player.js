@@ -1,6 +1,7 @@
 import { C } from '../core/constants.js';
 import { Bullet } from './Bullet.js';
 import { POWER_UPS } from './powerUps.js';
+import { drawShieldHexagon } from './visuals.js';
 
 /** Nave del jugador: se mueve en horizontal y dispara automáticamente. */
 export class Player {
@@ -139,8 +140,8 @@ export class Player {
       ctx.globalAlpha = 0.28 + Math.sin(this.game.elapsed * 10) * 0.12;
     }
     // Parpadeo durante la invulnerabilidad.
-    const shieldTime = Math.max(this.invulnerable, this.shieldPowerUp);
-    const blinkOff = this.isInvulnerable && Math.floor(shieldTime * 10) % 2 === 0;
+    // El parpadeo es del daño recibido; el escudo se ve como un hexágono alrededor de la nave.
+    const blinkOff = this.invulnerable > 0 && Math.floor(this.invulnerable * 10) % 2 === 0;
     ctx.fillStyle = blinkOff ? 'rgba(79, 195, 247, 0.33)' : '#4fc3f7';
     ctx.beginPath();
     ctx.moveTo(this.x, this.y - this.h / 2);
@@ -148,6 +149,13 @@ export class Player {
     ctx.lineTo(this.x - this.w / 2, this.y + this.h / 2);
     ctx.closePath();
     ctx.fill();
+    drawShieldHexagon(ctx, {
+      x: this.x,
+      y: this.y,
+      remaining: this.shieldPowerUp,
+      time: this.game.elapsed,
+      reducedMotion: this.game.reducedMotion === true,
+    });
     if (this.downedTimer > 0) {
       ctx.restore();
       ctx.fillStyle = '#ffcf6e';
