@@ -24,7 +24,7 @@ Llamadas de dibujo por frame: ~150. El presupuesto de un frame a 60 FPS es 16,67
 La app trae un panel (arriba a la izquierda) con FPS, duración media de frame, peor frame y porcentaje de frames lentos (> 20 ms) de los últimos 5 s. Se activa de tres formas:
 
 - Versión web: abrir con `?debug=1`, p. ej. `http://<ip-del-pc>:5173/?debug=1` con `npm run dev` (el teléfono en la misma Wi‑Fi).
-- App empaquetada: **tocar 5 veces seguidas el título «CRÉDITOS»** (menos de 3 s); se vuelve a ocultar repitiendo el gesto.
+- App empaquetada: **tocar 5 veces seguidas el título «NEON INVADERS» del Home** (o el de Créditos) en menos de 3 s; se vuelve a ocultar repitiendo el gesto.
 - `localStorage['spacecoop.debug'] = '1'` desde las herramientas de desarrollo remotas (`chrome://inspect`).
 
 ### 1.3 Procedimiento

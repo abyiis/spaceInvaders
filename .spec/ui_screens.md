@@ -291,6 +291,7 @@ El mapa de destinos es lógica pura y se prueba en Node con el plugin inyectado,
 - `Game.onGameOver`: se llama una vez con `{ mode, score, wave, durationSeconds }`; no se repite en `update()` posteriores ni al llamar otra vez a `triggerGameOver()`; se rearma tras `startNewGame()`; `mode` es `'coop'` con un gateway cuyo `isCoop` es `true`.
 - Splash: avance automático a 2,5 s; la omisión antes de 0,8 s se ignora y después funciona (temporizadores inyectados).
 - Forma de `CREDITS` (§7): al menos un integrante y cada `name` no vacío.
+- Gesto de depuración (`attachDebugTapGesture`): 5 toques en menos de 3 s sobre el título del Home o de Créditos activan o desactivan el panel de FPS y tráfico.
 - Salida en coop (`leaveController`): `open()` solo en coop y antes del Game Over; `stay()` cierra; `leave()` ejecuta la salida una sola vez y, si falla, deja el diálogo abierto; Esc alterna el diálogo.
 - Menú de pausa (`pauseController`): `open()` pausa el juego y quita el input; `resume()` reanuda y lo vuelve a enganchar; `exit()` llama a la salida y **no** dispara `onGameOver`; `open()` no hace nada tras el Game Over ni en coop.
 - Récord local: primera partida, récord superado, puntaje menor, `storage` que lanza.

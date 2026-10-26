@@ -61,3 +61,38 @@ test('el panel se actualiza con un temporizador y se retira al desmontar', () =>
     else globalThis.document = previousDocument;
   }
 });
+
+test('cinco toques seguidos sobre el elemento activan el panel y el contador se reinicia', async () => {
+  const { attachDebugTapGesture } = await import('../src/debug/debugOverlay.js');
+  let time = 0;
+  let toggles = 0;
+  let listener = null;
+  const element = {
+    addEventListener: (type, callback) => { assert.equal(type, 'click'); listener = callback; },
+    removeEventListener: (type, callback) => { assert.equal(callback, listener); listener = null; },
+  };
+  const detach = attachDebugTapGesture(element, { now: () => time, onToggle: () => { toggles += 1; } });
+
+  for (let tap = 0; tap < 4; tap += 1) { time += 200; listener(); }
+  assert.equal(toggles, 0);
+  time += 200; listener();
+  assert.equal(toggles, 1);
+
+  for (let tap = 0; tap < 5; tap += 1) { time += 200; listener(); }
+  assert.equal(toggles, 2);
+  detach();
+  assert.equal(listener, null);
+});
+
+test('toques espaciados más de 3 s no activan el panel', async () => {
+  const { attachDebugTapGesture } = await import('../src/debug/debugOverlay.js');
+  let time = 0;
+  let toggles = 0;
+  let listener = null;
+  attachDebugTapGesture(
+    { addEventListener: (_type, callback) => { listener = callback; }, removeEventListener() {} },
+    { now: () => time, onToggle: () => { toggles += 1; } },
+  );
+  for (let tap = 0; tap < 20; tap += 1) { time += 1000; listener(); }
+  assert.equal(toggles, 0);
+});

@@ -1,9 +1,5 @@
-import { DEBUG_TOGGLE_EVENT } from '../../debug/debugOverlay.js';
+import { attachDebugTapGesture } from '../../debug/debugOverlay.js';
 import { CREDITS } from '../creditsData.js';
-
-/** Toques seguidos en el título (en menos de este tiempo) que activan el panel de depuración. */
-const DEBUG_TAPS = 5;
-const DEBUG_TAP_WINDOW_MS = 3000;
 
 const TECHNOLOGIES = ['HTML5 Canvas', 'JavaScript', 'Vite', 'Capacitor', 'Firebase'];
 
@@ -54,15 +50,7 @@ export function mountCredits(container, { result }, nav) {
   }
 
   // Gesto oculto para medir FPS y tráfico en un teléfono sin tocar la URL (tareas 4.2 y 4.3).
-  let taps = [];
-  section.querySelector('#credits-title').addEventListener('click', () => {
-    const now = Date.now();
-    taps = [...taps.filter((tap) => now - tap < DEBUG_TAP_WINDOW_MS), now];
-    if (taps.length >= DEBUG_TAPS) {
-      taps = [];
-      window.dispatchEvent(new Event(DEBUG_TOGGLE_EVENT));
-    }
-  });
+  attachDebugTapGesture(section.querySelector('#credits-title'));
 
   const backButton = section.querySelector('[data-action="back"]');
   backButton.addEventListener('click', () => {

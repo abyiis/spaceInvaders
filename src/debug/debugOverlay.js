@@ -1,11 +1,40 @@
 /**
  * Panel de depuración con FPS y tráfico de red, para medir en el teléfono (tareas 4.2 y 4.3).
  * Se activa con `?debug=1`, con `localStorage['spacecoop.debug'] = '1'` o tocando 5 veces el
- * título de Créditos. No forma parte del juego: nunca se monta salvo que se pida.
+ * título del Home o de Créditos. No forma parte del juego: nunca se monta salvo que se pida.
  */
 
 export const DEBUG_STORAGE_KEY = 'spacecoop.debug';
 export const DEBUG_TOGGLE_EVENT = 'spacecoop:toggle-debug';
+
+/** Toques seguidos (en menos de `DEBUG_TAP_WINDOW_MS`) que activan o desactivan el panel. */
+const DEBUG_TAPS = 5;
+const DEBUG_TAP_WINDOW_MS = 3000;
+
+/**
+ * Gesto oculto para medir en un teléfono sin tocar la URL: 5 toques seguidos sobre `element`.
+ *
+ * @param {{ addEventListener(type: string, listener: () => void): void,
+ *   removeEventListener(type: string, listener: () => void): void }} element
+ * @param {{ now?: () => number, onToggle?: () => void }} [options]
+ * @returns {() => void} Quita el escuchador.
+ */
+export function attachDebugTapGesture(element, {
+  now = Date.now,
+  onToggle = () => window.dispatchEvent(new Event(DEBUG_TOGGLE_EVENT)),
+} = {}) {
+  let taps = [];
+  const onClick = () => {
+    const time = now();
+    taps = [...taps.filter((tap) => time - tap < DEBUG_TAP_WINDOW_MS), time];
+    if (taps.length >= DEBUG_TAPS) {
+      taps = [];
+      onToggle();
+    }
+  };
+  element.addEventListener('click', onClick);
+  return () => element.removeEventListener('click', onClick);
+}
 
 /**
  * ¿Debe arrancar con el panel visible?

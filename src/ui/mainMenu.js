@@ -1,3 +1,4 @@
+import { attachDebugTapGesture } from '../debug/debugOverlay.js';
 import { formatScore } from './screens/results.js';
 import { formatFirebaseError } from './firebaseErrorMessage.js';
 
@@ -85,6 +86,8 @@ export function mountMainMenu(container, actions) {
   `;
 
   const message = menu.querySelector('.main-menu__message');
+  // Gesto oculto para el panel de FPS y tráfico (docs/pruebas-rendimiento.md).
+  attachDebugTapGesture(menu.querySelector('#main-menu-title'));
   const joinForm = menu.querySelector('.main-menu__join-form');
   const joinInput = menu.querySelector('#room-code');
   const aliasDetails = menu.querySelector('.main-menu__alias');
