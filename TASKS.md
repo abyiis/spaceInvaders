@@ -17,14 +17,15 @@ Estimación total orientativa: 7-8 semanas a media jornada (incluye la Fase 2B).
 - [x] 0.2 `P0 D2` Boilerplate Canvas + JS + CSS jugable (nave, enemigos, disparos) con pruebas `node --test`
 - [x] 0.3 `P0 D1` Instalar Node ≥ 20, ejecutar `npm install` y `npm run dev`; verificar el juego en el navegador (móvil o modo responsive de DevTools)
 - [x] 0.4 `P0 D1` Ejecutar `npm run build` y confirmar que se genera `dist/`
-- [ ] 0.5 `P0 D1` Inicializar repositorio Git y primer commit
+- [x] 0.5 `P0 D1` Inicializar repositorio Git y primer commit
 - [ ] 0.6 `P0 D2` Cambiar `appId` en `capacitor.config.json` (p. ej. `co.edu.tuuniversidad.spacecoop`) y ejecutar `npx cap add android` `[arch]`
   - Parcial: `appId` ya es `co.edu.upb.spacecoop` (cámbialo si el equipo prefiere otro antes de generar la plataforma); falta `npx cap add android` (ver `docs/entrega.md`).
 - [ ] 0.7 `P0 D2` Ejecutar `npm run android` y probar el juego en un emulador o teléfono real `[arch]`
   - Pendiente: pasos en `docs/entrega.md` (requiere Android Studio).
-- [ ] 0.8 `P0 D2` Crear proyecto Firebase (plan Spark), registrar una app **Web** y guardar su configuración en `src/net/firebaseConfig.js` (ignorado por Git) `[fb]`
-- [ ] 0.9 `P0 D2` Habilitar Authentication → Anónimo; crear RTDB (región `us-central1`) y Firestore (modo producción) `[fb]`
+- [x] 0.8 `P0 D2` Crear proyecto Firebase (plan Spark), registrar una app **Web** y guardar su configuración en `src/net/firebaseConfig.js` (ignorado por Git) `[fb]`
+- [x] 0.9 `P0 D2` Habilitar Authentication → Anónimo; crear RTDB (región `us-central1`) y Firestore (modo producción) `[fb]`
 - [ ] 0.10 `P1 D1` Desplegar reglas: `firebase deploy --only database,firestore` `[fb]`
+  - Las reglas se desplegaron el 22/10 (ver README, validación en vivo), pero la Fase 3 las cambió (eventos del host, relevo de host, borrado de salas, ranking coop): **hay que volver a desplegarlas** (`firebase deploy --only database,firestore --project <project-id>`) antes de probar el coop; sin ello fallará con `permission_denied`.
 
 ## Fase 1 — Motor del juego, un jugador (≈ 2 semanas)
 
@@ -139,13 +140,13 @@ Matchmaking aleatorio, chat, compras, anti-trampas, más de 4 jugadores, reconex
 | 2026-10-22 | ui_screens | v1.1: créditos solo con nombres (sin roles, curso ni institución); récord local y botón «Atrás» dejan de ser opcionales; nuevo §9 menú de pausa y salida al Home (botón ⏸, `pauseController`); secciones 9-14 pasan a 10-15 | Supuestos confirmados por el equipo |
 | 2026-10-22 | architecture | v1.6: `pauseController.js` en el árbol de `ui/`; `playing` ya no es una pantalla sin interfaz (lleva el botón de pausa); input fuera mientras el menú de pausa está abierto; salir a mitad de partida es un abandono | Supuestos confirmados por el equipo |
 | 2026-10-22 | game_loop | v1.4: `PAUSED → HOME` por «Salir al inicio» (partida abandonada, sin `onGameOver`); `PAUSED` se alcanza también con el botón ⏸ | Supuestos confirmados por el equipo |
-| 2026-10-26 | ui_screens | v1.2: §9 y §12 salida de una partida coop (botón ✕, diálogo «¿Salir de la partida?», «Atrás» de Android) | Tarea 3.16 |
-| 2026-10-26 | ui_screens | v1.2: §8.1 y §8.6 Resultados en coop (desglose por jugador, guardado solo del host, «Volver al lobby» y salida de la sala) | Tarea 3.13 |
-| 2026-10-26 | architecture | v1.8: revisión final: árbol de módulos, §3.1 puerto `SyncGateway` completo (lectura y escritura), ADR-13 a ADR-16 | Tarea 4.10 |
-| 2026-10-26 | game_loop | v1.5 (revisión): ciclo por frame y estados de la partida con la cuenta atrás, los resultados por botón y la salida en coop | Tarea 4.10 |
-| 2026-10-26 | ui_screens | v1.2 (revisión): textos reales del splash y del Home tras el rediseño; Créditos solo como sorpresa tras la primera oleada | Tarea 4.10 |
-| 2026-10-26 | architecture | v1.7: §3.6 bloqueo de orientación vertical (`orientation.js`); nueva dependencia `@capacitor/screen-orientation` | Tarea 4.1 |
-| 2026-10-26 | game_loop | v1.5: en coop el host decide las transiciones de fase y el fin de partida (§3) | Tarea 3.10 |
-| 2026-10-26 | firebase_schema | v1.1: tipos de evento `enemy-shot`, `bonus-kill`, `revive`, `life-loss`, `state`, `phase`, `game-over`; los del host solo los firma `hostUid`; nodo `state/` reservado sin uso | Tarea 3.9 |
-| 2026-10-26 | game_loop | v1.5: §4.1 movimiento de la formación como función pura del tiempo de oleada, con los límites de la rejilla completa | Tarea 3.3 |
 | 2026-10-25 | multiplayer_sync | v1.1: modelo coop realmente implementado (reloj bloqueado al servidor con cuenta atrás, PRNG por flujo, formación y disparos deterministas, host autoritativo mediante eventos `phase`/`state`/`game-over`, relevo de host, avisos de conexión); ADR-13 | Tareas 3.1 – 3.16 |
+| 2026-10-26 | game_loop | v1.5: §4.1 movimiento de la formación como función pura del tiempo de oleada, con los límites de la rejilla completa | Tarea 3.3 |
+| 2026-10-26 | firebase_schema | v1.1: tipos de evento `enemy-shot`, `bonus-kill`, `revive`, `life-loss`, `state`, `phase`, `game-over`; los del host solo los firma `hostUid`; nodo `state/` reservado sin uso | Tarea 3.9 |
+| 2026-10-26 | game_loop | v1.5: en coop el host decide las transiciones de fase y el fin de partida (§3) | Tarea 3.10 |
+| 2026-10-26 | architecture | v1.7: §3.6 bloqueo de orientación vertical (`orientation.js`); nueva dependencia `@capacitor/screen-orientation` | Tarea 4.1 |
+| 2026-10-26 | ui_screens | v1.2 (revisión): textos reales del splash y del Home tras el rediseño; Créditos solo como sorpresa tras la primera oleada | Tarea 4.10 |
+| 2026-10-26 | game_loop | v1.5 (revisión): ciclo por frame y estados de la partida con la cuenta atrás, los resultados por botón y la salida en coop | Tarea 4.10 |
+| 2026-10-26 | architecture | v1.8: revisión final: árbol de módulos, §3.1 puerto `SyncGateway` completo (lectura y escritura), ADR-13 a ADR-16 | Tarea 4.10 |
+| 2026-10-26 | ui_screens | v1.2: §8.1 y §8.6 Resultados en coop (desglose por jugador, guardado solo del host, «Volver al lobby» y salida de la sala) | Tarea 3.13 |
+| 2026-10-26 | ui_screens | v1.2: §9 y §12 salida de una partida coop (botón ✕, diálogo «¿Salir de la partida?», «Atrás» de Android) | Tarea 3.16 |
