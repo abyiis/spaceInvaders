@@ -111,7 +111,9 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 - [x] 4.6 `P0 D2` Redactar el informe: arquitectura, decisiones (ADR), limitaciones y pruebas
 - [x] 4.7 `P1 D2` Preparar la demostración: guion de 5 minutos con 2 teléfonos
 - [ ] 4.8 `P1 D2` Sprites y sonido definitivos (opcional)
-- [ ] 4.9 `P2 D3` Power-ups simples (disparo doble) *(solo si sobra tiempo)*
+  - No realizado (opcional): los gráficos siguen dibujados por código en el canvas y los sonidos sintetizados con Web Audio.
+- [x] 4.9 `P2 D3` Power-ups simples (disparo doble) *(solo si sobra tiempo)*
+  - Ya implementado y superado en el commit de mejoras de gameplay: cuatro potenciadores (escudo, disparo rápido, triple disparo y sobrecarga) en `src/game/powerUps.js`, con pruebas en `test/gameplayUpdates.test.js` y `test/advancedGameModes.test.js`.
 - [ ] 4.10 `P2 D2` Revisar y actualizar `.spec/` para reflejar lo realmente implementado
 
 ---
