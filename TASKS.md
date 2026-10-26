@@ -83,7 +83,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 - [x] 3.5 `P0 D3` `syncService.js`: publicar posición propia a 10 Hz solo si cambió `[sync]` *(implementado en `CoopGateway` con el publicador puro `src/core/positionPublisher.js`; ver ADR-13)*
 - [x] 3.6 `P0 D4` Nave del compañero con buffer de interpolación (100 ms) `[sync]`
 - [x] 3.7 `P0 D3` Eventos `shot` (cosméticos) para mostrar los disparos del compañero `[sync]`
-- [ ] 3.8 `P0 D4` Eventos `kill`: reclamo por el jugador, adjudicación por el host (primero gana) con pruebas de la lógica pura `[sync]`
+- [x] 3.8 `P0 D4` Eventos `kill`: reclamo por el jugador, adjudicación por el host (primero gana) con pruebas de la lógica pura `[sync]`
 - [ ] 3.9 `P0 D4` Eventos `hit` y vidas por jugador escritas por el host `[sync]`
 - [ ] 3.10 `P0 D3` Fin de oleada y de partida decididos por el host (`state`) `[sync][loop]`
 - [ ] 3.11 `P1 D4` Reasignación del rol de host si el host se desconecta `[sync]`

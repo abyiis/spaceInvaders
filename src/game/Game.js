@@ -1,4 +1,5 @@
 import { C } from '../core/constants.js';
+import { createHostLedger } from '../core/hostLedger.js';
 import { STREAM_SALT, streamFor } from '../core/prng.js';
 import { boxesOverlap } from '../core/collision.js';
 import { Boss } from './Boss.js';
@@ -134,6 +135,8 @@ export class Game {
     this.isGameOver = false;
     this.paused = false;
     this.#assignSeed();
+    /** Bajas y puntos por jugador; el del host es el oficial (`multiplayer_sync.md` §4.3). */
+    this.ledger = createHostLedger();
     /** Segundos que faltan para empezar la partida coop; 0 una vez en marcha. */
     this.countdown = 0;
     /** `true` mientras un cliente coop espera conocer el reloj del servidor. */
@@ -195,6 +198,7 @@ export class Game {
 
   #nextWave() {
     this.wave += 1;
+    this.ledger.startWave(this.wave);
     this.formation = new Formation(this, this.wave);
   }
 
@@ -425,44 +429,40 @@ export class Game {
 
     if (event.type === 'kill' && event.wave === this.wave) {
       const enemy = this.formation.enemies.find((candidate) => candidate.id === event.enemyId);
-      if (!enemy || enemy.dead) return;
+      // El primer reclamo gana; si la baja ya estaba reclamada solo falta el potenciador.
+      const first = this.ledger.claimKill(event.wave, event.enemyId, event.uid, C.SCORE_PER_ENEMY);
+      if (enemy) this.#dropRemotePowerUp(event, enemy, `k:${event.wave}:${event.enemyId}`);
+      if (!first || !enemy || enemy.dead) return;
       enemy.dead = true;
       this.score += C.SCORE_PER_ENEMY;
       this.killEffects.push({ x: enemy.x, y: enemy.y, color: enemy.color, age: 0 });
-      if (POWER_UP_TYPES.includes(event.powerUpType)) {
-        this.powerUps.push({
-          type: event.powerUpType,
-          x: enemy.x,
-          y: enemy.y,
-          w: 16,
-          h: 16,
-        });
-      }
       return;
     }
 
     if (event.type === 'bonus-kill' && event.wave === this.wave && this.bonusStage) {
       const ship = this.bonusStage.ships.find((candidate) => candidate.id === event.shipId);
-      if (ship?.dead) return;
-      if (ship) ship.dead = true;
       const multiplier = Number.isFinite(event.multiplier)
         ? Math.max(1, Math.min(5, event.multiplier))
         : 1;
+      const first = this.ledger.claimBonusKill(
+        event.wave,
+        event.shipId,
+        event.uid,
+        BONUS_SHIP_SCORE * multiplier,
+      );
+      this.#dropRemotePowerUp(
+        event,
+        { x: ship?.x ?? this.width / 2, y: ship?.y ?? 150 },
+        `b:${event.wave}:${event.shipId}`,
+      );
+      if (!first || ship?.dead) return;
+      if (ship) ship.dead = true;
       this.score += BONUS_SHIP_SCORE * multiplier;
       this.bonusStage.combo = Math.max(
         this.bonusStage.combo,
         (multiplier - 1) * 3 + 1,
       );
       this.bonusStage.comboTimer = 1.8;
-      if (POWER_UP_TYPES.includes(event.powerUpType)) {
-        this.powerUps.push({
-          type: event.powerUpType,
-          x: ship?.x ?? this.width / 2,
-          y: ship?.y ?? 150,
-          w: 16,
-          h: 16,
-        });
-      }
       return;
     }
 
@@ -509,7 +509,7 @@ export class Game {
             (candidate) => !candidate.dead && boxesOverlap(bullet, candidate),
           );
           if (ship) {
-            this.#defeatBonusShip(ship);
+            this.#defeatBonusShip(ship, bullet.ownerUid);
             bullet.dead = true;
             continue;
           }
@@ -544,7 +544,7 @@ export class Game {
         for (const enemy of enemies) {
           if (enemy.dead || !boxesOverlap(bullet, enemy)) continue;
           if (enemy.hit(bullet.damage)) {
-            this.#defeatEnemy(enemy);
+            this.#defeatEnemy(enemy, { ownerUid: bullet.ownerUid });
           }
           bullet.dead = true;
           break;
@@ -607,8 +607,23 @@ export class Game {
     }
   }
 
-  #defeatEnemy(enemy, { scoreMultiplier = 1, dropChance = POWER_UP_DROP_CHANCE } = {}) {
-    this.score += C.SCORE_PER_ENEMY * scoreMultiplier;
+  get #localUid() {
+    return this.sync.uid ?? 'local';
+  }
+
+  /** `true` si `uid` es el compañero: sus bajas las reclama él mismo por evento. */
+  #isRemoteUid(uid) {
+    return this.sync.isCoop && uid != null && uid !== this.sync.uid;
+  }
+
+  /**
+   * Baja de un enemigo en la simulación local. Si la bala era del compañero se aplica el efecto y
+   * el puntaje de forma optimista, pero el reclamo y el potenciador los publica su dueño.
+   */
+  #defeatEnemy(enemy, { scoreMultiplier = 1, dropChance = POWER_UP_DROP_CHANCE, ownerUid = null } = {}) {
+    const points = C.SCORE_PER_ENEMY * scoreMultiplier;
+    this.ledger.claimKill(this.wave, enemy.id, ownerUid ?? this.#localUid, points);
+    this.score += points;
     this.effects.kill();
     this.killEffects.push({
       x: enemy.x,
@@ -616,20 +631,24 @@ export class Game {
       color: enemy.color,
       age: 0,
     });
+    if (this.#isRemoteUid(ownerUid)) return;
     const powerUpType = this.#dropPowerUp(
       enemy.x,
       enemy.y,
       dropChance,
       STANDARD_POWER_UP_TYPES,
     );
+    if (powerUpType) this.ledger.markDrop(`k:${this.wave}:${enemy.id}`);
     this.sync.emitKill(this.wave, enemy.id, this.elapsed, powerUpType);
   }
 
-  #defeatBonusShip(ship) {
+  #defeatBonusShip(ship, ownerUid = null) {
     if (ship.dead || !this.bonusStage) return;
     ship.dead = true;
     const multiplier = this.bonusStage.registerKill();
-    this.score += BONUS_SHIP_SCORE * multiplier;
+    const points = BONUS_SHIP_SCORE * multiplier;
+    this.ledger.claimBonusKill(this.wave, ship.id, ownerUid ?? this.#localUid, points);
+    this.score += points;
     this.effects.kill();
     this.killEffects.push({
       x: ship.x,
@@ -637,12 +656,14 @@ export class Game {
       color: '#ffd166',
       age: 0,
     });
+    if (this.#isRemoteUid(ownerUid)) return;
     const powerUpType = this.#dropPowerUp(
       ship.x,
       ship.y,
       BONUS_POWER_UP_DROP_CHANCE,
       POWER_UP_TYPES,
     );
+    if (powerUpType) this.ledger.markDrop(`b:${this.wave}:${ship.id}`);
     this.sync.emitBonusKill(
       this.wave,
       ship.id,
@@ -650,6 +671,18 @@ export class Game {
       this.elapsed,
       powerUpType,
     );
+  }
+
+  /** Crea el potenciador que el compañero soltó al reclamar una baja (una sola vez por baja). */
+  #dropRemotePowerUp(event, position, key) {
+    if (!POWER_UP_TYPES.includes(event.powerUpType) || !this.ledger.markDrop(key)) return;
+    this.powerUps.push({
+      type: event.powerUpType,
+      x: position.x,
+      y: position.y,
+      w: 16,
+      h: 16,
+    });
   }
 
   #dropPowerUp(x, y, dropChance, types) {
