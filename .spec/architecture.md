@@ -1,6 +1,6 @@
 # architecture.md — Arquitectura general
 
-> Estado: **v1.7 (fuente de verdad)**. Si el código y este documento difieren, se corrige primero el documento y luego el código (SDD).
+> Estado: **v1.8 (fuente de verdad)**. Si el código y este documento difieren, se corrige primero el documento y luego el código (SDD).
 >
 > Nota de mantenimiento: el commit `d5ec5fe` sobrescribió por error este archivo con el contenido de `ui_screens.md`; se restauró la v1.4 y se reaplicaron las v1.5 y v1.6 del changelog de `TASKS.md`.
 
@@ -38,10 +38,17 @@ src/
 ├── lifecycle.js              # pausa al pasar a segundo plano (visibilitychange + appStateChange)
 ├── effects.js                # sonido (Web Audio) y vibración: implementa el puerto Effects
 ├── style.css                 # estilos globales y de pantallas (tokens CSS comunes)
+├── orientation.js            # bloqueo de orientación vertical (Capacitor)
+├── debug/debugOverlay.js     # panel opcional de FPS y tráfico (?debug=1)
 ├── core/                     # lógica pura, sin DOM ni Firebase
-│   ├── constants.js
-│   ├── difficulty.js         # waveParams(w)
-│   └── collision.js          # AABB
+│   ├── constants.js  difficulty.js  collision.js   # balance, waveParams(w), AABB
+│   ├── prng.js               # mulberry32 + deriveSeed (azar sincronizado)
+│   ├── gameClock.js          # reloj compartido: serverNow, startAt, cuenta atrás
+│   ├── formationPath.js  shotSchedule.js           # movimiento y disparos deterministas
+│   ├── hostLedger.js  hostElection.js              # primer reclamo gana; relevo de host
+│   ├── positionPublisher.js  interpolationBuffer.js  # posición a 10 Hz e interpolación
+│   ├── connectionMonitor.js  # avisos de conexión
+│   └── trafficMeter.js  frameStats.js              # medidores de depuración
 ├── game/                     # simulación del juego
 │   ├── Game.js               # estado, oleadas, colisiones, render(ctx)
 │   ├── SyncGateway.js        # puerto de red (typedef) + NoopSyncGateway
@@ -56,7 +63,8 @@ src/
 │   ├── authService.js  profileRepository.js  scoreRepository.js
 │   └── roomRepository.js     # salas, presencia, posiciones y eventos en RTDB
 └── ui/                       # pantallas HTML/CSS y navegación
-    ├── screenRouter.js  uiConstants.js  pauseController.js  backButton.js  bestScore.js
+    ├── screenRouter.js  uiConstants.js  pauseController.js  leaveController.js
+    ├── backButton.js  bestScore.js
     ├── mainMenu.js  lobby.js  ranking.js  creditsData.js  firebaseErrorMessage.js
     └── screens/              # splash, credits, results, playing
 test/                         # pruebas con node:test
@@ -75,21 +83,25 @@ Reglas de dependencia (obligatorias):
 
 ### 3.1 Puerto `SyncGateway` (v1.1)
 
-`game/` nunca habla con Firebase: notifica sus eventos locales a un objeto `SyncGateway` que recibe por el constructor (`new Game({ sync })`). El puerto vive en `src/game/SyncGateway.js` (la capa que lo usa es la dueña del contrato) y `net/syncService.js` lo implementará en la Fase 3 sin que `game/` importe `net/`. Por defecto `Game` usa `NoopSyncGateway`, que no hace nada: así el modo solo funciona sin Firebase.
+`game/` nunca habla con Firebase: notifica sus eventos locales a un objeto `SyncGateway` que recibe por el constructor (`new Game({ sync })`) y recibe los del compañero por los receptores que registra con `setHandlers`. El puerto vive en `src/game/SyncGateway.js` (la capa que lo usa es la dueña del contrato); `src/game/CoopGateway.js` lo implementa para el coop sobre un `roomRepository` inyectado (sin importar `firebase/*`). Por defecto `Game` usa `NoopSyncGateway`, que no hace nada: así el modo solo funciona sin Firebase.
 
-| Miembro | Cuándo lo llama `Game` | Origen en `multiplayer_sync.md` |
+| Miembro | Cuándo lo usa `Game` | Origen en `multiplayer_sync.md` |
 |---|---|---|
-| `isCoop: boolean` | — (solo lectura; `false` en el Noop) | §6 |
-| `publishPlayerX(x: number)` | Cada frame, con `x` normalizado 0..1. Solo entrega el valor: el gateway real conserva el último y un temporizador de 100 ms hace el `update()` parcial, solo si cambió más de 0,002. | §4.1 |
-| `emitShot(t: number, x: number)` | El jugador dispara (`t` = segundos de juego, `x` normalizado). | §4.2 `shot` |
-| `emitKill(wave: number, enemyId: number, t: number)` | Un impacto local destruye a un enemigo. | §4.2 `kill` |
-| `emitHit(t: number)` | La nave local pierde una vida. | §4.2 `hit` |
-| `dispose()` | Se abandona la partida. Cancela suscripciones y temporizadores. | `firebase_schema.md` §4.4 |
+| `isCoop`, `isHost`, `hostUid`, `uid`, `remoteUid`, `seed`, `playerNames` | Lectura: identidad, rol y semilla de la sala (`Noop`: `false`/`null`). | §1, §5 |
+| `gameTime()` | Solo coop: segundos del servidor desde `startAt` (negativos en la cuenta atrás; `null` sin sincronizar). Si existe, `Game.update` ignora el `dt` del frame. | §2 |
+| `remoteX` | Posición del compañero, interpolada 100 ms atrás. | §4.1 |
+| `connectionStatus` | `ok` / `unstable` / `peer-offline` / `peer-gone`. | §5 |
+| `publishPlayerX(x)` | Cada frame; el gateway decide cuándo escribir (10 Hz, solo si cambió, con latido). | §4.1 |
+| `emitShot`, `emitKill`, `emitBonusKill`, `emitHit`, `emitRevive`, `emitLifeLoss` | Eventos de jugador. | §4.2 |
+| `emitEnemyShot` | El host publica los disparos del jefe. | §4.2 |
+| `emitState`, `emitPhase`, `emitGameOver` | Solo el host: estado oficial (§4.3). | §4.3 |
+| `setHandlers({ onEvent, onHostChange })` | Registra los receptores de eventos del compañero y del relevo de host. | §4.2, §5 |
+| `leave()` / `dispose()` | Salir de la sala / liberar suscripciones y temporizadores. | §6 |
 
 Notas:
 - `enemyId` = índice del enemigo en su oleada (`row * columns + col`); es estable entre clientes porque la rejilla es determinista.
-- `t` es `Game.elapsed` (segundos de juego acumulados desde `startNewGame()`). En coop la Fase 3 lo sustituirá por el reloj del servidor (`multiplayer_sync.md` §2).
-- El sentido entrante (eventos del compañero, `killed`, `lives`) **no** forma parte de esta versión del puerto; se añadirá en las tareas 3.6-3.10 y se anotará en el changelog.
+- `t` es `Game.elapsed`; en coop coincide con el tiempo del servidor porque la simulación avanza hasta alcanzar `gameTime()`.
+- `CoopGateway` incluye el contador de tráfico estimado (`traffic`) que lee el panel de depuración.
 
 ### 3.2 Pausa y ciclo de vida (v1.2)
 
@@ -118,7 +130,7 @@ Igual que la red, el audio y la vibración son un puerto: `game/` avisa de lo qu
 - Los sonidos se sintetizan con osciladores de Web Audio: sin archivos de audio (coherente con §6; los sonidos definitivos son la tarea 4.8).
 - Los WebViews bloquean el audio hasta que hay un gesto del usuario (§7): el `AudioContext` se crea o reanuda en `unlock()`. Los eventos anteriores al primer gesto no suenan.
 - `createEffects({ AudioContextClass, haptics })` recibe el constructor de audio y el plugin de vibración inyectados (en `main.js`, `Haptics` de `@capacitor/haptics`). Si el entorno no tiene Web Audio o la vibración falla (p. ej. un navegador de escritorio), el efecto se omite en silencio: nunca debe interrumpir la partida.
-- En pausa no hay eventos, así que no suena nada; en coop los eventos del compañero no generan efectos hasta que la Fase 3 lo decida.
+- En pausa no hay eventos, así que no suena nada; en coop los eventos del compañero no generan efectos propios (solo suenan los de la nave local y las bajas locales).
 
 ### 3.4 Fondo decorativo (v1.4)
 
@@ -158,11 +170,15 @@ El lienzo lógico es 9:16, así que la app empaquetada se bloquea en vertical. `
 | ADR-10 | Sonidos sintetizados con Web Audio + `@capacitor/haptics` para vibrar | Archivos de audio / `navigator.vibrate` | Cero assets en el MVP; `navigator.vibrate` no cubre iOS ni garantiza el permiso en Android. |
 | ADR-11 | Router de pantallas propio (`screenRouter.js`, ~100 líneas) | Librería de rutas / SPA framework | Cinco pantallas; el router se prueba en Node con contenedor y pantallas falsas y no añade dependencias. |
 | ADR-12 | Resultados aparece 1,2 s después del Game Over y el reinicio es solo por botón | Reinicio con un toque en el canvas | Un toque accidental al morir no debe saltarse el puntaje. |
+| ADR-13 | Estado autoritativo del coop en eventos del host (`phase`, `state`, `game-over`), no en un nodo `state` | Nodo `state` + eventos | Orden total por push ID: un `phase` nunca llega antes que los `kill` que lo causan. Ver `multiplayer_sync.md` §10. |
+| ADR-14 | Simulación coop local con reloj bloqueado al servidor; solo la formación y sus disparos son funciones puras | Todo como función pura de `(semilla, oleada, t)` | Jefes, kamikazes y peligros dependen de la posición de los jugadores. |
+| ADR-15 | Paso fijo de 1/60 s atado a `serverNow` en coop | Integrar con el `dt` de cada cliente | Una caída de FPS no acumula deriva entre dispositivos. |
+| ADR-16 | «Volver al lobby» deja la sala y vuelve al Home | Reutilizar la sala | Reiniciar una sala exigiría reescribir nodos de otros jugadores (lo impiden las reglas). |
 
 ## 6. Requisitos no funcionales
 
 - 60 FPS en un gama media de 2020 dentro del WebView.
-- Latencia percibida del compañero < 200 ms (con interpolación).
+- Latencia percibida del compañero < 200 ms (con interpolación de 100 ms).
 - Tráfico por jugador < 5 KB/s en partida.
 - Sin assets externos en el MVP (formas dibujadas con Canvas); sprites y audio opcionales en Fase 4.
 - Bloqueo de orientación vertical en la app empaquetada (§3.6).

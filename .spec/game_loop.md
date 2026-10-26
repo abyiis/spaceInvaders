@@ -27,7 +27,7 @@ El juego encadena **oleadas** (waves) indefinidamente. Cada oleada normal es má
 
 ## 3. Ciclo por frame (`update(dt)`)
 
-1. Si `isGameOver` o `paused`, no se actualiza la simulación (en Game Over se espera un toque para reiniciar; en pausa, un toque para continuar).
+1. Si `isGameOver` o `paused`, no se actualiza la simulación (en Game Over la pantalla de Resultados decide qué sigue; en pausa se continúa desde el menú de pausa o con un toque tras una pausa por segundo plano). En coop el frame avanza hasta el tiempo del servidor en pasos fijos y la cuenta atrás 3-2-1 sustituye a la simulación hasta `startAt`.
 2. `Starfield`: desplaza las estrellas hacia abajo (§3.4).
 3. `Player`: aplica cooldown de disparo y de invulnerabilidad.
 4. `Hazards`: temporizadores y colisiones de asteroides; el campo magnético curva los disparos del jugador.
@@ -112,14 +112,14 @@ El desplazamiento de la rejilla es una **función pura** del tiempo `t` desde el
 ## 7. Estados del juego
 
 ```
-LOBBY → PLAYING → GAME_OVER → (toque) → PLAYING   (solo)
-           │  ▲              └──→ resultados → LOBBY   (coop)
-  segundo  │  │ toque / Espacio / Enter
-  plano    ▼  │
-          PAUSED                                     (solo; ver architecture.md §3.2)
+LOBBY → (cuenta atrás, coop) → PLAYING → GAME_OVER → RESULTADOS → PLAYING   (solo, «Jugar de nuevo»)
+                                    │  ▲                       └──→ HOME      (coop, «Volver al lobby»)
+          segundo plano o botón ⏸  │  │ continuar (menú de pausa o toque)
+                                    ▼  │
+                                  PAUSED                       (solo; ver architecture.md §3.2)
 ```
 
-`PAUSED` solo existe en modo solo y nunca desde `GAME_OVER`. Mientras dura, la simulación está congelada (incluidos temporizadores de invulnerabilidad y de disparo).
+`PAUSED` solo existe en modo solo y nunca desde `GAME_OVER`. En coop no hay pausa: el diálogo «¿Salir de la partida?» se muestra sobre la partida en marcha. Mientras dura, la simulación está congelada (incluidos temporizadores de invulnerabilidad y de disparo).
 
 ## 8. Pruebas esperadas (unitarias, sin navegador, con `node --test`)
 

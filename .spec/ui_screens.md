@@ -40,7 +40,7 @@ PLAYING ──⏸ Pausa → Salir al inicio──→ HOME          (partida aban
 | (arranque) | La app carga | `splash` | Una vez por arranque. Volver del segundo plano **no** repite el splash. |
 | `splash` | Pasan 2,5 s, o toque/tecla tras 0,8 s | `home` | |
 | `home` | «Jugar solo» | `playing` | Empieza una partida nueva (`startNewGame()`). |
-| `home` | «Créditos» | `credits` | |
+| `home` | — | — | Desde el rediseño visual el Home ya no tiene botón «Créditos»: la pantalla se muestra como sorpresa al terminar una partida en la primera oleada (`scheduleResultsNavigation`), con el botón «Continuar» hacia Resultados. |
 | `home` | «Crear sala», «Unirse a sala», «Ranking» | — | Hasta que existan sus pantallas, muestran un aviso «disponible pronto» (comportamiento actual de 2.3). |
 | `credits` | «Volver» | `home` | |
 | `playing` | Game Over | `results` | Tras 1,2 s (§8). |
@@ -99,7 +99,7 @@ export function createScreenRouter(options) {}
 
 **Propósito:** presentar la marca al abrir la app.
 
-- Contenido: nave (SVG en línea), título «SPACE COOP», lema «Arcade cooperativo» y una barra de carga **decorativa** (no refleja carga real).
+- Contenido: nave (SVG en línea), título «NEON INVADERS», lema «LA TIERRA ES TU ÚLTIMA LÍNEA» y una barra de carga **decorativa** (no refleja carga real). *(El diseño visual definitivo sigue `visualReferences/`; el nombre comercial del juego es «Neon Invaders» y «Space Coop» el del repositorio.)*
 - Dura **2,5 s** y pasa sola a `home`. Un toque, un clic o una tecla la omiten, pero **solo a partir de 0,8 s**, para que la marca llegue a verse.
 - Se muestra una sola vez por arranque de la app.
 - No importa Firebase ni hace trabajo de red: el modo solo debe poder empezar sin configuración (`architecture.md` §3, regla 5).
@@ -117,7 +117,8 @@ export function createScreenRouter(options) {}
   3. **Unirse a sala**.
   4. **Ranking**.
   5. **Créditos** (secundario, visualmente más discreto que los anteriores).
-- «Jugar solo» → `playing`. «Créditos» → `credits`.
+- «Jugar solo» → `playing`.
+- **Texto real del Home (rediseño):** marca «NEON INVADERS», «Bienvenido, piloto. Elige tu misión.», tarjetas «Un Jugador» (Jugar), «Crear Sala» y «Unirse a Sala» (campo de código de 5 caracteres), botón «Ranking», franja «Récord personal» y alias editable. Los comportamientos de este apartado se mantienen.
 - «Crear sala», «Unirse a sala» y «Ranking» mantienen sus avisos en `role="status"` hasta que existan sus pantallas.
 - Si existe un récord personal (§8.5) se muestra una línea «Tu récord: N» bajo la descripción.
 - La implementación vive en `src/ui/mainMenu.js`; se adapta para devolver su función `unmount` y recibir las acciones por parámetro.
@@ -307,7 +308,7 @@ El mapa de destinos es lógica pura y se prueba en Node con el plugin inyectado,
 ## 14. Criterios de aceptación
 
 - Al abrir la app se ve el splash, y a los 2,5 s (o con un toque pasados 0,8 s) aparece el Home.
-- Desde el Home se llega a Créditos y se vuelve; «Jugar solo» empieza una partida nueva.
+- Créditos aparece al terminar una partida en la primera oleada y «Continuar» lleva a Resultados; «Jugar solo» empieza una partida nueva.
 - Al perder la última vida, tras 1,2 s aparece Resultados con el puntaje, la oleada y el tiempo **correctos**.
 - Un toque o una tecla durante esos 1,2 s no reinicia la partida.
 - «Jugar de nuevo» arranca una partida limpia (puntaje 0, 3 vidas, oleada 1); «Inicio» vuelve al Home.

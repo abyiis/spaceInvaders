@@ -114,7 +114,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
   - No realizado (opcional): los gráficos siguen dibujados por código en el canvas y los sonidos sintetizados con Web Audio.
 - [x] 4.9 `P2 D3` Power-ups simples (disparo doble) *(solo si sobra tiempo)*
   - Ya implementado y superado en el commit de mejoras de gameplay: cuatro potenciadores (escudo, disparo rápido, triple disparo y sobrecarga) en `src/game/powerUps.js`, con pruebas en `test/gameplayUpdates.test.js` y `test/advancedGameModes.test.js`.
-- [ ] 4.10 `P2 D2` Revisar y actualizar `.spec/` para reflejar lo realmente implementado
+- [x] 4.10 `P2 D2` Revisar y actualizar `.spec/` para reflejar lo realmente implementado
 
 ---
 
@@ -141,6 +141,9 @@ Matchmaking aleatorio, chat, compras, anti-trampas, más de 4 jugadores, reconex
 | 2026-10-22 | game_loop | v1.4: `PAUSED → HOME` por «Salir al inicio» (partida abandonada, sin `onGameOver`); `PAUSED` se alcanza también con el botón ⏸ | Supuestos confirmados por el equipo |
 | 2026-10-26 | ui_screens | v1.2: §9 y §12 salida de una partida coop (botón ✕, diálogo «¿Salir de la partida?», «Atrás» de Android) | Tarea 3.16 |
 | 2026-10-26 | ui_screens | v1.2: §8.1 y §8.6 Resultados en coop (desglose por jugador, guardado solo del host, «Volver al lobby» y salida de la sala) | Tarea 3.13 |
+| 2026-10-26 | architecture | v1.8: revisión final: árbol de módulos, §3.1 puerto `SyncGateway` completo (lectura y escritura), ADR-13 a ADR-16 | Tarea 4.10 |
+| 2026-10-26 | game_loop | v1.5 (revisión): ciclo por frame y estados de la partida con la cuenta atrás, los resultados por botón y la salida en coop | Tarea 4.10 |
+| 2026-10-26 | ui_screens | v1.2 (revisión): textos reales del splash y del Home tras el rediseño; Créditos solo como sorpresa tras la primera oleada | Tarea 4.10 |
 | 2026-10-26 | architecture | v1.7: §3.6 bloqueo de orientación vertical (`orientation.js`); nueva dependencia `@capacitor/screen-orientation` | Tarea 4.1 |
 | 2026-10-26 | game_loop | v1.5: en coop el host decide las transiciones de fase y el fin de partida (§3) | Tarea 3.10 |
 | 2026-10-26 | firebase_schema | v1.1: tipos de evento `enemy-shot`, `bonus-kill`, `revive`, `life-loss`, `state`, `phase`, `game-over`; los del host solo los firma `hostUid`; nodo `state/` reservado sin uso | Tarea 3.9 |
