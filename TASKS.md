@@ -124,7 +124,7 @@ Spec: `.spec/visual_feedback.md` v1.0. Todo en el canvas, sin red; las fases (fr
 - [x] 5.1 `P1 D2` Franja de oleada: 0,5 s en el centro con «OLEADA N», animada de izquierda a derecha `[vf]`
 - [x] 5.2 `P1 D3` Animación de entrada de las naves enemigas (desde arriba, escalonada, sin impactos mientras entran) `[vf]`
 - [x] 5.3 `P1 D3` Aviso del jefe: 2 s de icono de advertencia intermitente antes de que aparezca; coherente en coop `[vf][sync]`
-- [ ] 5.4 `P1 D2` Pila de textos de estado sin superposiciones y barra del jefe debajo `[vf]`
+- [x] 5.4 `P1 D2` Pila de textos de estado sin superposiciones y barra del jefe debajo `[vf]`
 - [ ] 5.5 `P1 D1` El botón de pausa/salida ya no tapa el número de oleada `[vf]`
 - [ ] 5.6 `P1 D2` Escudo como hexágono alrededor de la nave (parpadea al terminar) `[vf]`
 - [ ] 5.7 `P1 D2` Temblor leve de pantalla al perder una vida (respeta movimiento reducido) `[vf]`

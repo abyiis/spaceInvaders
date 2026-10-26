@@ -233,10 +233,10 @@ export class Boss {
     ctx.fillRect(this.x - 3, top + this.h * 0.42, 6, 6);
   }
 
-  renderHealthBar(ctx, width) {
+  /** @param {number} [y] Parte superior de la barra (la pila de avisos la desplaza hacia abajo). */
+  renderHealthBar(ctx, width, y = 42) {
     const barWidth = Math.min(width - 48, 260);
     const x = (width - barWidth) / 2;
-    const y = 42;
 
     ctx.fillStyle = '#0b1222';
     ctx.fillRect(x, y, barWidth, 10);

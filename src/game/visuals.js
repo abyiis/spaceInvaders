@@ -3,6 +3,11 @@
 export const VISUALS = Object.freeze({
   BANNER_DURATION: 0.5,
   BANNER_HEIGHT: 56,
+  /** Pila de textos de estado bajo el HUD: primera `y` y alto de cada renglón. */
+  STATUS_TOP: 36,
+  STATUS_LINE_HEIGHT: 15,
+  /** Separación entre el último renglón y la barra de salud del jefe. */
+  BOSS_BAR_GAP: 14,
   /** Segundos de advertencia intermitente antes de que aparezca el jefe. */
   BOSS_WARNING_DURATION: 2,
   BOSS_WARNING_BLINK_HZ: 4,
@@ -111,4 +116,21 @@ export function drawBossWarning(ctx, age, { width, height, reducedMotion = false
     ctx.fillText('¡ALERTA! JEFE', cx, cy + 74);
   }
   ctx.restore();
+}
+
+/**
+ * Ordena los textos de estado en una pila vertical sin solapes (`visual_feedback.md` §6).
+ *
+ * @template T
+ * @param {T[]} lines Renglones en orden de prioridad (de arriba abajo).
+ * @returns {{ lines: (T & { y: number })[], bottom: number, bossBarY: number }}
+ *   `bottom`: `y` libre tras el último renglón; `bossBarY`: dónde dibujar la barra del jefe.
+ */
+export function layoutStatusStack(lines) {
+  const placed = lines.map((line, index) => ({
+    ...line,
+    y: VISUALS.STATUS_TOP + index * VISUALS.STATUS_LINE_HEIGHT,
+  }));
+  const bottom = VISUALS.STATUS_TOP + lines.length * VISUALS.STATUS_LINE_HEIGHT;
+  return { lines: placed, bottom, bossBarY: bottom + VISUALS.BOSS_BAR_GAP };
 }

@@ -10,7 +10,7 @@ import { Player } from './Player.js';
 import { Starfield } from './Starfield.js';
 import { asteroidOverlapsBox, Hazards } from './Hazards.js';
 import { NoopEffects } from './Effects.js';
-import { drawBanner, drawBossWarning, VISUALS } from './visuals.js';
+import { drawBanner, drawBossWarning, layoutStatusStack, VISUALS } from './visuals.js';
 import { NoopSyncGateway } from './SyncGateway.js';
 import {
   POWER_UP_DROP_CHANCE,
@@ -141,6 +141,8 @@ export class Game {
     this.officialKills = null;
     /** @type {{ text: string, remaining: number } | null} */
     this.notice = null;
+    /** `y` de la barra del jefe, bajo la pila de avisos (la fija `#renderHud`). */
+    this.statusBossBarY = 42;
     /** Franja central animada (oleada, fase bonus); `null` si no hay. */
     this.banner = null;
     /** Aviso de conexión del coop (`null` si todo va bien). */
@@ -1019,7 +1021,7 @@ export class Game {
         reducedMotion: this.reducedMotion,
       });
     }
-    if (this.boss) this.boss.renderHealthBar(ctx, this.width);
+    if (this.boss) this.boss.renderHealthBar(ctx, this.width, this.statusBossBarY);
     if (this.syncingClock || this.countdown > 0) this.#renderCountdown(ctx);
     if (this.isGameOver) this.#renderGameOver(ctx);
     else if (this.paused) this.#renderPaused(ctx);
@@ -1273,6 +1275,22 @@ export class Game {
     ctx.textAlign = 'right';
     ctx.fillText(`Oleada: ${this.wave}`, this.width - 12, 12);
 
+    const { lines, bossBarY } = layoutStatusStack(this.#statusLines());
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (const line of lines) {
+      ctx.fillStyle = line.color;
+      ctx.font = line.font;
+      ctx.fillText(line.text, this.width / 2, line.y);
+    }
+    this.statusBossBarY = bossBarY;
+  }
+
+  /** Textos de estado en orden de prioridad; se apilan sin solaparse (`visual_feedback.md` §6). */
+  #statusLines() {
+    const small = 'bold 10px ui-monospace, monospace';
+    const lines = [];
+
     const hazardWarning = this.hazards.warningRemaining;
     if (hazardWarning > 0) {
       const warningLabels = {
@@ -1280,75 +1298,53 @@ export class Game {
         magnetic: '⚠ CAMPO MAGNÉTICO',
       };
       const pulse = Math.floor(hazardWarning * 4) % 2 === 0;
-      ctx.fillStyle = pulse ? '#ff4444' : '#ff9944';
-      ctx.font = 'bold 10px ui-monospace, monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText(
-        `${warningLabels[this.hazards.pendingType] ?? '⚠ PELIGRO'} · EN ${Math.ceil(hazardWarning)}s`,
-        this.width / 2,
-        32,
-      );
+      lines.push({
+        text: `${warningLabels[this.hazards.pendingType] ?? '⚠ PELIGRO'} · EN ${Math.ceil(hazardWarning)}s`,
+        color: pulse ? '#ff4444' : '#ff9944',
+        font: small,
+      });
     } else if (this.hazards.active) {
       const labels = {
         asteroids: 'LLUVIA DE ASTEROIDES',
         magnetic: 'CAMPO MAGNÉTICO',
       };
-      ctx.fillStyle = this.hazards.active.type === 'asteroids' ? '#ffb36c' : '#8bd5ff';
-      ctx.font = 'bold 10px ui-monospace, monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText(
-        `${labels[this.hazards.active.type]} · ${Math.ceil(this.hazards.active.remaining)}s`,
-        this.width / 2,
-        32,
-      );
-    }
-
-    if (this.bossRewardTimer > 0) {
-      ctx.fillStyle = '#ffd274';
-      ctx.font = 'bold 10px ui-monospace, monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText('+1 VIDA · 2 POTENCIADORES', this.width / 2, this.boss ? 60 : 34);
+      lines.push({
+        text: `${labels[this.hazards.active.type]} · ${Math.ceil(this.hazards.active.remaining)}s`,
+        color: this.hazards.active.type === 'asteroids' ? '#ffb36c' : '#8bd5ff',
+        font: small,
+      });
     }
 
     if (this.bonusStage) {
-      ctx.fillStyle = '#ffd166';
-      ctx.font = 'bold 10px ui-monospace, monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
       const combo = this.bonusStage.combo >= 3
         ? ` · COMBO x${Math.min(5, 1 + Math.floor((this.bonusStage.combo - 1) / 3))}`
         : '';
-      ctx.fillText(
-        `FASE BONUS · ${Math.ceil(this.bonusStage.remaining)}s${combo}`,
-        this.width / 2,
-        this.hazards.active ? 46 : 32,
-      );
+      lines.push({
+        text: `FASE BONUS · ${Math.ceil(this.bonusStage.remaining)}s${combo}`,
+        color: '#ffd166',
+        font: small,
+      });
     }
 
-    const activePowerUps = [
+    if (this.bossRewardTimer > 0) {
+      lines.push({ text: '+1 VIDA · 2 POTENCIADORES', color: '#ffd274', font: small });
+    }
+
+    for (const [type, remaining] of [
       ['shield', this.player.shieldPowerUp],
       ['rapidFire', this.player.rapidFire],
       ['tripleShot', this.player.tripleShot],
       ['overdrive', this.player.overdrive],
-    ].filter(([, remaining]) => remaining > 0);
-    if (activePowerUps.length > 0) {
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.font = 'bold 11px ui-monospace, monospace';
-      activePowerUps.forEach(([type, remaining], index) => {
-        const definition = POWER_UPS[type];
-        ctx.fillStyle = definition.color;
-        const offset = this.bossRewardTimer > 0 ? 16 : 0;
-        ctx.fillText(
-          `${definition.label} ${remaining.toFixed(1)}s`,
-          this.width / 2,
-          34 + offset + index * 15,
-        );
+    ]) {
+      if (remaining <= 0) continue;
+      const definition = POWER_UPS[type];
+      lines.push({
+        text: `${definition.label} ${remaining.toFixed(1)}s`,
+        color: definition.color,
+        font: 'bold 11px ui-monospace, monospace',
       });
     }
+    return lines;
   }
 
   #renderNotice(ctx) {
