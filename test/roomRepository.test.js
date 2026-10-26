@@ -12,6 +12,7 @@ function createDependencies({ committed = true } = {}) {
   const updates = [];
   const writes = [];
   const disconnectCalls = [];
+  const removals = [];
   const subscriptions = new Map();
   let childAddedCallback;
   let valueCallback;
@@ -51,6 +52,9 @@ function createDependencies({ committed = true } = {}) {
       };
     },
     push: (databaseRef) => ({ path: `${databaseRef.path}/event-1`, key: 'event-1' }),
+    remove: async (databaseRef) => {
+      removals.push(databaseRef.path);
+    },
     ref: (_database, path) => ({ path }),
     serverTimestamp: () => timestamp,
     set: async (databaseRef, data) => {
@@ -70,6 +74,7 @@ function createDependencies({ committed = true } = {}) {
     authService,
     databaseApi,
     disconnectCalls,
+    removals,
     get errorCallback() {
       return errorCallback;
     },
@@ -521,4 +526,53 @@ test('watchServerOffset entrega el desfase del servidor y se cancela', () => {
   stop();
   assert.equal(dependencies.subscriptions.has('.info/serverTimeOffset'), false);
   assert.throws(() => repository.watchServerOffset(null, () => {}), TypeError);
+});
+
+test('finishRoom marca la sala como terminada solo si quien llama es el host', async () => {
+  const dependencies = createDependencies();
+  const calls = [];
+  dependencies.databaseApi.runTransaction = async (databaseRef, update) => {
+    calls.push({
+      path: databaseRef.path,
+      host: update({ hostUid: 'host-user', status: 'playing', seed: 1 }),
+      other: update({ hostUid: 'someone', status: 'playing' }),
+      empty: update(null),
+    });
+    return { committed: true };
+  };
+  const repository = createRoomRepository(dependencies);
+
+  assert.equal(await repository.finishRoom('aaaaa'), true);
+  assert.equal(calls[0].path, 'rooms/AAAAA/meta');
+  assert.deepEqual(calls[0].host, { hostUid: 'host-user', status: 'finished', seed: 1 });
+  assert.equal(calls[0].other, undefined);
+  assert.equal(calls[0].empty, undefined);
+  await assert.rejects(repository.finishRoom('x'), /five valid characters/);
+});
+
+test('deleteRoom borra rooms/{code} completa', async () => {
+  const dependencies = createDependencies();
+  const repository = createRoomRepository(dependencies);
+  await repository.deleteRoom('abcde');
+  assert.deepEqual(dependencies.removals, ['rooms/ABCDE']);
+  await assert.rejects(repository.deleteRoom('abc'), /five valid characters/);
+});
+
+test('leaveLobby: el host cierra la sala y el invitado solo libera su plaza', async () => {
+  const dependencies = createDependencies();
+  const repository = createRoomRepository(dependencies);
+
+  dependencies.snapshots.set('rooms/AAAAA/meta', { hostUid: 'host-user' });
+  assert.equal(await repository.leaveLobby('AAAAA'), 'closed');
+  assert.deepEqual(dependencies.removals, ['rooms/AAAAA']);
+
+  dependencies.removals.length = 0;
+  dependencies.snapshots.set('rooms/AAAAA/meta', { hostUid: 'another-host' });
+  assert.equal(await repository.leaveLobby('AAAAA'), 'left');
+  assert.deepEqual(dependencies.removals, ['rooms/AAAAA/players/host-user']);
+
+  dependencies.removals.length = 0;
+  dependencies.snapshots.delete('rooms/AAAAA/meta');
+  assert.equal(await repository.leaveLobby('AAAAA'), 'left');
+  assert.deepEqual(dependencies.removals, ['rooms/AAAAA/players/host-user']);
 });

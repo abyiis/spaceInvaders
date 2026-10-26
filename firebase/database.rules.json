@@ -5,6 +5,7 @@
     "rooms": {
       "$roomId": {
         ".read": "auth != null",
+        ".write": "auth != null && !newData.exists() && (data.child('meta/hostUid').val() === auth.uid || (data.child('players').child(auth.uid).exists() && data.child('players').child(data.child('meta/hostUid').val()).child('connected').val() === false))",
 
         "meta": {
           ".write": "auth != null && (!data.exists() || data.child('hostUid').val() === auth.uid || (root.child('rooms').child($roomId).child('players').child(data.child('hostUid').val()).child('connected').val() === false && root.child('rooms').child($roomId).child('players').child(auth.uid).exists() && newData.child('hostUid').val() === auth.uid && newData.child('seed').val() === data.child('seed').val()))",

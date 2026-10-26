@@ -257,6 +257,64 @@ describe('Firebase security rules', { skip: !emulatorAvailable }, () => {
     ));
   });
 
+  it('Realtime Database solo permite borrar la sala al host o a un jugador cuando el host está desconectado', async () => {
+    const hostDatabase = testEnvironment.authenticatedContext('host').database();
+    const guestDatabase = testEnvironment.authenticatedContext('guest').database();
+    const strangerDatabase = testEnvironment.authenticatedContext('stranger').database();
+    const seedRoom = async (code, hostConnected) => {
+      await setRtdb(rtdbRef(hostDatabase, `rooms/${code}/meta`), {
+        hostUid: 'host', seed: 1, status: 'finished', createdAt: 1, maxPlayers: 2,
+      });
+      const player = { name: 'P', x: 0.5, ts: 1, ready: true, connected: true };
+      await setRtdb(rtdbRef(hostDatabase, `rooms/${code}/players/host`), { ...player, connected: hostConnected });
+      await setRtdb(rtdbRef(guestDatabase, `rooms/${code}/players/guest`), player);
+      await setRtdb(rtdbRef(guestDatabase, `rooms/${code}/events/e1`), { type: 'hit', uid: 'guest', t: 1 });
+    };
+    const repositoryFor = (uid, database) => createRoomRepository({
+      rtdb: database,
+      authService: { signIn: async () => uid },
+    });
+
+    await seedRoom('AAAAA', true);
+    await assertFails(repositoryFor('stranger', strangerDatabase).deleteRoom('AAAAA'));
+    await assertFails(repositoryFor('guest', guestDatabase).deleteRoom('AAAAA'));
+    await assertFails(setRtdb(rtdbRef(guestDatabase, 'rooms/AAAAA/players'), null));
+    await assertFails(setRtdb(rtdbRef(guestDatabase, 'rooms/AAAAA'), { meta: { hostUid: 'guest' } }));
+    assert.equal((await getRtdb(rtdbRef(hostDatabase, 'rooms/AAAAA/meta/hostUid'))).val(), 'host');
+    await assertSucceeds(repositoryFor('host', hostDatabase).deleteRoom('AAAAA'));
+    assert.equal((await getRtdb(rtdbRef(hostDatabase, 'rooms/AAAAA'))).exists(), false);
+
+    await seedRoom('BBBBB', false);
+    await assertFails(repositoryFor('stranger', strangerDatabase).deleteRoom('BBBBB'));
+    await assertSucceeds(repositoryFor('guest', guestDatabase).deleteRoom('BBBBB'));
+    assert.equal((await getRtdb(rtdbRef(hostDatabase, 'rooms/BBBBB'))).exists(), false);
+  });
+
+  it('Realtime Database: el invitado libera su plaza y el host cierra la sala al salir del lobby', async () => {
+    const hostDatabase = testEnvironment.authenticatedContext('host').database();
+    const guestDatabase = testEnvironment.authenticatedContext('guest').database();
+    const hostRepository = createRoomRepository({
+      rtdb: hostDatabase,
+      authService: { signIn: async () => 'host' },
+      codeFactory: () => 'CCCCC',
+      seedFactory: () => 9,
+    });
+    await hostRepository.createRoom({ name: 'Host' });
+    const guestRepository = createRoomRepository({
+      rtdb: guestDatabase,
+      authService: { signIn: async () => 'guest' },
+    });
+    await guestRepository.joinRoom('CCCCC', { name: 'Guest' });
+    assert.equal((await getRtdb(rtdbRef(hostDatabase, 'rooms/CCCCC/players/guest'))).exists(), true);
+
+    assert.equal(await guestRepository.leaveLobby('CCCCC'), 'left');
+    assert.equal((await getRtdb(rtdbRef(hostDatabase, 'rooms/CCCCC/players/guest'))).exists(), false);
+    await guestRepository.joinRoom('CCCCC', { name: 'Guest' });
+
+    assert.equal(await hostRepository.leaveLobby('CCCCC'), 'closed');
+    assert.equal((await getRtdb(rtdbRef(hostDatabase, 'rooms/CCCCC'))).exists(), false);
+  });
+
   it('Firestore profiles are private to their owner', async () => {
     const owner = testEnvironment.authenticatedContext('owner').firestore();
     const otherUser = testEnvironment.authenticatedContext('other').firestore();

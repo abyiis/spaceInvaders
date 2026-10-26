@@ -12,6 +12,7 @@
  *   watchPresence: (code: string, uid: string, onError: (error: Error) => void) => () => Promise<void>,
  *   setReady: (code: string, ready: boolean) => Promise<void>,
  *   startGame: (code: string) => Promise<object>,
+ *   leaveRoom?: (code: string) => Promise<unknown>,
  *   onStart: (meta: object) => void,
  *   onBack: () => void,
  * }} options
@@ -27,6 +28,7 @@ export function mountLobby(container, {
   watchPresence,
   setReady,
   startGame,
+  leaveRoom,
   onStart,
   onBack,
 }) {
@@ -65,6 +67,7 @@ export function mountLobby(container, {
   let savingReady = false;
   let starting = false;
   let startHandled = false;
+  let sawRoom = false;
   startButton.hidden = !isHost;
 
   const renderPlayers = (players) => {
@@ -85,6 +88,7 @@ export function mountLobby(container, {
       }
     }
 
+    if (sawRoom && Object.keys(players).length === 0) return;
     const othersReady = Object.entries(players)
       .filter(([playerUid]) => playerUid !== uid)
       .every(([, player]) => player.ready === true);
@@ -110,7 +114,16 @@ export function mountLobby(container, {
     },
   );
   const unsubscribeStatus = watchRoomStatus(code, (meta) => {
-    if (disposed || startHandled || meta?.status !== 'playing') return;
+    if (disposed) return;
+    if (meta) sawRoom = true;
+    else if (sawRoom) {
+      // El host cerró la sala: ya no hay nada que esperar.
+      readyButton.disabled = true;
+      startButton.disabled = true;
+      message.textContent = 'El host cerró la sala. Vuelve al inicio.';
+      return;
+    }
+    if (startHandled || meta?.status !== 'playing') return;
     startHandled = true;
     onStart(meta);
   }, (error) => {
@@ -132,6 +145,9 @@ export function mountLobby(container, {
       message.textContent = 'Saliendo de la sala…';
       try {
         await cleanup();
+        // Liberar la plaza (o cerrar la sala si somos el host) es un favor a los demás: si falla
+        // —p. ej. sin red— igualmente se vuelve al inicio.
+        await leaveRoom?.(code).catch((error) => console.warn('No se pudo limpiar la sala:', error));
         onBack();
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);

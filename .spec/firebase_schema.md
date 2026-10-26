@@ -51,7 +51,7 @@ rooms/
 | Ruta | Lectura | Escritura |
 |---|---|---|
 | `rooms` (listado) | ❌ nunca | ❌ |
-| `rooms/{code}` | usuario autenticado (el código actúa como secreto) | — |
+| `rooms/{code}` | usuario autenticado (el código actúa como secreto) | solo **borrarla**: el host, o un jugador de la sala si el host figura con `connected: false` |
 | `rooms/{code}/meta` | autenticado | crear: cualquier autenticado si no existe; modificar: solo `hostUid`, o un jugador de la sala que pase a ser `hostUid` mientras el host figura con `connected: false` (relevo; la semilla no puede cambiar) |
 | `rooms/{code}/players/{uid}` | autenticado | solo `auth.uid == uid` |
 | `rooms/{code}/state` | autenticado | solo `meta/hostUid` |

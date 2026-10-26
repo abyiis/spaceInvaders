@@ -5,6 +5,7 @@ import {
   onValue,
   push,
   ref,
+  remove,
   runTransaction,
   set,
   serverTimestamp,
@@ -36,6 +37,17 @@ function generateSeed() {
   return secureRandomBytes(new Uint32Array(1))[0];
 }
 
+function normalizeRoomCode(inputCode) {
+  const code = typeof inputCode === 'string' ? inputCode.trim().toUpperCase() : '';
+  if (
+    code.length !== ROOM_CODE_LENGTH
+    || !Array.from(code).every((character) => ROOM_CODE_CHARACTERS.includes(character))
+  ) {
+    throw new Error('Room code must contain exactly five valid characters.');
+  }
+  return code;
+}
+
 function normalizePlayerName(name) {
   if (typeof name !== 'string' || name.trim().length === 0 || name.trim().length > 16) {
     throw new Error('Player name must contain 1-16 characters.');
@@ -54,6 +66,7 @@ function normalizePlayerName(name) {
  *     onValue: typeof onValue,
  *     push: typeof push,
  *     ref: typeof ref,
+ *     remove: typeof remove,
  *     runTransaction: typeof runTransaction,
  *     serverTimestamp: typeof serverTimestamp,
  *     update: typeof update,
@@ -73,6 +86,7 @@ export function createRoomRepository({
     onValue,
     push,
     ref,
+    remove,
     runTransaction,
     set,
     serverTimestamp,
@@ -291,6 +305,44 @@ export function createRoomRepository({
       );
       if (!result.committed) throw new Error('The room could not be started.');
       return { code, seed: meta.seed, hostUid: uid, startAt };
+    },
+
+    /** Host: marca la partida como terminada (`meta/status = finished`). */
+    async finishRoom(inputCode) {
+      const code = normalizeRoomCode(inputCode);
+      const uid = await authService.signIn();
+      const result = await databaseApi.runTransaction(
+        databaseApi.ref(rtdb, `rooms/${code}/meta`),
+        (currentData) => {
+          if (!currentData || currentData.hostUid !== uid) return undefined;
+          return { ...currentData, status: 'finished' };
+        },
+        { applyLocally: false },
+      );
+      return result.committed;
+    },
+
+    /**
+     * Borra la sala entera. Las reglas lo permiten al host, o a un jugador de la sala cuando el
+     * host figura desconectado (el último en salir).
+     */
+    async deleteRoom(inputCode) {
+      const code = normalizeRoomCode(inputCode);
+      await authService.signIn();
+      await databaseApi.remove(databaseApi.ref(rtdb, `rooms/${code}`));
+    },
+
+    /** Salir del lobby: el host cierra la sala; el invitado libera su plaza. */
+    async leaveLobby(inputCode) {
+      const code = normalizeRoomCode(inputCode);
+      const uid = await authService.signIn();
+      const metaSnapshot = await databaseApi.get(databaseApi.ref(rtdb, `rooms/${code}/meta`));
+      if (metaSnapshot.exists() && metaSnapshot.val().hostUid === uid) {
+        await databaseApi.remove(databaseApi.ref(rtdb, `rooms/${code}`));
+        return 'closed';
+      }
+      await databaseApi.remove(databaseApi.ref(rtdb, `rooms/${code}/players/${uid}`));
+      return 'left';
     },
 
     watchRoomStatus(inputCode, onStatus, onError) {

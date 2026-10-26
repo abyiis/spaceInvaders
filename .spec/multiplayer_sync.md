@@ -83,7 +83,7 @@ No hay nodo `state`: el estado oficial viaja en los eventos del host, que hereda
 3. Ambos marcan `ready`; el host fija `meta/startAt = serverNow + 3000` y `status = playing`.
 4. Juego (§3-4), con cuenta atrás hasta `startAt`.
 5. Fin: el host escribe `status = finished` y guarda el puntaje en Firestore (`leaderboard`, `mode: 'coop'`, `players`) **solo el host**, una vez.
-6. Limpieza: el host borra `rooms/{code}` al salir de Resultados o al abandonar la partida si ya no queda nadie conectado; salas con `createdAt` > 24 h pueden eliminarse manualmente (no hay Cloud Functions).
+6. Limpieza (`roomRepository.deleteRoom`): el host borra `rooms/{code}` al salir de Resultados (por el botón o con «Atrás»). Las reglas también dejan borrarla a un jugador de la sala cuando el host figura desconectado (el último en salir). Al salir del lobby el host borra la sala y el invitado libera su plaza (`leaveLobby`); si el host cierra la sala, el invitado ve «El host cerró la sala». Salas con `createdAt` > 24 h pueden eliminarse manualmente (no hay Cloud Functions).
 7. «Salir» a mitad de partida (tarea 3.16): confirmación «¿Salir de la partida?»; abandonar equivale a desconectarse (§5).
 
 ## 7. Presupuesto de tráfico (2 jugadores, 10 min)

@@ -41,6 +41,15 @@ async function saveSoloScore(result) {
   await scoreRepository.saveSoloScore({ ...result, name: playerDisplayName });
 }
 
+/** Al salir de Resultados el host borra la sala (`multiplayer_sync.md` §6, paso 6). */
+function cleanUpCoopRoom(result) {
+  const room = activeCoopRoom;
+  activeCoopRoom = null;
+  if (!room || !result.isHost) return;
+  room.roomRepository.deleteRoom(room.code)
+    .catch((error) => console.warn('No se pudo borrar la sala:', error));
+}
+
 /** Solo el host guarda el puntaje del equipo, una vez (`multiplayer_sync.md` §6). */
 async function saveCoopScore(result) {
   const { scoreRepository } = await import('./net/firebase.js');
@@ -52,9 +61,16 @@ async function saveCoopScore(result) {
   });
 }
 
+/** Sala coop de la partida en curso; la usan el cierre de partida y la salida de Resultados. */
+let activeCoopRoom = null;
+
 const game = new Game({
   effects,
   onGameOver: (result) => {
+    if (result.mode === 'coop' && result.isHost && activeCoopRoom) {
+      activeCoopRoom.roomRepository.finishRoom(activeCoopRoom.code)
+        .catch((error) => console.warn('No se pudo cerrar la sala:', error));
+    }
     ui.querySelector('[data-action="pause"]')?.setAttribute('hidden', '');
     cancelPendingResults();
     cancelPendingResults = scheduleResultsNavigation(router, result, {
@@ -96,6 +112,7 @@ const router = createScreenRouter({
           ? saveSoloScore
           : result.isHost ? saveCoopScore : undefined,
       bestScoreStore: result.mode === 'solo' ? bestScoreStore : undefined,
+      onExit: result.mode === 'coop' ? () => cleanUpCoopRoom(result) : undefined,
     }, nav),
     [SCREENS.HOME]: (container, _params, nav) => mountMainMenu(container, {
       bestScore: bestScoreStore.get(),
@@ -143,8 +160,10 @@ const router = createScreenRouter({
           startAt: coop.startAt,
           onError: (error) => console.error('Co-op synchronization failed:', error),
         });
+        activeCoopRoom = { code: coop.code, roomRepository: coop.roomRepository };
       } else {
         sync = new NoopSyncGateway();
+        activeCoopRoom = null;
       }
       game.setSyncGateway(sync);
       const unmount = mountPlaying(container, {
@@ -169,6 +188,7 @@ const router = createScreenRouter({
       watchPresence: firebase.roomRepository.watchPresence,
       setReady: firebase.roomRepository.setReady,
       startGame: firebase.roomRepository.startGame,
+      leaveRoom: firebase.roomRepository.leaveLobby,
       onStart: (meta) => nav.show(SCREENS.PLAYING, {
         coop: {
           code: room.code,

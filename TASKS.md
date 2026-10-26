@@ -89,7 +89,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 - [x] 3.11 `P1 D4` Reasignación del rol de host si el host se desconecta `[sync]`
 - [x] 3.12 `P1 D3` Avisos de "conexión inestable" y compañero desconectado `[sync]`
 - [x] 3.13 `P1 D2` Resultados de partida coop (reutiliza la pantalla de Resultados de 2B.8 con desglose por jugador y «Volver al lobby») y guardado en ranking (solo host) `[fb][ui]`
-- [ ] 3.14 `P1 D2` Limpieza de la sala al finalizar `[sync]`
+- [x] 3.14 `P1 D2` Limpieza de la sala al finalizar `[sync]`
 - [ ] 3.15 `P1 D3` Prueba manual documentada con 2 dispositivos reales y redes distintas `[sync]`
 - [ ] 3.16 `P1 D2` Salir de una partida coop a mitad de partida: botón «Salir» con confirmación «¿Salir de la partida?», abandono de la sala y limpieza `[sync][ui]`
 
