@@ -10,7 +10,7 @@ import { Player } from './Player.js';
 import { Starfield } from './Starfield.js';
 import { asteroidOverlapsBox, Hazards } from './Hazards.js';
 import { NoopEffects } from './Effects.js';
-import { drawBanner, drawBossWarning, layoutStatusStack, VISUALS } from './visuals.js';
+import { drawBanner, drawBossWarning, layoutStatusStack, shakeOffset, VISUALS } from './visuals.js';
 import { NoopSyncGateway } from './SyncGateway.js';
 import {
   POWER_UP_DROP_CHANCE,
@@ -143,6 +143,8 @@ export class Game {
     this.notice = null;
     /** `y` de la barra del jefe, bajo la pila de avisos (la fija `#renderHud`). */
     this.statusBossBarY = 42;
+    /** Temblor de pantalla en curso (`{ age }`) o `null`. */
+    this.shake = null;
     /** Franja central animada (oleada, fase bonus); `null` si no hay. */
     this.banner = null;
     /** Aviso de conexión del coop (`null` si todo va bien). */
@@ -311,6 +313,10 @@ export class Game {
       this.notice.remaining -= dt;
       if (this.notice.remaining <= 0) this.notice = null;
     }
+    if (this.shake) {
+      this.shake.age += dt;
+      if (this.shake.age >= VISUALS.SHAKE_DURATION) this.shake = null;
+    }
     if (this.banner) {
       this.banner.age += dt;
       if (this.banner.age >= VISUALS.BANNER_DURATION) this.banner = null;
@@ -434,6 +440,12 @@ export class Game {
       this.remotePlayer.revivePending = false;
       this.#checkCoopGameOver();
     }
+  }
+
+  /** Hace temblar la escena 0,35 s (no hace nada con movimiento reducido). */
+  shakeScreen() {
+    if (this.reducedMotion) return;
+    this.shake = { age: 0 };
   }
 
   /** Lanza la franja central de 0,5 s; una nueva sustituye a la anterior. */
@@ -993,6 +1005,10 @@ export class Game {
     ctx.fillStyle = '#0b0e1a';
     ctx.fillRect(0, 0, this.width, this.height);
 
+    // El temblor mueve la escena pero no el HUD ni las franjas.
+    const shake = shakeOffset(this.shake);
+    ctx.save();
+    ctx.translate(shake.x, shake.y);
     this.starfield.render(ctx);
     this.#renderHazards(ctx);
     for (const enemy of this.formation.alive) enemy.render(ctx);
@@ -1004,6 +1020,7 @@ export class Game {
     this.player.render(ctx);
     this.#renderRemotePlayer(ctx);
     this.#renderSynergyEffects(ctx);
+    ctx.restore();
 
     this.#renderHud(ctx);
     this.#renderNotice(ctx);

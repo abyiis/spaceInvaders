@@ -127,7 +127,7 @@ Spec: `.spec/visual_feedback.md` v1.0. Todo en el canvas, sin red; las fases (fr
 - [x] 5.4 `P1 D2` Pila de textos de estado sin superposiciones y barra del jefe debajo `[vf]`
 - [x] 5.5 `P1 D1` El botón de pausa/salida ya no tapa el número de oleada `[vf]`
 - [x] 5.6 `P1 D2` Escudo como hexágono alrededor de la nave (parpadea al terminar) `[vf]`
-- [ ] 5.7 `P1 D2` Temblor leve de pantalla al perder una vida (respeta movimiento reducido) `[vf]`
+- [x] 5.7 `P1 D2` Temblor leve de pantalla al perder una vida (respeta movimiento reducido) `[vf]`
 - [ ] 5.8 `P1 D1` Franja dorada «FASE BONUS» al iniciar una fase bonus `[vf]`
 
 ---

@@ -45,6 +45,7 @@ export class Player {
     if (this.isInvulnerable || this.downedTimer > 0 || this.eliminated || this.game.isGameOver) {
       return false;
     }
+    this.game.shakeScreen();
     if (this.game.sync.isCoop) {
       this.downedTimer = 5;
       this.game.sync.emitHit(this.game.elapsed);

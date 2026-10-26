@@ -3,6 +3,9 @@
 export const VISUALS = Object.freeze({
   BANNER_DURATION: 0.5,
   BANNER_HEIGHT: 56,
+  /** Temblor al perder una vida: duración (s) y desplazamiento máximo (px). */
+  SHAKE_DURATION: 0.35,
+  SHAKE_MAGNITUDE: 4,
   /** Escudo hexagonal: radio, color, giro (rad/s) y ventana final de parpadeo (s). */
   SHIELD_RADIUS: 26,
   SHIELD_COLOR: '#67f5d5',
@@ -177,4 +180,15 @@ export function drawShieldHexagon(ctx, { x, y, remaining, time, reducedMotion = 
   ctx.stroke();
   ctx.restore();
   return true;
+}
+
+/**
+ * Desplazamiento del temblor de pantalla: hasta `SHAKE_MAGNITUDE` px que decae linealmente hasta 0.
+ * @param {{ age: number } | null} shake
+ * @param {() => number} [random] Debe devolver un valor en [0, 1); no debe ser el azar de la partida.
+ */
+export function shakeOffset(shake, random = Math.random) {
+  if (!shake || shake.age >= VISUALS.SHAKE_DURATION) return { x: 0, y: 0 };
+  const strength = VISUALS.SHAKE_MAGNITUDE * (1 - shake.age / VISUALS.SHAKE_DURATION);
+  return { x: (random() * 2 - 1) * strength, y: (random() * 2 - 1) * strength };
 }
