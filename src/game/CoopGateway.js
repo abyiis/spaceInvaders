@@ -1,4 +1,5 @@
 import { createGameClock } from '../core/gameClock.js';
+import { createInterpolationBuffer } from '../core/interpolationBuffer.js';
 import { createPositionPublisher } from '../core/positionPublisher.js';
 
 export class CoopGateway {
@@ -29,6 +30,8 @@ export class CoopGateway {
       },
     });
     this.currentPlayers = {};
+    this.remoteBuffer = createInterpolationBuffer();
+    this.bufferedUid = null;
     this.disposed = false;
     this.unsubscribeOffset = roomRepository.watchServerOffset?.(
       (offset) => this.clock.setOffset(offset),
@@ -38,6 +41,7 @@ export class CoopGateway {
       code,
       (players) => {
         this.currentPlayers = players;
+        this.#bufferRemotePosition();
       },
       onError,
     );
@@ -74,7 +78,14 @@ export class CoopGateway {
     return Object.keys(this.currentPlayers).find((playerUid) => playerUid !== this.localUid) ?? null;
   }
 
+  /**
+   * Posición del compañero: interpolada 100 ms atrás del reloj del servidor. Sin reloj o sin
+   * marcas de tiempo (`ts`) cae a la última posición recibida.
+   */
   get remoteX() {
+    const serverNow = this.clock.serverNow();
+    const interpolated = serverNow === null ? null : this.remoteBuffer.sample(serverNow);
+    if (interpolated !== null) return interpolated;
     const x = this.currentPlayers[this.remoteUid]?.x;
     return Number.isFinite(x) ? x : null;
   }
@@ -148,6 +159,16 @@ export class CoopGateway {
     this.unsubscribePlayers();
     this.unsubscribeEvents();
     this.stopPresence().catch(this.onError);
+  }
+
+  #bufferRemotePosition() {
+    const uid = this.remoteUid;
+    if (uid !== this.bufferedUid) {
+      this.remoteBuffer.clear();
+      this.bufferedUid = uid;
+    }
+    const remote = this.currentPlayers[uid];
+    if (remote) this.remoteBuffer.push(remote.ts, remote.x);
   }
 
   #publish(event) {
