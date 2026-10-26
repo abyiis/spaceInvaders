@@ -120,6 +120,7 @@ test('en hitos coincidentes se derrota primero al jefe y luego comienza la fase 
   game.wave = 15;
   game.formation.enemies.forEach((enemy) => { enemy.dead = true; });
   game.update(0.001);
+  game.update(2.01); // advertencia previa al jefe
 
   assert.ok(game.boss);
   assert.equal(game.pendingBonusStage, true);

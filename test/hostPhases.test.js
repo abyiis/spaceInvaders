@@ -98,6 +98,9 @@ test('tras la tercera oleada el host abre el jefe y el invitado lo recibe', () =
   host.game.wave = 3;
   clearFormation(host.game);
   host.game.update(0.01);
+  assert.equal(host.game.boss, null);
+  assert.ok(host.game.bossIncoming);
+  host.game.update(2.01);
   assert.ok(host.game.boss);
   const [phase] = phases(host.sync);
   assert.equal(phase.kind, 'boss');
@@ -107,6 +110,8 @@ test('tras la tercera oleada el host abre el jefe y el invitado lo recibe', () =
   guest.game.wave = 3;
   clearFormation(guest.game);
   guest.sync.handlers.onEvent('p1', { type: 'phase', uid: 'host', ...phase });
+  assert.ok(guest.game.bossIncoming);
+  guest.game.update(2.01);
   assert.ok(guest.game.boss);
   assert.equal(guest.game.boss.wave, 3);
   assert.equal(guest.game.score, phase.score);
@@ -117,6 +122,7 @@ test('al caer el jefe el host suma su recompensa y la siguiente fase lleva bossD
   game.wave = 3;
   clearFormation(game);
   game.update(0.01);
+  game.update(2.01);
   game.boss.health = 0;
   const livesBefore = game.lives;
   game.update(0.01);
@@ -136,6 +142,7 @@ test('el invitado aplica la recompensa del jefe al recibir la fase con bossDefea
   game.wave = 3;
   clearFormation(game);
   sync.handlers.onEvent('p1', { type: 'phase', uid: 'host', kind: 'boss', wave: 3, t: 5, score: 200, lives: 3 });
+  game.update(2.01);
   assert.ok(game.boss);
 
   sync.handlers.onEvent('p2', {

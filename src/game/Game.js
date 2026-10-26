@@ -10,7 +10,7 @@ import { Player } from './Player.js';
 import { Starfield } from './Starfield.js';
 import { asteroidOverlapsBox, Hazards } from './Hazards.js';
 import { NoopEffects } from './Effects.js';
-import { drawBanner, VISUALS } from './visuals.js';
+import { drawBanner, drawBossWarning, VISUALS } from './visuals.js';
 import { NoopSyncGateway } from './SyncGateway.js';
 import {
   POWER_UP_DROP_CHANCE,
@@ -153,6 +153,8 @@ export class Game {
     /** `true` mientras un cliente coop espera conocer el reloj del servidor. */
     this.syncingClock = false;
     this.boss = null;
+    /** Advertencia previa al jefe: `{ wave, age }` mientras dura; `null` si no hay. */
+    this.bossIncoming = null;
     this.bonusStage = null;
     this.pendingBonusStage = false;
     this.bossDefeatedPending = false;
@@ -316,6 +318,7 @@ export class Game {
 
     this.elapsed += dt;
     this.bossRewardTimer = Math.max(0, this.bossRewardTimer - dt);
+    this.#updateBossWarning(dt);
     this.starfield.update(dt);
     this.player.update(dt);
     this.sync.publishPlayerX(this.player.x / this.width);
@@ -349,7 +352,7 @@ export class Game {
       this.#defeatBoss();
       return;
     }
-    if (this.boss) return;
+    if (this.boss || this.bossIncoming) return;
     if (this.bonusStage) {
       if (this.bonusStage.remaining <= 0) {
         this.bonusStage = null;
@@ -503,8 +506,22 @@ export class Game {
   }
 
   #enterBoss() {
-    this.boss = new Boss(this, this.wave);
+    this.#beginBossWarning(this.wave);
     this.#announcePhase('boss');
+  }
+
+  /** El jefe no aparece de golpe: 2 s de advertencia intermitente y después entra. */
+  #beginBossWarning(wave, lag = 0) {
+    this.bossIncoming = { wave, age: Math.min(lag, VISUALS.BOSS_WARNING_DURATION) };
+  }
+
+  #updateBossWarning(dt) {
+    if (!this.bossIncoming) return;
+    this.bossIncoming.age += dt;
+    if (this.bossIncoming.age < VISUALS.BOSS_WARNING_DURATION) return;
+    const { wave } = this.bossIncoming;
+    this.bossIncoming = null;
+    this.boss = new Boss(this, wave);
   }
 
   #enterBonus() {
@@ -540,11 +557,11 @@ export class Game {
     const lag = this.#eventLag(event);
 
     if (event.kind === 'boss') {
-      if (this.boss || wave < this.wave) return;
+      if (this.boss || this.bossIncoming || wave < this.wave) return;
       this.#adoptOfficial(event);
       this.wave = wave;
       this.pendingBonusStage = wave % 5 === 0;
-      this.boss = new Boss(this, wave);
+      this.#beginBossWarning(wave, lag);
       return;
     }
     if (event.kind === 'bonus') {
@@ -561,6 +578,7 @@ export class Game {
       this.#adoptOfficial(event);
       if (this.boss && event.bossDefeated) this.#celebrateBossDefeat();
       this.boss = null;
+      this.bossIncoming = null;
       this.bonusStage = null;
       this.wave = wave - 1;
       this.#nextWave({ startElapsed: event.t });
@@ -987,6 +1005,13 @@ export class Game {
 
     this.#renderHud(ctx);
     this.#renderNotice(ctx);
+    if (this.bossIncoming) {
+      drawBossWarning(ctx, this.bossIncoming.age, {
+        width: this.width,
+        height: this.height,
+        reducedMotion: this.reducedMotion,
+      });
+    }
     if (this.banner) {
       drawBanner(ctx, this.banner, this.banner.age / VISUALS.BANNER_DURATION, {
         width: this.width,

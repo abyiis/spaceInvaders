@@ -3,6 +3,9 @@
 export const VISUALS = Object.freeze({
   BANNER_DURATION: 0.5,
   BANNER_HEIGHT: 56,
+  /** Segundos de advertencia intermitente antes de que aparezca el jefe. */
+  BOSS_WARNING_DURATION: 2,
+  BOSS_WARNING_BLINK_HZ: 4,
   /** Entrada de los enemigos: duración por enemigo, escalonado por rejilla y altura de partida. */
   ENTRANCE_DURATION: 0.5,
   ENTRANCE_ROW_DELAY: 0.08,
@@ -68,5 +71,44 @@ export function drawBanner(ctx, { text, kind }, progress, { width, height, reduc
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, width / 2 + offsetX, height / 2 + 1);
+  ctx.restore();
+}
+
+/**
+ * Advertencia de jefe: triángulo amarillo con «!» y el texto «¡ALERTA! JEFE», intermitente.
+ * Con movimiento reducido no parpadea ni pulsa.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} age Segundos desde que empezó la advertencia.
+ * @param {{ width: number, height: number, reducedMotion?: boolean }} view
+ */
+export function drawBossWarning(ctx, age, { width, height, reducedMotion = false }) {
+  const visible = reducedMotion || Math.floor(age * VISUALS.BOSS_WARNING_BLINK_HZ * 2) % 2 === 0;
+  const pulse = reducedMotion ? 0.12 : 0.08 + 0.06 * Math.sin(age * Math.PI * 2 * VISUALS.BOSS_WARNING_BLINK_HZ);
+  ctx.save();
+  ctx.fillStyle = `rgba(255, 40, 60, ${pulse})`;
+  ctx.fillRect(0, 0, width, height);
+  if (visible) {
+    const cx = width / 2;
+    const cy = height / 2 - 20;
+    ctx.fillStyle = '#ffd21a';
+    ctx.strokeStyle = '#7a1010';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 46);
+    ctx.lineTo(cx + 54, cy + 40);
+    ctx.lineTo(cx - 54, cy + 40);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#2a0a0a';
+    ctx.font = 'bold 56px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('!', cx, cy + 12);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px system-ui, sans-serif';
+    ctx.fillText('¡ALERTA! JEFE', cx, cy + 74);
+  }
   ctx.restore();
 }

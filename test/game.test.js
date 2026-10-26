@@ -106,6 +106,9 @@ test('aparece un jefe al completar cada tercera ronda y detiene la formación no
   }
   for (const enemy of g.formation.enemies) enemy.dead = true;
   g.update(0.001);
+  assert.equal(g.boss, null);
+  assert.ok(g.bossIncoming);
+  g.update(2.01); // advertencia previa al jefe
 
   assert.equal(g.wave, 3);
   assert.ok(g.boss instanceof Boss);
@@ -186,6 +189,7 @@ test('derrotar al jefe da una vida y dos potenciadores distintos y avanza la ron
   }
   for (const enemy of g.formation.enemies) enemy.dead = true;
   g.update(0.001);
+  g.update(2.01); // advertencia previa al jefe
 
   const livesBeforeBoss = g.lives;
   const scoreBeforeBoss = g.score;
