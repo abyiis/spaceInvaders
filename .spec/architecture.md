@@ -1,6 +1,6 @@
 # architecture.md — Arquitectura general
 
-> Estado: **v1.6 (fuente de verdad)**. Si el código y este documento difieren, se corrige primero el documento y luego el código (SDD).
+> Estado: **v1.7 (fuente de verdad)**. Si el código y este documento difieren, se corrige primero el documento y luego el código (SDD).
 >
 > Nota de mantenimiento: el commit `d5ec5fe` sobrescribió por error este archivo con el contenido de `ui_screens.md`; se restauró la v1.4 y se reaplicaron las v1.5 y v1.6 del changelog de `TASKS.md`.
 
@@ -18,6 +18,7 @@ Juego móvil estilo Space Invaders, arcade infinito por puntuación, con modo co
 | Ciclo de vida de la app | `@capacitor/app` (evento `appStateChange`) | Plugin oficial de Capacitor para saber cuándo la app pasa a segundo plano en Android/iOS. En el navegador se usa además `visibilitychange`. Añadido en v1.2 (tarea 1.11). |
 | Sonido | Web Audio API (sintetizado, sin archivos) | Sin assets ni dependencias; funciona igual en navegador y WebView. Añadido en v1.3 (tarea 1.12). |
 | Vibración | `@capacitor/haptics` (cae a `navigator.vibrate` en navegador) | `navigator.vibrate` no existe en iOS; el plugin cubre Android e iOS y declara por sí mismo el permiso `VIBRATE`. Añadido en v1.3 (tarea 1.12). |
+| Orientación | `@capacitor/screen-orientation` | Bloquea la app en vertical en Android/iOS (`src/orientation.js`); en el navegador no hace falta. Añadido en v1.7 (tarea 4.1). |
 | Build y servidor de desarrollo | Vite | Recarga en vivo y bundle para `dist/`. |
 | Estado de partida en vivo | Firebase Realtime Database (RTDB) | Baja latencia y facturación por ancho de banda, no por operación. |
 | Datos de baja frecuencia | Cloud Firestore | Ranking global y perfiles. |
@@ -131,6 +132,10 @@ Las pantallas de la app (splash, home, créditos, resultados, lobby, ranking y l
 - `input.js` solo está enganchado mientras dura `playing` y se quita mientras el menú de pausa está abierto (v1.6). Salir a mitad de partida es un **abandono**: no hay resultado ni ranking.
 - `playing` ya no es una pantalla sin interfaz: lleva el botón de pausa (⏸) y su menú (`pauseController.js`). En coop no hay pausa: el botón es «Salir» con confirmación (tarea 3.16).
 
+### 3.6 Orientación (v1.7)
+
+El lienzo lógico es 9:16, así que la app empaquetada se bloquea en vertical. `src/orientation.js` exporta `lockPortrait(screenOrientation, { onError })`, que pide `portrait` al plugin `@capacitor/screen-orientation` (inyectado, como `lifecycle.js` con `@capacitor/app`). `main.js` lo llama al arrancar solo si `Capacitor.isNativePlatform()`; un rechazo del sistema se registra y no interrumpe el juego. Cuando exista la plataforma Android, `android:screenOrientation="portrait"` en la actividad principal evita además el giro durante el arranque (ver `docs/entrega.md`).
+
 ## 4. Modos de juego
 
 - **Solo**: sin red. El puntaje se guarda en Firestore si hay sesión.
@@ -159,7 +164,7 @@ Las pantallas de la app (splash, home, créditos, resultados, lobby, ranking y l
 - Latencia percibida del compañero < 200 ms (con interpolación).
 - Tráfico por jugador < 5 KB/s en partida.
 - Sin assets externos en el MVP (formas dibujadas con Canvas); sprites y audio opcionales en Fase 4.
-- Bloqueo de orientación vertical en la app empaquetada (Fase 4).
+- Bloqueo de orientación vertical en la app empaquetada (§3.6).
 
 ## 7. Particularidades del entorno híbrido
 

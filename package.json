@@ -19,6 +19,7 @@
     "@capacitor/core": "^7.0.0",
     "@capacitor/haptics": "^7.0.0",
     "@capacitor/ios": "^7.0.0",
+    "@capacitor/screen-orientation": "^7.0.4",
     "firebase": "^11.0.0"
   },
   "devDependencies": {

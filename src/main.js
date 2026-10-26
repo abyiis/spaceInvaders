@@ -1,12 +1,15 @@
 import './style.css';
 import { C } from './core/constants.js';
 import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { Haptics } from '@capacitor/haptics';
+import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { createEffects } from './effects.js';
 import { Game } from './game/Game.js';
 import { CoopGateway } from './game/CoopGateway.js';
 import { NoopSyncGateway } from './game/SyncGateway.js';
 import { attachLifecycle } from './lifecycle.js';
+import { lockPortrait } from './orientation.js';
 import { mountLobby } from './ui/lobby.js';
 import { mountMainMenu } from './ui/mainMenu.js';
 import { mountRanking } from './ui/ranking.js';
@@ -101,6 +104,13 @@ for (const type of ['pointerdown', 'pointerup', 'keydown']) {
 }
 
 attachLifecycle(game, { app: App });
+
+// En la app empaquetada el juego solo se ve en vertical (el lienzo lógico es 9:16).
+if (Capacitor.isNativePlatform()) {
+  void lockPortrait(ScreenOrientation, {
+    onError: (error) => console.warn('No se pudo bloquear la orientación:', error),
+  });
+}
 
 function showLobby(firebase, room, isHost) {
   const hostUid = isHost ? room.uid : room.meta.hostUid;

@@ -96,7 +96,8 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 
 ## Fase 4 — Pulido & Entrega universitaria (≈ 1 semana)
 
-- [ ] 4.1 `P0 D2` Bloquear orientación vertical en la app (plugin `@capacitor/screen-orientation` o configuración de Android) `[arch]`
+- [x] 4.1 `P0 D2` Bloquear orientación vertical en la app (plugin `@capacitor/screen-orientation` o configuración de Android) `[arch]`
+  - Implementado con el plugin (`src/orientation.js`) y probado con el plugin inyectado; confirmar el bloqueo en un teléfono o emulador junto con 2B.13 y 4.2.
 - [ ] 4.2 `P0 D2` Probar rendimiento en un teléfono real dentro del WebView (60 FPS en solo, sin tirones en coop)
 - [ ] 4.3 `P0 D2` Medir tráfico real en la consola de Firebase y comparar con el presupuesto de `multiplayer_sync.md` §7
 - [ ] 4.4 `P0 D2` Ícono y pantalla de arranque **nativa** (splash de Capacitor, de 1 s o menos); no es el splash de la app, que es la tarea 2B.3 `[ui]`
@@ -132,6 +133,7 @@ Matchmaking aleatorio, chat, compras, anti-trampas, más de 4 jugadores, reconex
 | 2026-10-22 | game_loop | v1.4: `PAUSED → HOME` por «Salir al inicio» (partida abandonada, sin `onGameOver`); `PAUSED` se alcanza también con el botón ⏸ | Supuestos confirmados por el equipo |
 | 2026-10-26 | ui_screens | v1.2: §9 y §12 salida de una partida coop (botón ✕, diálogo «¿Salir de la partida?», «Atrás» de Android) | Tarea 3.16 |
 | 2026-10-26 | ui_screens | v1.2: §8.1 y §8.6 Resultados en coop (desglose por jugador, guardado solo del host, «Volver al lobby» y salida de la sala) | Tarea 3.13 |
+| 2026-10-26 | architecture | v1.7: §3.6 bloqueo de orientación vertical (`orientation.js`); nueva dependencia `@capacitor/screen-orientation` | Tarea 4.1 |
 | 2026-10-26 | game_loop | v1.5: en coop el host decide las transiciones de fase y el fin de partida (§3) | Tarea 3.10 |
 | 2026-10-26 | firebase_schema | v1.1: tipos de evento `enemy-shot`, `bonus-kill`, `revive`, `life-loss`, `state`, `phase`, `game-over`; los del host solo los firma `hostUid`; nodo `state/` reservado sin uso | Tarea 3.9 |
 | 2026-10-26 | game_loop | v1.5: §4.1 movimiento de la formación como función pura del tiempo de oleada, con los límites de la rejilla completa | Tarea 3.3 |
