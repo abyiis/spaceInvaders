@@ -142,3 +142,45 @@ test('getTopScores propagates authentication and Firestore errors', async () => 
   };
   await assert.rejects(repository.getTopScores(), (error) => error === queryFailure);
 });
+
+test('saveCoopScore guarda el puntaje del equipo con la lista de jugadores', async () => {
+  const dependencies = createDependencies();
+  const repository = createScoreRepository(dependencies);
+
+  assert.equal(
+    await repository.saveCoopScore({
+      score: 900,
+      wave: 6,
+      name: '  Ana y Beto ',
+      players: ['player-uid', 'friend-uid'],
+    }),
+    'score-entry-id',
+  );
+  assert.deepEqual(dependencies.writes[0].document, {
+    uid: 'player-uid',
+    name: 'Ana y Beto',
+    score: 900,
+    mode: 'coop',
+    wave: 6,
+    players: ['player-uid', 'friend-uid'],
+    createdAt: dependencies.timestamp,
+  });
+});
+
+test('saveCoopScore valida los datos y exige que quien guarda sea jugador de la partida', async () => {
+  const dependencies = createDependencies();
+  const repository = createScoreRepository(dependencies);
+  const valid = { score: 10, wave: 1, name: 'A y B', players: ['player-uid', 'friend'] };
+
+  await assert.rejects(repository.saveCoopScore({ ...valid, score: -1 }), RangeError);
+  await assert.rejects(repository.saveCoopScore({ ...valid, wave: 0 }), RangeError);
+  await assert.rejects(repository.saveCoopScore({ ...valid, name: ' ' }), RangeError);
+  await assert.rejects(repository.saveCoopScore({ ...valid, name: 'x'.repeat(41) }), RangeError);
+  await assert.rejects(repository.saveCoopScore({ ...valid, players: ['player-uid'] }), RangeError);
+  await assert.rejects(repository.saveCoopScore({ ...valid, players: 'player-uid' }), RangeError);
+  await assert.rejects(
+    repository.saveCoopScore({ ...valid, players: ['someone', 'else'] }),
+    /Only a player of the match/,
+  );
+  assert.deepEqual(dependencies.writes, []);
+});

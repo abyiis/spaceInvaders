@@ -18,6 +18,7 @@
  *   La nave local perdió una vida en el tiempo de juego `t` (s).
  * @property {{ kind: string, message: string, secondsLeft?: number }} [connectionStatus]
  *   Solo coop: estado de la conexión propia y del compañero (`ok`, `unstable`, `peer-offline`, `peer-gone`).
+ * @property {Record<string, string>} [playerNames] Solo coop: alias de los jugadores por uid.
  * @property {number | null} [seed] Solo coop: semilla compartida de la sala.
  * @property {string | null} uid Identificador del jugador local.
  * @property {string | null} remoteUid Identificador del compañero.

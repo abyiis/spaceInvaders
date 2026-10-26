@@ -241,6 +241,38 @@ body {
   font-weight: 700;
 }
 
+.results-screen__players {
+  display: grid;
+  gap: 8px;
+  margin: -12px 0 24px;
+  padding: 0;
+  list-style: none;
+}
+
+.results-screen__players[hidden],
+.results-screen__note[hidden] {
+  display: none;
+}
+
+.results-screen__players li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ui-muted);
+}
+
+.results-screen__players li span:last-child {
+  color: var(--ui-text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.results-screen__note {
+  margin: -8px 0 20px;
+  color: var(--ui-muted);
+  font-size: 0.82rem;
+}
+
 .results-screen__save {
   display: grid;
   gap: 8px;

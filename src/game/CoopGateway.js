@@ -113,6 +113,13 @@ export class CoopGateway {
     return this.monitor.status();
   }
 
+  /** Alias de los jugadores de la sala, por uid. */
+  get playerNames() {
+    return Object.fromEntries(
+      Object.entries(this.currentPlayers).map(([uid, player]) => [uid, player?.name ?? '']),
+    );
+  }
+
   get remoteUid() {
     return Object.keys(this.currentPlayers).find((playerUid) => playerUid !== this.localUid) ?? null;
   }

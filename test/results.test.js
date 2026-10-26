@@ -33,8 +33,9 @@ class FakeElement {
     return this.children.get(selector);
   }
 
-  append(element) {
-    this.child = element;
+  append(...elements) {
+    this.child = elements[0];
+    this.appended = [...(this.appended ?? []), ...elements];
   }
 
   focus() {
@@ -241,5 +242,70 @@ test('mountResults muestra el nuevo récord y los estados/reintento de guardado'
     assert.equal(status.textContent, 'Puntaje guardado en el ranking');
     assert.equal(attempts, 2);
     unmount();
+  });
+});
+
+test('mountResults en coop muestra el desglose por jugador y Volver al lobby; el host guarda', async () => {
+  await withFakeDocument(async (document) => {
+    const container = new FakeElement(document);
+    const navCalls = [];
+    const saved = [];
+    let exits = 0;
+    const result = {
+      mode: 'coop',
+      score: 4200,
+      wave: 7,
+      durationSeconds: 400,
+      localUid: 'host',
+      isHost: true,
+      players: [
+        { uid: 'host', name: 'Ana', kills: 21 },
+        { uid: 'guest', name: 'Beto', kills: 1 },
+      ],
+    };
+    const unmount = mountResults(container, {
+      result,
+      saveScore: async (received) => { saved.push(received); },
+      bestScoreStore: { submit: () => { throw new Error('el récord personal no aplica en coop'); } },
+      onExit: () => { exits += 1; },
+    }, { show: (...args) => navCalls.push(args) });
+    const screen = container.child;
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(screen.querySelector('#results-title').textContent, 'RESULTADO DEL EQUIPO');
+    assert.equal(screen.querySelector('[data-result-score]').textContent, '4.200');
+    const replay = screen.querySelector('[data-action="replay"]');
+    assert.equal(replay.textContent, 'Volver al lobby');
+    assert.equal(screen.querySelector('[data-action="home"]').hidden, true);
+    const list = screen.querySelector('[data-players]');
+    assert.equal(list.hidden, false);
+    const rows = list.appended.map((item) => item.appended.map((cell) => cell.textContent));
+    assert.deepEqual(rows, [['Ana (tú)', '21 bajas'], ['Beto', '1 baja']]);
+    assert.equal(screen.querySelector('[data-coop-note]').hidden, true);
+    assert.deepEqual(saved, [result]);
+    assert.equal(screen.querySelector('[data-save-status]').textContent, 'Puntaje guardado en el ranking');
+
+    replay.listeners.get('click')();
+    assert.deepEqual(navCalls, [['home']]);
+    assert.equal(exits, 0);
+    unmount();
+    assert.equal(exits, 1);
+  });
+});
+
+test('mountResults en coop: el invitado no guarda y ve quién guarda el puntaje', async () => {
+  await withFakeDocument((document) => {
+    const container = new FakeElement(document);
+    mountResults(container, {
+      result: {
+        mode: 'coop', score: 10, wave: 2, durationSeconds: 5, localUid: 'guest', isHost: false,
+        players: [{ uid: 'host', name: 'Ana', kills: 0 }, { uid: 'guest', name: 'Beto', kills: 1 }],
+      },
+    }, { show() {} });
+    const screen = container.child;
+    assert.equal(screen.querySelector('[data-save-area]').hidden, true);
+    const note = screen.querySelector('[data-coop-note]');
+    assert.equal(note.hidden, false);
+    assert.equal(note.textContent, 'El host guarda el puntaje del equipo en el ranking.');
   });
 });

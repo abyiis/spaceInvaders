@@ -206,3 +206,46 @@ test('ambos pilotos eliminados: solo el host cierra la partida', () => {
   guest.game.update(0.02);
   assert.equal(guest.game.isGameOver, false);
 });
+
+test('el resultado coop trae el desglose por jugador con las bajas oficiales del host', () => {
+  const results = [];
+  const sync = new FakeCoopSync(false);
+  Object.defineProperty(sync, 'playerNames', { get: () => ({ host: 'Ana', guest: 'Beto' }) });
+  const game = new Game({ sync, random: () => 0.5, onGameOver: (result) => results.push(result) });
+  game.ledger.claimKill(1, 0, 'guest', 10);
+  sync.handlers.onEvent('g1', {
+    type: 'game-over', uid: 'host', t: 80, score: 300, wave: 4, kills: { host: 25, guest: 5 },
+  });
+
+  assert.equal(results.length, 1);
+  assert.deepEqual(results[0].players, [
+    { uid: 'guest', name: 'Beto', kills: 5 },
+    { uid: 'host', name: 'Ana', kills: 25 },
+  ]);
+  assert.equal(results[0].localUid, 'guest');
+  assert.equal(results[0].isHost, false);
+});
+
+test('el resultado coop del host usa su libro de bajas y marca isHost', () => {
+  const results = [];
+  const sync = new FakeCoopSync(true);
+  const game = new Game({ sync, random: () => 0.5, onGameOver: (result) => results.push(result) });
+  game.ledger.claimKill(1, 0, 'host', 10);
+  game.ledger.claimKill(1, 1, 'guest', 10);
+  game.ledger.claimKill(1, 2, 'guest', 10);
+  game.triggerGameOver();
+
+  assert.equal(results[0].isHost, true);
+  assert.deepEqual(results[0].players.map(({ uid, kills }) => [uid, kills]), [['host', 1], ['guest', 2]]);
+  assert.deepEqual(
+    sync.emitted.find(([type]) => type === 'game-over').slice(-1)[0],
+    { host: 1, guest: 2 },
+  );
+});
+
+test('el resultado en solitario no incluye datos de coop', () => {
+  const results = [];
+  const game = new Game({ random: () => 0.5, onGameOver: (result) => results.push(result) });
+  game.triggerGameOver();
+  assert.deepEqual(Object.keys(results[0]).sort(), ['durationSeconds', 'mode', 'score', 'wave']);
+});

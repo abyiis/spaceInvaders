@@ -296,6 +296,10 @@ describe('Firebase security rules', { skip: !emulatorAvailable }, () => {
     await assertFails(addDoc(scores, { ...entry, uid: 'other' }));
     await assertFails(addDoc(scores, { ...entry, score: 1_000_001 }));
     await assertFails(addDoc(scores, { ...entry, score: 1.5 }));
+    await assertFails(addDoc(scores, { ...entry, mode: 'coop' }));
+    await assertFails(addDoc(scores, { ...entry, mode: 'coop', players: ['owner'] }));
+    await assertFails(addDoc(scores, { ...entry, mode: 'coop', players: ['other', 'third'] }));
+    await assertSucceeds(addDoc(scores, { ...entry, mode: 'coop', players: ['owner', 'other'], name: 'Ana y Beto' }));
     await assertFails(updateDoc(doc(owner, 'leaderboard', created.id), { score: 200 }));
     await assertFails(deleteDoc(doc(owner, 'leaderboard', created.id)));
   });

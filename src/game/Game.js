@@ -134,6 +134,8 @@ export class Game {
     this.elapsed = 0;
     this.isGameOver = false;
     this.paused = false;
+    /** Bajas por jugador según el host (llega en `game-over`); `null` mientras no se conocen. */
+    this.officialKills = null;
     /** @type {{ text: string, remaining: number } | null} */
     this.notice = null;
     /** Aviso de conexión del coop (`null` si todo va bien). */
@@ -230,17 +232,13 @@ export class Game {
     if (this.isGameOver) return;
     if (Number.isFinite(official?.score)) this.score = Math.max(0, Math.floor(official.score));
     if (Number.isFinite(official?.wave)) this.wave = Math.max(this.wave, Math.floor(official.wave));
+    if (official?.kills && typeof official.kills === 'object') this.officialKills = official.kills;
     this.isGameOver = true;
     if (announce && this.sync.isCoop && this.isAuthority) {
       this.sync.emitGameOver(this.elapsed, this.score, this.wave, this.ledger.killsBy());
     }
     this.effects.gameOver();
-    this.onGameOver({
-      mode: this.sync.isCoop ? 'coop' : 'solo',
-      score: this.score,
-      wave: this.wave,
-      durationSeconds: this.elapsed,
-    });
+    this.onGameOver(this.#buildResult());
   }
 
   /**
@@ -426,6 +424,27 @@ export class Game {
   /** Mensaje temporal al pie de la pantalla. */
   showNotice(text, seconds = 3) {
     this.notice = { text, remaining: seconds };
+  }
+
+  /** Resultado de la partida (`ui_screens.md` §8.1); en coop incluye el desglose por jugador. */
+  #buildResult() {
+    const result = {
+      mode: this.sync.isCoop ? 'coop' : 'solo',
+      score: this.score,
+      wave: this.wave,
+      durationSeconds: this.elapsed,
+    };
+    if (!this.sync.isCoop) return result;
+    const kills = this.officialKills ?? this.ledger.killsBy();
+    const names = this.sync.playerNames ?? {};
+    return {
+      ...result,
+      localUid: this.sync.uid,
+      isHost: this.sync.isHost === true,
+      players: [this.sync.uid, this.sync.remoteUid]
+        .filter(Boolean)
+        .map((uid) => ({ uid, name: names[uid] || 'Jugador', kills: kills[uid] ?? 0 })),
+    };
   }
 
   /** Los eventos del host solo valen si los firma el host actual. */

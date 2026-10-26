@@ -3,7 +3,7 @@
  *
  * @param {HTMLElement} container
  * @param {{
- *   loadScores: () => Promise<Array<{ id: string, name?: string, score?: number, wave?: number }>>,
+ *   loadScores: () => Promise<Array<{ id: string, name?: string, score?: number, wave?: number, mode?: string }>>,
  *   onBack: () => void,
  * }} options
  * @returns {() => void}
@@ -54,7 +54,9 @@ export function mountRanking(container, { loadScores, onBack }) {
         const player = document.createElement('span');
         const score = document.createElement('span');
         rank.textContent = `${index + 1}.`;
-        player.textContent = entry.name || 'Jugador';
+        player.textContent = entry.mode === 'coop'
+          ? `${entry.name || 'Equipo'} · coop`
+          : entry.name || 'Jugador';
         score.textContent = `${formatter.format(Number(entry.score) || 0)} pts`;
         item.append(rank, player, score);
         list.append(item);

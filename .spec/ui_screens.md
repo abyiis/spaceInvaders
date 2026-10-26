@@ -1,6 +1,6 @@
 # ui_screens.md — Pantallas de la app y navegación
 
-> Estado: **v1.1**. Aplica a todas las pantallas HTML/CSS que se montan en `#ui` sobre el canvas. Los tiempos viven en `src/ui/uiConstants.js` y deben coincidir con la tabla de §11.
+> Estado: **v1.2**. Aplica a todas las pantallas HTML/CSS que se montan en `#ui` sobre el canvas. Los tiempos viven en `src/ui/uiConstants.js` y deben coincidir con la tabla de §11.
 
 ## 1. Alcance
 
@@ -161,7 +161,7 @@ export const CREDITS = {
 - `wave`: oleada en la que terminó la partida.
 - `durationSeconds`: `Game.elapsed` al terminar, en segundos.
 - `mode`: `'coop'` si `sync.isCoop`, si no `'solo'`.
-- La tarea 3.13 ampliará el modelo con `players` (desglose por jugador) y anotará el cambio en el changelog.
+- En coop (tarea 3.13) el modelo añade `players: { uid, name, kills }[]` (desglose por jugador, con las bajas oficiales del host), `localUid` e `isHost`.
 
 ### 8.2 Contenido (modo solo)
 
@@ -208,7 +208,17 @@ El guardado se lanza una sola vez al montar la pantalla; «Reintentar» lo repit
 
 ### 8.6 Modo coop (tarea 3.13)
 
-La pantalla reserva el caso `mode: 'coop'`: título «Resultado del equipo», desglose por jugador y botón «Volver al lobby». Al salir de Resultados, el host borra la sala (`multiplayer_sync.md` §6, paso 6). Hasta la tarea 3.13 la pantalla solo atiende `mode: 'solo'`.
+Con `mode: 'coop'` la pantalla muestra:
+
+| Elemento | Texto / formato |
+|---|---|
+| Título | «Resultado del equipo» |
+| Puntaje, oleada, tiempo | Igual que en solo (puntaje oficial del host) |
+| Desglose | Una fila por jugador: nombre («(tú)» en el propio) y «N bajas» |
+| Guardado | Solo en el host: «Guardando puntaje…» / «Puntaje guardado en el ranking» / «No se pudo guardar el puntaje» + **Reintentar**. El invitado ve «El host guarda el puntaje del equipo en el ranking.» |
+| Acción | Botón **Volver al lobby** (no hay «Jugar de nuevo» ni «Inicio»): sale de la sala y vuelve al Home, desde donde se puede crear otra sala o unirse a una |
+
+No hay récord personal en coop. Al salir de Resultados (por el botón o por «Atrás» de Android) el host borra la sala (`multiplayer_sync.md` §6, paso 6).
 
 ## 9. Menú de pausa y salida al Home
 

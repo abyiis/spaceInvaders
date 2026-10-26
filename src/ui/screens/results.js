@@ -88,11 +88,13 @@ export function createScoreSaveController({ saveScore, result, onState }) {
  *   result: { score: number, wave: number, durationSeconds: number },
  *   saveScore?: (result: object) => Promise<void>,
  *   bestScoreStore?: { submit(score: number): { best: number | null, isNewBest: boolean } },
+ *   onExit?: () => void,
  * }} params
+ *   `onExit` se llama una vez al salir de la pantalla por cualquier camino (p. ej. limpiar la sala coop).
  * @param {{ show(name: string, params?: object): void }} nav
  * @returns {() => void}
  */
-export function mountResults(container, { result, saveScore, bestScoreStore }, nav) {
+export function mountResults(container, { result, saveScore, bestScoreStore, onExit }, nav) {
   const screen = document.createElement('section');
   screen.className = 'app-screen results-screen screen-enter';
   screen.setAttribute('aria-labelledby', 'results-title');
@@ -109,6 +111,8 @@ export function mountResults(container, { result, saveScore, bestScoreStore }, n
         <div><dt>Oleada</dt><dd data-result-wave></dd></div>
         <div><dt>Tiempo de misión</dt><dd data-result-duration></dd></div>
       </dl>
+      <ul class="results-screen__players" data-players aria-label="Bajas por jugador" hidden></ul>
+      <p class="results-screen__note" data-coop-note hidden></p>
       <div class="results-screen__save" data-save-area hidden>
         <p role="status" aria-live="polite" data-save-status></p>
         <button class="main-menu__button" type="button" data-action="retry" hidden>
@@ -133,8 +137,35 @@ export function mountResults(container, { result, saveScore, bestScoreStore }, n
     const { isNewBest } = bestScoreStore.submit(result.score);
     screen.querySelector('[data-new-best]').hidden = !isNewBest;
   }
-  screen.querySelector('[data-action="replay"]').addEventListener('click', () => nav.show('playing'));
-  screen.querySelector('[data-action="home"]').addEventListener('click', () => nav.show('home'));
+  const replayButton = screen.querySelector('[data-action="replay"]');
+  const homeButton = screen.querySelector('[data-action="home"]');
+  homeButton.addEventListener('click', () => nav.show('home'));
+  if (result.mode === 'coop') {
+    screen.querySelector('#results-title').textContent = 'RESULTADO DEL EQUIPO';
+    screen.querySelector('.results-screen__signal').textContent = 'Misión cooperativa';
+    replayButton.textContent = 'Volver al lobby';
+    replayButton.addEventListener('click', () => nav.show('home'));
+    homeButton.hidden = true;
+
+    const playersList = screen.querySelector('[data-players]');
+    playersList.hidden = false;
+    for (const player of result.players ?? []) {
+      const item = document.createElement('li');
+      const name = document.createElement('span');
+      const kills = document.createElement('span');
+      name.textContent = `${player.name}${player.uid === result.localUid ? ' (tú)' : ''}`;
+      kills.textContent = `${player.kills} ${player.kills === 1 ? 'baja' : 'bajas'}`;
+      item.append(name, kills);
+      playersList.append(item);
+    }
+    if (result.isHost === false) {
+      const note = screen.querySelector('[data-coop-note]');
+      note.hidden = false;
+      note.textContent = 'El host guarda el puntaje del equipo en el ranking.';
+    }
+  } else {
+    replayButton.addEventListener('click', () => nav.show('playing'));
+  }
 
   const saveArea = screen.querySelector('[data-save-area]');
   const saveStatus = screen.querySelector('[data-save-status]');
@@ -172,5 +203,6 @@ export function mountResults(container, { result, saveScore, bestScoreStore }, n
   return () => {
     saveController?.dispose();
     screen.remove();
+    onExit?.();
   };
 }

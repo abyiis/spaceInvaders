@@ -79,7 +79,8 @@ leaderboard/{docId}
   score:     int
   mode:      "solo" | "coop"
   wave:      int
-  players:   array<string>   # uids (coop)
+  players:   array<string>   # uids (coop); el documento lo crea el host (uid == auth.uid) y debe figurar en la lista
+                             # name (coop): alias de ambos jugadores, «A y B» (hasta 40 caracteres)
   createdAt: timestamp
 ```
 
@@ -88,7 +89,7 @@ leaderboard/{docId}
 | Ruta | Lectura | Escritura |
 |---|---|---|
 | `users/{uid}` | solo el dueño | solo el dueño |
-| `leaderboard/{id}` | cualquier autenticado | **crear**: autenticado con `uid == auth.uid`, `score` entero ≥ 0 y ≤ 1.000.000; **actualizar/borrar**: nadie |
+| `leaderboard/{id}` | cualquier autenticado | **crear**: autenticado con `uid == auth.uid`, `score` entero ≥ 0 y ≤ 1.000.000 y, si `mode == 'coop'`, `players` lista de entre 2 y 4 uids que incluye a `auth.uid`; **actualizar/borrar**: nadie |
 
 ### Consulta de ranking
 - `leaderboard` ordenado por `score` descendente, `limit(20)`. Índice simple automático; para filtrar por `mode` + ordenar por `score` Firestore pedirá un índice compuesto (crearlo desde el enlace del error).

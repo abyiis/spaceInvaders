@@ -41,6 +41,17 @@ async function saveSoloScore(result) {
   await scoreRepository.saveSoloScore({ ...result, name: playerDisplayName });
 }
 
+/** Solo el host guarda el puntaje del equipo, una vez (`multiplayer_sync.md` §6). */
+async function saveCoopScore(result) {
+  const { scoreRepository } = await import('./net/firebase.js');
+  await scoreRepository.saveCoopScore({
+    score: result.score,
+    wave: result.wave,
+    players: result.players.map((player) => player.uid),
+    name: result.players.map((player) => player.name).join(' y '),
+  });
+}
+
 const game = new Game({
   effects,
   onGameOver: (result) => {
@@ -79,7 +90,11 @@ const router = createScreenRouter({
     [SCREENS.CREDITS]: mountCredits,
     [SCREENS.RESULTS]: (container, { result }, nav) => mountResults(container, {
       result,
-      saveScore: result.mode === 'solo' && hasFirebaseConfig ? saveSoloScore : undefined,
+      saveScore: !hasFirebaseConfig
+        ? undefined
+        : result.mode === 'solo'
+          ? saveSoloScore
+          : result.isHost ? saveCoopScore : undefined,
       bestScoreStore: result.mode === 'solo' ? bestScoreStore : undefined,
     }, nav),
     [SCREENS.HOME]: (container, _params, nav) => mountMainMenu(container, {
