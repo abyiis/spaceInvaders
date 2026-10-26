@@ -15,6 +15,7 @@ Juego estilo Space Invaders, arcade infinito por puntuación, con cooperativo en
   multiplayer_sync.md
   firebase_schema.md
   ui_screens.md
+  visual_feedback.md
 docs/                        Informe, guion de demostración, guía de entrega (APK) y guías de prueba manual
 assets/                      Ícono y splash nativo generados (npm run assets)
 scripts/                     Generador de recursos y bench de la simulación
@@ -44,7 +45,7 @@ Requisitos: **Node ≥ 20**. Para la app Android: Android Studio (iOS requiere m
 
 ```bash
 npm install
-npm test            # 335 pruebas unitarias y de integración
+npm test            # 369 pruebas unitarias y de integración
 npm run dev         # servidor de desarrollo; ábrelo en el navegador o desde el teléfono (misma Wi-Fi)
 npm run build       # genera dist/
 npm run test:rules  # reglas de Firebase con emuladores (Java + Firebase CLI)
@@ -102,6 +103,6 @@ El agente leerá los specs, tomará la siguiente tarea de `TASKS.md`, la impleme
 - Specs al día (`architecture` v1.8, `game_loop` v1.5, `multiplayer_sync` v1.1, `firebase_schema` v1.1, `ui_screens` v1.2).
 - Fases 1, 2 y 2B completas salvo la revisión manual en Android (2B.13). **Fase 3 completa a nivel de código y pruebas** (tareas 3.1 – 3.14 y 3.16); la prueba manual con dos teléfonos (3.15) está documentada en `docs/pruebas-coop.md`.
 - Fase 4: orientación vertical, panel de FPS y tráfico, ícono y splash generados, informe, guion de demo y guía de entrega listos; **pendientes** (necesitan Android Studio o teléfonos): generar `android/` y el APK (0.6, 0.7, 4.4 y 4.5) y medir rendimiento y tráfico reales (4.2 y 4.3). Ver `docs/`.
-- Verificado: `npm test` (335 pruebas), `npm run test:rules` (9 pruebas con los emuladores de RTDB y Firestore) y `npm run build`.
+- Verificado: `npm test` (369 pruebas), `npm run test:rules` (9 pruebas con los emuladores de RTDB y Firestore) y `npm run build`.
 - Las reglas de Firebase hay que **volver a desplegarlas** tras la Fase 3 (tarea 0.10).
 - La app Capacitor todavía no se ha verificado en un emulador o dispositivo.

@@ -11,13 +11,14 @@ Equipo: Juan Felipe Cano Noreña, Juan David Parra Sierra, Santiago Viana Ayala.
 | Tipo de app | Híbrida: web (HTML5 Canvas + JavaScript + CSS) empaquetada con **Capacitor** como app Android/iOS |
 | Modos | Solo (sin red) y cooperativo online de 2 jugadores por código de sala |
 | Backend | Firebase en plan gratuito Spark: Realtime Database (partida), Cloud Firestore (ranking y perfiles), Auth anónima. Sin Cloud Functions |
-| Pruebas | 332 pruebas automáticas con `node --test` + 9 pruebas de reglas de seguridad con el emulador de Firebase |
+| Pruebas | 369 pruebas automáticas con `node --test` + 9 pruebas de reglas de seguridad con el emulador de Firebase |
 | Estado | Solo y coop completos a nivel de código y pruebas automáticas; **pendiente**: validación con dos teléfonos reales, medición de rendimiento y tráfico reales y generación del APK (ver §9) |
 
 ## 2. Funcionalidades
 
 - **Juego:** nave que se mueve por arrastre o teclado y dispara sola; oleadas infinitas con dificultad creciente (`waveParams`), enemigos de 2 puntos de vida desde la oleada 5, kamikazes y naves de soporte con escudo, **jefes** cada 3 oleadas (dos fases, tres diseños, nave de apoyo que lo cura), **fases bonus** cada 5 oleadas con combos hasta ×5, **peligros ambientales** (lluvia de asteroides, campo magnético, oscuridad), **cuatro potenciadores** (escudo, disparo rápido, triple disparo, sobrecarga), sonidos sintetizados y vibración.
 - **Cooperativo:** crear/unirse a sala por código de 5 caracteres, lobby en vivo con «Listo», cuenta atrás compartida, naves de ambos jugadores, **sinergia de disparos** (dos disparos de jugadores distintos que se cruzan explotan), **rescate** de la nave caída gastando una vida compartida, puntaje de equipo, resultados con desglose por jugador, guardado en el ranking por el host, relevo de host si se cae y avisos de conexión.
+- **Indicadores visuales (Fase 5):** franja de oleada y dorada de fase bonus, entrada animada de los enemigos, advertencia de 2 s antes del jefe, escudo hexagonal, pila de textos sin solapes y temblor al perder una vida (`.spec/visual_feedback.md`).
 - **Aplicación:** splash, Home, Créditos, Resultados, ranking top 20, alias persistente, récord personal local, pausa y botón «Atrás» de Android, panel de depuración de FPS y tráfico.
 
 ## 3. Arquitectura
@@ -94,7 +95,7 @@ Reglas de dependencia (verificadas por revisión y por la estructura de imports)
 | UI y red | Router, pantallas (Resultados, Splash, Créditos), pausa y salida coop, «Atrás», repositorios con dobles |
 | Reglas de seguridad | Emulador de RTDB y Firestore (`npm run test:rules`): permisos, eventos del host, relevo, borrado de salas, ranking coop (9 casos) |
 
-`npm test` ejecuta todo salvo las reglas (necesitan Java y Firebase CLI). Resultado al cierre: 332 pasan, 0 fallan; `npm run build` termina sin errores.
+`npm test` ejecuta todo salvo las reglas (necesitan Java y Firebase CLI). Resultado al cierre: 369 pasan, 0 fallan; `npm run build` termina sin errores.
 
 **Pruebas manuales pendientes:** `docs/pruebas-coop.md` (dos teléfonos, redes distintas, 14 escenarios), `docs/pruebas-rendimiento.md` (FPS y tráfico reales) y la revisión de pantallas en Android (tarea 2B.13).
 

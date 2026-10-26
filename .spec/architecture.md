@@ -57,6 +57,7 @@ src/
 │   ├── Starfield.js          # fondo de estrellas en parallax (decorativo, v1.4)
 │   ├── Player.js  Enemy.js  Bullet.js  Formation.js
 │   ├── Boss.js  BonusStage.js  Hazards.js  powerUps.js
+│   ├── visuals.js            # franjas, aviso del jefe, escudo, temblor y pila de textos (visual_feedback.md)
 │   └── input.js              # Pointer Events + teclado (único módulo game/ que toca el DOM)
 ├── net/                      # acceso a Firebase tras interfaces
 │   ├── firebase.js           # init + exports
