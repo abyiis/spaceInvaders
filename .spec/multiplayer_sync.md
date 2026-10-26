@@ -46,7 +46,7 @@ Aleatoriedad: **todo lo sincronizado usa el PRNG propio** `mulberry32` de `src/c
 
 | `type` | Emisor | Campos | Significado |
 |---|---|---|---|
-| `shot` | jugador | `t, x, vx, damage` | Disparó. El compañero simula la bala localmente (así ve las mismas colisiones y la sinergia de disparos). |
+| `shot` | jugador | `t, x, vx, damage` | Disparó. El compañero recrea la bala localmente (así ve las mismas colisiones y la sinergia de disparos), adelantada lo que habría avanzado durante el retraso del evento (`elapsed − t`, tope 0,25 s). |
 | `enemy-shot` | host | `t, x, y, vx, vy, color?` | Disparo del jefe. |
 | `kill` | jugador | `wave, enemyId, t, powerUpType?` | Reclama haber destruido ese enemigo. |
 | `bonus-kill` | jugador | `wave, shipId, multiplier, t, powerUpType?` | Reclama una nave de la fase bonus. |

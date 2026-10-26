@@ -27,6 +27,8 @@ const BONUS_POWER_UP_DROP_CHANCE = 0.3;
 /** Paso de la simulación coop atada al reloj del servidor (`multiplayer_sync.md` §2). */
 const FIXED_STEP = 1 / 60;
 const MAX_CATCH_UP_STEPS = 30;
+/** Tope de la compensación de latencia al recrear disparos remotos (s). */
+const MAX_EVENT_LAG = 0.25;
 
 /**
  * Dibuja un ícono pixel-art retro para el power-up dado.
@@ -386,13 +388,16 @@ export class Game {
   #applyRemoteEvent(event) {
     if (!event || !this.sync.isCoop) return;
     if (event.type === 'shot' && Number.isFinite(event.x)) {
-      const x = event.x * this.width;
+      const vx = Number.isFinite(event.vx) ? event.vx : 0;
+      const vy = -C.PLAYER_BULLET_SPEED * (vx === 0 ? 1 : C.SIDE_SHOT_SPEED_FACTOR);
+      // La bala nace donde estaría si el evento no hubiera tardado en llegar.
+      const lag = this.#eventLag(event);
       this.bullets.push(new Bullet({
-        x,
-        y: (this.remotePlayer?.y ?? this.player.y) - this.player.h / 2,
+        x: event.x * this.width + vx * lag,
+        y: (this.remotePlayer?.y ?? this.player.y) - this.player.h / 2 + vy * lag,
         fromPlayer: true,
-        vy: -C.PLAYER_BULLET_SPEED,
-        vx: Number.isFinite(event.vx) ? event.vx : 0,
+        vy,
+        vx,
         damage: Number.isFinite(event.damage) ? event.damage : 1,
         ownerUid: event.uid,
       }));
@@ -405,11 +410,13 @@ export class Game {
       && Number.isFinite(event.y)
       && Number.isFinite(event.vy)
     ) {
+      const vx = Number.isFinite(event.vx) ? event.vx : 0;
+      const lag = this.#eventLag(event);
       this.bullets.push(new Bullet({
-        x: event.x * this.width,
-        y: event.y * this.height,
+        x: event.x * this.width + vx * lag,
+        y: event.y * this.height + event.vy * lag,
         fromPlayer: false,
-        vx: Number.isFinite(event.vx) ? event.vx : 0,
+        vx,
         vy: event.vy,
         color: typeof event.color === 'string' ? event.color : undefined,
       }));
@@ -484,6 +491,12 @@ export class Game {
       this.remotePlayer.revivePending = false;
       this.#checkCoopGameOver();
     }
+  }
+
+  /** Segundos de retraso de un evento remoto respecto del tiempo de juego local. */
+  #eventLag(event) {
+    if (!Number.isFinite(event.t)) return 0;
+    return Math.max(0, Math.min(MAX_EVENT_LAG, this.elapsed - event.t));
   }
 
   #resolveCollisions() {

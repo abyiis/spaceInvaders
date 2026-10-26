@@ -104,9 +104,9 @@ export class Player {
       this.fireCooldown = C.PLAYER_FIRE_INTERVAL * (this.rapidFire > 0 ? 0.55 : 1);
       const shots = this.tripleShot > 0
         ? [
-          { x: this.x - 9, vx: -90, vy: -C.PLAYER_BULLET_SPEED * 0.9 },
+          { x: this.x - 9, vx: -90, vy: -C.PLAYER_BULLET_SPEED * C.SIDE_SHOT_SPEED_FACTOR },
           { x: this.x, vx: 0, vy: -C.PLAYER_BULLET_SPEED },
-          { x: this.x + 9, vx: 90, vy: -C.PLAYER_BULLET_SPEED * 0.9 },
+          { x: this.x + 9, vx: 90, vy: -C.PLAYER_BULLET_SPEED * C.SIDE_SHOT_SPEED_FACTOR },
         ]
         : [{ x: this.x, vx: 0, vy: -C.PLAYER_BULLET_SPEED }];
 

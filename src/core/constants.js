@@ -27,6 +27,8 @@ export const C = Object.freeze({
   BULLET_WIDTH: 4,
   BULLET_HEIGHT: 12,
   PLAYER_BULLET_SPEED: 420,
+  /** Los disparos laterales del triple disparo son un 10 % más lentos en vertical. */
+  SIDE_SHOT_SPEED_FACTOR: 0.9,
   ENEMY_BULLET_SPEED: 180,
 
   // Puntuación
