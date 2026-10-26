@@ -3,7 +3,7 @@
 Leyenda de etiquetas:
 - Prioridad: `P0` imprescindible · `P1` importante · `P2` deseable
 - Dificultad: `D1` trivial · `D2` fácil · `D3` media · `D4` difícil · `D5` muy difícil
-- Specs relacionadas entre corchetes: `[arch]` architecture · `[loop]` game_loop · `[sync]` multiplayer_sync · `[fb]` firebase_schema · `[ui]` ui_screens
+- Specs relacionadas entre corchetes: `[arch]` architecture · `[loop]` game_loop · `[sync]` multiplayer_sync · `[fb]` firebase_schema · `[ui]` ui_screens · `[vf]` visual_feedback
 
 > **Regla SDD:** si una tarea exige cambiar el comportamiento descrito en `.spec/`, se actualiza primero el spec (y se anota en el changelog al final de este archivo) y luego el código.
 
@@ -117,6 +117,19 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
   - Ya implementado y superado en el commit de mejoras de gameplay: cuatro potenciadores (escudo, disparo rápido, triple disparo y sobrecarga) en `src/game/powerUps.js`, con pruebas en `test/gameplayUpdates.test.js` y `test/advancedGameModes.test.js`.
 - [x] 4.10 `P2 D2` Revisar y actualizar `.spec/` para reflejar lo realmente implementado
 
+## Fase 5 — Indicadores y alertas visuales (≈ 2 días)
+
+Spec: `.spec/visual_feedback.md` v1.0. Todo en el canvas, sin red; las fases (franjas, jefe, entrada) se calculan con el tiempo de juego para que en coop se vean a la vez.
+
+- [ ] 5.1 `P1 D2` Franja de oleada: 0,5 s en el centro con «OLEADA N», animada de izquierda a derecha `[vf]`
+- [ ] 5.2 `P1 D3` Animación de entrada de las naves enemigas (desde arriba, escalonada, sin impactos mientras entran) `[vf]`
+- [ ] 5.3 `P1 D3` Aviso del jefe: 2 s de icono de advertencia intermitente antes de que aparezca; coherente en coop `[vf][sync]`
+- [ ] 5.4 `P1 D2` Pila de textos de estado sin superposiciones y barra del jefe debajo `[vf]`
+- [ ] 5.5 `P1 D1` El botón de pausa/salida ya no tapa el número de oleada `[vf]`
+- [ ] 5.6 `P1 D2` Escudo como hexágono alrededor de la nave (parpadea al terminar) `[vf]`
+- [ ] 5.7 `P1 D2` Temblor leve de pantalla al perder una vida (respeta movimiento reducido) `[vf]`
+- [ ] 5.8 `P1 D1` Franja dorada «FASE BONUS» al iniciar una fase bonus `[vf]`
+
 ---
 
 ## Fuera de alcance (no hacer en el MVP)
@@ -143,6 +156,7 @@ Matchmaking aleatorio, chat, compras, anti-trampas, más de 4 jugadores, reconex
 | 2026-10-25 | multiplayer_sync | v1.1: modelo coop realmente implementado (reloj bloqueado al servidor con cuenta atrás, PRNG por flujo, formación y disparos deterministas, host autoritativo mediante eventos `phase`/`state`/`game-over`, relevo de host, avisos de conexión); ADR-13 | Tareas 3.1 – 3.16 |
 | 2026-10-26 | game_loop | v1.5: §4.1 movimiento de la formación como función pura del tiempo de oleada, con los límites de la rejilla completa | Tarea 3.3 |
 | 2026-10-26 | firebase_schema | v1.1: tipos de evento `enemy-shot`, `bonus-kill`, `revive`, `life-loss`, `state`, `phase`, `game-over`; los del host solo los firma `hostUid`; nodo `state/` reservado sin uso | Tarea 3.9 |
+| 2026-10-27 | visual_feedback | v1.0 nuevo: franja de oleada y de fase bonus, entrada de enemigos, advertencia de 2 s antes del jefe, escudo hexagonal, pila de textos sin solapes, HUD sin tapar por el botón de pausa y temblor al perder una vida | Fase 5 (5.1 – 5.8) |
 | 2026-10-26 | game_loop | v1.5: en coop el host decide las transiciones de fase y el fin de partida (§3) | Tarea 3.10 |
 | 2026-10-26 | architecture | v1.7: §3.6 bloqueo de orientación vertical (`orientation.js`); nueva dependencia `@capacitor/screen-orientation` | Tarea 4.1 |
 | 2026-10-26 | ui_screens | v1.2 (revisión): textos reales del splash y del Home tras el rediseño; Créditos solo como sorpresa tras la primera oleada | Tarea 4.10 |
