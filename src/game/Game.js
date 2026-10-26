@@ -369,7 +369,25 @@ export class Game {
     if (consumedLife) this.lives -= 1;
     this.player.eliminated = true;
     this.sync.emitLifeLoss(this.elapsed, consumedLife);
+    this.#publishOfficialState();
     this.#checkCoopGameOver();
+  }
+
+  /** `true` si este cliente decide la partida: siempre en solo, el host en coop. */
+  get isAuthority() {
+    return !this.sync.isCoop || this.sync.isHost === true;
+  }
+
+  /** Los eventos del host solo valen si los firma el host actual. */
+  #fromHost(event) {
+    const hostUid = this.sync.hostUid;
+    return hostUid == null || event.uid === hostUid;
+  }
+
+  /** El host publica las vidas oficiales; el compañero las adopta (`multiplayer_sync.md` §4.3). */
+  #publishOfficialState() {
+    if (!this.sync.isCoop || !this.isAuthority) return;
+    this.sync.emitState(this.elapsed, this.score, this.lives, this.wave);
   }
 
   #reviveRemotePlayer() {
@@ -383,6 +401,7 @@ export class Game {
     this.remotePlayer.downedTimer = 0;
     this.lives -= 1;
     this.sync.emitRevive(this.remotePlayer.uid, this.elapsed);
+    this.#publishOfficialState();
   }
 
   #checkCoopGameOver() {
@@ -466,6 +485,12 @@ export class Game {
       return;
     }
 
+    if (event.type === 'state' && !this.isAuthority) {
+      if (!this.#fromHost(event)) return;
+      if (Number.isFinite(event.lives)) this.lives = Math.max(0, Math.floor(event.lives));
+      return;
+    }
+
     if (!this.remotePlayer) return;
     if (event.type === 'hit') {
       this.remotePlayer.downedTimer = 5;
@@ -482,6 +507,7 @@ export class Game {
       this.remotePlayer.downedTimer = 0;
       this.remotePlayer.revivePending = false;
       this.lives = Math.max(0, this.lives - 1);
+      this.#publishOfficialState();
       return;
     }
     if (event.type === 'life-loss') {
@@ -489,6 +515,7 @@ export class Game {
       this.remotePlayer.downedTimer = 0;
       this.remotePlayer.eliminated = true;
       this.remotePlayer.revivePending = false;
+      this.#publishOfficialState();
       this.#checkCoopGameOver();
     }
   }

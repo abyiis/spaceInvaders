@@ -141,6 +141,10 @@ export class CoopGateway {
     this.#publish({ type: 'life-loss', t, consumedLife });
   }
 
+  emitState(t, score, lives, wave) {
+    this.#publish({ type: 'state', t, score, lives, wave });
+  }
+
   emitBonusKill(wave, shipId, multiplier, t, powerUpType = null) {
     this.#publish({
       type: 'bonus-kill',

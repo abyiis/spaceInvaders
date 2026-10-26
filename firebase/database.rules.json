@@ -53,9 +53,9 @@
         "events": {
           "$eventId": {
             ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
-            ".validate": "newData.hasChildren(['type', 'uid', 't'])",
+            ".validate": "newData.hasChildren(['type', 'uid', 't']) && ((newData.child('type').val() !== 'state' && newData.child('type').val() !== 'phase' && newData.child('type').val() !== 'game-over' && newData.child('type').val() !== 'enemy-shot') || root.child('rooms').child($roomId).child('meta/hostUid').val() === newData.child('uid').val())",
             "type": {
-              ".validate": "newData.val() === 'shot' || newData.val() === 'enemy-shot' || newData.val() === 'kill' || newData.val() === 'hit' || newData.val() === 'revive' || newData.val() === 'life-loss' || newData.val() === 'bonus-kill'"
+              ".validate": "newData.val() === 'shot' || newData.val() === 'enemy-shot' || newData.val() === 'kill' || newData.val() === 'hit' || newData.val() === 'revive' || newData.val() === 'life-loss' || newData.val() === 'bonus-kill' || newData.val() === 'state'"
             },
             "uid": { ".validate": "newData.isString()" },
             "t": { ".validate": "newData.isNumber()" },
@@ -66,6 +66,8 @@
             "targetUid": { ".validate": "newData.isString()" },
             "powerUpType": { ".validate": "newData.isString()" },
             "consumedLife": { ".validate": "newData.isBoolean()" },
+            "score": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000" },
+            "lives": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
             "damage": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 3" },
             "vx": { ".validate": "newData.isNumber() && newData.val() >= -200 && newData.val() <= 200" },
             "vy": { ".validate": "newData.isNumber() && newData.val() >= -500 && newData.val() <= 500" },

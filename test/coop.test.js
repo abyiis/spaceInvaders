@@ -43,6 +43,10 @@ class RecordingCoopSync {
     this.emitted.push(['bonus-kill', ...args]);
   }
 
+  emitState(...args) {
+    this.emitted.push(['state', ...args]);
+  }
+
   dispose() {}
 }
 

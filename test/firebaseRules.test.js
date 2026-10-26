@@ -152,6 +152,43 @@ describe('Firebase security rules', { skip: !emulatorAvailable }, () => {
     ));
   });
 
+  it('Realtime Database solo admite eventos del host (state, phase, game-over, enemy-shot) firmados por el host', async () => {
+    const hostDatabase = testEnvironment.authenticatedContext('host').database();
+    const guestDatabase = testEnvironment.authenticatedContext('guest').database();
+    await setRtdb(rtdbRef(hostDatabase, 'rooms/ABCDE/meta'), {
+      hostUid: 'host',
+      seed: 123,
+      status: 'playing',
+      createdAt: 1,
+      maxPlayers: 2,
+    });
+
+    await assertSucceeds(setRtdb(
+      rtdbRef(hostDatabase, 'rooms/ABCDE/events/state-1'),
+      { type: 'state', uid: 'host', t: 12.5, score: 120, lives: 2, wave: 3 },
+    ));
+    await assertFails(setRtdb(
+      rtdbRef(guestDatabase, 'rooms/ABCDE/events/state-2'),
+      { type: 'state', uid: 'guest', t: 12.5, score: 999999, lives: 3, wave: 3 },
+    ));
+    await assertFails(setRtdb(
+      rtdbRef(guestDatabase, 'rooms/ABCDE/events/enemy-1'),
+      { type: 'enemy-shot', uid: 'guest', t: 1, x: 0.5, y: 0.5, vy: 180 },
+    ));
+    await assertFails(setRtdb(
+      rtdbRef(hostDatabase, 'rooms/ABCDE/events/state-3'),
+      { type: 'state', uid: 'host', t: 1, score: 0, lives: 100, wave: 1 },
+    ));
+    await assertFails(setRtdb(
+      rtdbRef(hostDatabase, 'rooms/ABCDE/events/state-4'),
+      { type: 'state', uid: 'host', t: 1, score: -1, lives: 1, wave: 1 },
+    ));
+    await assertSucceeds(setRtdb(
+      rtdbRef(guestDatabase, 'rooms/ABCDE/events/hit-1'),
+      { type: 'hit', uid: 'guest', t: 3 },
+    ));
+  });
+
   it('Firestore profiles are private to their owner', async () => {
     const owner = testEnvironment.authenticatedContext('owner').firestore();
     const otherUser = testEnvironment.authenticatedContext('other').firestore();

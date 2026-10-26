@@ -1,6 +1,6 @@
 # firebase_schema.md — Esquema de datos y reglas
 
-> Estado: **v1.0**. Las reglas ejecutables están en `firebase/database.rules.json` y `firebase/firestore.rules`. Este documento y esos archivos deben mantenerse idénticos en intención.
+> Estado: **v1.1**. Las reglas ejecutables están en `firebase/database.rules.json` y `firebase/firestore.rules`. Este documento y esos archivos deben mantenerse idénticos en intención.
 
 ## 1. Realtime Database (partida en vivo)
 
@@ -21,7 +21,8 @@ rooms/
         ts:        int          # ms servidor de la última actualización
         ready:     bool
         connected: bool
-    state/                      # SOLO escribe el host
+    state/                      # RESERVADO, sin uso (ADR-13): el estado oficial viaja en eventos del host
+                                # (state / phase / game-over). Solo escribe el host.
       wave:   int
       score:  int
       status: string
@@ -29,12 +30,20 @@ rooms/
       killed/{wave}/{enemyId}: true
     events/
       {pushId}/
-        type: "shot" | "kill" | "hit"
+        type: "shot" | "enemy-shot" | "kill" | "bonus-kill" | "hit" | "revive"
+            | "life-loss" | "state" | "phase" | "game-over"
         uid:  string
         t:    number            # tiempo de juego (s)
-        x:    number            # solo shot
-        wave: int               # solo kill
+        x, y: number            # shot / enemy-shot (normalizados 0..1)
+        vx, vy: number          # shot / enemy-shot
+        damage: int             # shot (1..3)
+        wave: int               # kill / bonus-kill / state / phase
         enemyId: int            # solo kill
+        shipId, multiplier: int # solo bonus-kill
+        powerUpType: string     # kill / bonus-kill (potenciador soltado)
+        targetUid: string       # solo revive
+        consumedLife: bool      # solo life-loss
+        score, lives: int       # eventos del host (state / phase / game-over)
 ```
 
 ### Reglas (resumen de intención)
@@ -46,9 +55,9 @@ rooms/
 | `rooms/{code}/meta` | autenticado | crear: cualquier autenticado si no existe; modificar: solo `hostUid` |
 | `rooms/{code}/players/{uid}` | autenticado | solo `auth.uid == uid` |
 | `rooms/{code}/state` | autenticado | solo `meta/hostUid` |
-| `rooms/{code}/events/{id}` | autenticado | autenticado con `uid == auth.uid` (solo crear, no editar) |
+| `rooms/{code}/events/{id}` | autenticado | autenticado con `uid == auth.uid` (solo crear, no editar); los tipos `state`, `phase`, `game-over` y `enemy-shot` solo los puede firmar `meta/hostUid` |
 
-Validaciones: `x` en [0,1]; `type` en el conjunto permitido; `name` ≤ 16 caracteres; `lives` en [0,3].
+Validaciones: `x` en [0,1]; `type` en el conjunto permitido; `name` ≤ 16 caracteres; `lives` en [0,3] en `state/` y en [0,99] en los eventos (un jefe derrotado concede vidas extra); `score` en [0, 1.000.000].
 
 > Limitación conocida (aceptada en MVP): sin Cloud Functions, un cliente malicioso podría falsear eventos `kill`. El proyecto es universitario; no se implementa anti-trampas.
 

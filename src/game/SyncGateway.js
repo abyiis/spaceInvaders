@@ -23,6 +23,10 @@
  * @property {(handlers: object) => void} setHandlers Registra receptores de eventos remotos.
  * @property {(targetUid: string, t: number) => void} emitRevive Publica un rescate cooperativo.
  * @property {(t: number, consumedLife: boolean) => void} emitLifeLoss Publica una eliminación definitiva.
+ * @property {boolean} isHost `true` si este jugador es el host (autoridad de la partida).
+ * @property {string | null} hostUid Identificador del host actual.
+ * @property {(t: number, score: number, lives: number, wave: number) => void} emitState
+ *   Solo el host: publica las vidas oficiales (y el puntaje) tras un rescate o una eliminación.
  * @property {() => number | null} [gameTime]
  *   Solo coop: segundos de juego según el reloj del servidor (negativos hasta `startAt`),
  *   o `null` mientras el reloj no está sincronizado. Ver `.spec/multiplayer_sync.md` §2.
@@ -45,6 +49,10 @@ export class NoopSyncGateway {
 
   get isHost() {
     return false;
+  }
+
+  get hostUid() {
+    return null;
   }
 
   get remoteUid() {
@@ -70,6 +78,8 @@ export class NoopSyncGateway {
   emitRevive() {}
 
   emitLifeLoss() {}
+
+  emitState() {}
 
   emitBonusKill() {}
 
