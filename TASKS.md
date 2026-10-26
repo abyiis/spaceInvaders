@@ -109,7 +109,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 - [ ] 4.5 `P0 D2` Generar APK de entrega desde Android Studio (Build → Build Bundle(s) / APK(s))
   - Pendiente: guía paso a paso en `docs/entrega.md`; no hay Android SDK en el entorno de desarrollo.
 - [x] 4.6 `P0 D2` Redactar el informe: arquitectura, decisiones (ADR), limitaciones y pruebas
-- [ ] 4.7 `P1 D2` Preparar la demostración: guion de 5 minutos con 2 teléfonos
+- [x] 4.7 `P1 D2` Preparar la demostración: guion de 5 minutos con 2 teléfonos
 - [ ] 4.8 `P1 D2` Sprites y sonido definitivos (opcional)
 - [ ] 4.9 `P2 D3` Power-ups simples (disparo doble) *(solo si sobra tiempo)*
 - [ ] 4.10 `P2 D2` Revisar y actualizar `.spec/` para reflejar lo realmente implementado
