@@ -1,5 +1,12 @@
+import { createGameClock } from '../core/gameClock.js';
+
 export class CoopGateway {
-  constructor({ roomRepository, code, uid, hostUid, onError = console.error }) {
+  /**
+   * @param {{ roomRepository: object, code: string, uid: string, hostUid: string,
+   *   startAt?: number, now?: () => number, onError?: (error: Error) => void }} options
+   *   `startAt` es el instante cero de la partida (ms del servidor); `now` es el reloj local.
+   */
+  constructor({ roomRepository, code, uid, hostUid, startAt = null, now = Date.now, onError = console.error }) {
     if (!roomRepository || typeof roomRepository.watchPlayers !== 'function') {
       throw new TypeError('A room repository is required for co-op synchronization.');
     }
@@ -8,11 +15,17 @@ export class CoopGateway {
     this.localUid = uid;
     this.hostUid = hostUid;
     this.onError = onError;
+    this.clock = createGameClock({ now });
+    this.clock.setStartAt(startAt);
     this.handlers = null;
     this.pendingEvents = [];
     this.lastPublishAt = 0;
     this.currentPlayers = {};
     this.disposed = false;
+    this.unsubscribeOffset = roomRepository.watchServerOffset?.(
+      (offset) => this.clock.setOffset(offset),
+      onError,
+    ) ?? (() => {});
     this.unsubscribePlayers = roomRepository.watchPlayers(
       code,
       (players) => {
@@ -42,6 +55,11 @@ export class CoopGateway {
 
   get isHost() {
     return this.localUid === this.hostUid;
+  }
+
+  /** Segundos de juego según el reloj del servidor; `null` mientras no se conoce el desfase. */
+  gameTime() {
+    return this.clock.gameTime();
   }
 
   get remoteUid() {
@@ -121,6 +139,7 @@ export class CoopGateway {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    this.unsubscribeOffset();
     this.unsubscribePlayers();
     this.unsubscribeEvents();
     this.stopPresence().catch(this.onError);

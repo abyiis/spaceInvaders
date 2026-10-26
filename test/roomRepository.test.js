@@ -369,17 +369,19 @@ test('startGame exige que el host tenga dos jugadores conectados y listos', asyn
     dependencies.transactionCalls.push({ value, options });
     return { committed: true, snapshot: { val: () => value } };
   };
-  const repository = createRoomRepository(dependencies);
+  dependencies.snapshots.set('.info/serverTimeOffset', 250);
+  const repository = createRoomRepository({ ...dependencies, localNow: () => 1_000_000 });
 
   assert.deepEqual(await repository.startGame('aaaaa'), {
     code: 'AAAAA',
     seed: 17,
     hostUid: 'host-user',
+    startAt: 1_003_250,
   });
   assert.deepEqual(dependencies.transactionCalls[0].value, {
     ...meta,
     status: 'playing',
-    startAt: dependencies.timestamp,
+    startAt: 1_003_250,
   });
 
   dependencies.snapshots.set('rooms/AAAAA/players', {
@@ -421,7 +423,7 @@ test('publishPlayerX y emitGameEvent escriben solo el jugador autenticado', asyn
 
   assert.deepEqual(dependencies.updates[0], {
     databaseRef: { path: 'rooms/AAAAA/players/host-user' },
-    data: { x: 0.4 },
+    data: { x: 0.4, ts: dependencies.timestamp },
   });
   assert.deepEqual(dependencies.writes[0], {
     databaseRef: { path: 'rooms/AAAAA/events/event-1', key: 'event-1' },
@@ -466,4 +468,19 @@ test('watchPresence registers disconnect state, marks connected, and clears pres
   });
   assert.equal(dependencies.subscriptions.has('.info/connected'), false);
   assert.deepEqual(errors, []);
+});
+
+test('watchServerOffset entrega el desfase del servidor y se cancela', () => {
+  const dependencies = createDependencies();
+  const repository = createRoomRepository(dependencies);
+  const offsets = [];
+  const stop = repository.watchServerOffset((offset) => offsets.push(offset), () => {});
+
+  assert.ok(dependencies.subscriptions.has('.info/serverTimeOffset'));
+  dependencies.valueCallback({ val: () => -420 });
+  dependencies.valueCallback({ val: () => null });
+  assert.deepEqual(offsets, [-420]);
+  stop();
+  assert.equal(dependencies.subscriptions.has('.info/serverTimeOffset'), false);
+  assert.throws(() => repository.watchServerOffset(null, () => {}), TypeError);
 });

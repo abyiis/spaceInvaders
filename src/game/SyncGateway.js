@@ -22,6 +22,9 @@
  * @property {(handlers: object) => void} setHandlers Registra receptores de eventos remotos.
  * @property {(targetUid: string, t: number) => void} emitRevive Publica un rescate cooperativo.
  * @property {(t: number, consumedLife: boolean) => void} emitLifeLoss Publica una eliminación definitiva.
+ * @property {() => number | null} [gameTime]
+ *   Solo coop: segundos de juego según el reloj del servidor (negativos hasta `startAt`),
+ *   o `null` mientras el reloj no está sincronizado. Ver `.spec/multiplayer_sync.md` §2.
  * @property {() => void} dispose
  *   Libera suscripciones y temporizadores.
  */

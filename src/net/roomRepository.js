@@ -10,6 +10,7 @@ import {
   serverTimestamp,
   update,
 } from 'firebase/database';
+import { START_DELAY_MS } from '../core/gameClock.js';
 
 const ROOM_CODE_CHARACTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ROOM_CODE_LENGTH = 5;
@@ -59,6 +60,7 @@ function normalizePlayerName(name) {
  *   },
  *   codeFactory?: () => string,
  *   seedFactory?: () => number,
+ *   localNow?: () => number,
  * }} options
  */
 export function createRoomRepository({
@@ -78,6 +80,7 @@ export function createRoomRepository({
   },
   codeFactory = generateRoomCode,
   seedFactory = generateSeed,
+  localNow = Date.now,
 }) {
   return {
     async createRoom({ name = 'Jugador' } = {}) {
@@ -250,9 +253,10 @@ export function createRoomRepository({
       }
 
       const uid = await authService.signIn();
-      const [metaSnapshot, playersSnapshot] = await Promise.all([
+      const [metaSnapshot, playersSnapshot, offsetSnapshot] = await Promise.all([
         databaseApi.get(databaseApi.ref(rtdb, `rooms/${code}/meta`)),
         databaseApi.get(databaseApi.ref(rtdb, `rooms/${code}/players`)),
+        databaseApi.get(databaseApi.ref(rtdb, '.info/serverTimeOffset')),
       ]);
       const meta = metaSnapshot.val();
       if (!meta || meta.hostUid !== uid) {
@@ -266,6 +270,11 @@ export function createRoomRepository({
         throw new Error('Both players must be connected and ready before starting.');
       }
 
+      // `startAt` es un instante futuro del servidor: ambos clientes ven la misma cuenta atrás.
+      const serverOffset = Number(offsetSnapshot.val());
+      const startAt = Math.round(
+        localNow() + (Number.isFinite(serverOffset) ? serverOffset : 0) + START_DELAY_MS,
+      );
       const result = await databaseApi.runTransaction(
         databaseApi.ref(rtdb, `rooms/${code}/meta`),
         (currentData) => {
@@ -275,13 +284,13 @@ export function createRoomRepository({
           return {
             ...currentData,
             status: 'playing',
-            startAt: databaseApi.serverTimestamp(),
+            startAt,
           };
         },
         { applyLocally: false },
       );
       if (!result.committed) throw new Error('The room could not be started.');
-      return { code, seed: meta.seed, hostUid: uid };
+      return { code, seed: meta.seed, hostUid: uid, startAt };
     },
 
     watchRoomStatus(inputCode, onStatus, onError) {
@@ -319,7 +328,22 @@ export function createRoomRepository({
       }
       await databaseApi.update(
         databaseApi.ref(rtdb, `rooms/${code}/players/${uid}`),
-        { x },
+        { x, ts: databaseApi.serverTimestamp() },
+      );
+    },
+
+    /** Desfase servidor − local en ms (`.info/serverTimeOffset`). Devuelve la función de cancelación. */
+    watchServerOffset(onOffset, onError) {
+      if (typeof onOffset !== 'function' || typeof onError !== 'function') {
+        throw new TypeError('Server offset callbacks must be functions.');
+      }
+      return databaseApi.onValue(
+        databaseApi.ref(rtdb, '.info/serverTimeOffset'),
+        (snapshot) => {
+          const offset = snapshot.val();
+          if (Number.isFinite(offset)) onOffset(offset);
+        },
+        onError,
       );
     },
 

@@ -23,6 +23,9 @@ const POWER_UP_FALL_SPEED = 90;
 const BOSS_SCORE_REWARD = 100;
 const BONUS_SHIP_SCORE = 50;
 const BONUS_POWER_UP_DROP_CHANCE = 0.3;
+/** Paso de la simulación coop atada al reloj del servidor (`multiplayer_sync.md` §2). */
+const FIXED_STEP = 1 / 60;
+const MAX_CATCH_UP_STEPS = 30;
 
 /**
  * Dibuja un ícono pixel-art retro para el power-up dado.
@@ -127,6 +130,10 @@ export class Game {
     this.elapsed = 0;
     this.isGameOver = false;
     this.paused = false;
+    /** Segundos que faltan para empezar la partida coop; 0 una vez en marcha. */
+    this.countdown = 0;
+    /** `true` mientras un cliente coop espera conocer el reloj del servidor. */
+    this.syncingClock = false;
     this.boss = null;
     this.bonusStage = null;
     this.pendingBonusStage = false;
@@ -216,7 +223,39 @@ export class Game {
   /** @param {number} dt Segundos desde el frame anterior. */
   update(dt) {
     if (this.paused) return;
+    if (this.sync.isCoop && typeof this.sync.gameTime === 'function') {
+      this.#updateLockedToServerClock(dt);
+      return;
+    }
+    this.#step(dt);
+  }
 
+  /**
+   * En coop el tiempo de juego es el del servidor: se avanza en pasos fijos hasta alcanzarlo,
+   * de modo que ambos clientes recorren la misma secuencia de estados.
+   */
+  #updateLockedToServerClock(dt) {
+    if (this.isGameOver) {
+      this.#step(dt);
+      return;
+    }
+    const target = this.sync.gameTime();
+    this.syncingClock = target === null;
+    if (target === null) return;
+    if (target < 0) {
+      this.countdown = -target;
+      return;
+    }
+    this.countdown = 0;
+    for (let steps = 0; steps < MAX_CATCH_UP_STEPS && !this.isGameOver; steps += 1) {
+      const remaining = target - this.elapsed;
+      if (remaining <= 1e-6) break;
+      this.#step(remaining <= FIXED_STEP * 2 ? remaining : FIXED_STEP);
+    }
+  }
+
+  /** Avanza la simulación `dt` segundos. */
+  #step(dt) {
     this.#updateKillEffects(dt);
     if (this.isGameOver) return;
 
@@ -673,6 +712,7 @@ export class Game {
 
     this.#renderHud(ctx);
     if (this.boss) this.boss.renderHealthBar(ctx, this.width);
+    if (this.syncingClock || this.countdown > 0) this.#renderCountdown(ctx);
     if (this.isGameOver) this.#renderGameOver(ctx);
     else if (this.paused) this.#renderPaused(ctx);
   }
@@ -1001,6 +1041,24 @@ export class Game {
         );
       });
     }
+  }
+
+  #renderCountdown(ctx) {
+    ctx.fillStyle = 'rgba(11, 14, 26, 0.55)';
+    ctx.fillRect(0, 0, this.width, this.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (this.syncingClock) {
+      ctx.font = 'bold 20px system-ui, sans-serif';
+      ctx.fillText('Sincronizando…', this.width / 2, this.height / 2);
+      return;
+    }
+    ctx.font = 'bold 96px system-ui, sans-serif';
+    ctx.fillText(String(Math.ceil(this.countdown)), this.width / 2, this.height / 2 - 12);
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.fillStyle = '#aeb8c9';
+    ctx.fillText('¡Prepárate!', this.width / 2, this.height / 2 + 56);
   }
 
   #renderPaused(ctx) {

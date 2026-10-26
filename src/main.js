@@ -117,11 +117,15 @@ const router = createScreenRouter({
         if (!Number.isSafeInteger(coop.seed)) {
           throw new Error('The room is missing a valid shared game seed.');
         }
+        if (!Number.isFinite(coop.startAt)) {
+          throw new Error('The room is missing a valid start time.');
+        }
         sync = new CoopGateway({
           roomRepository: coop.roomRepository,
           code: coop.code,
           uid: coop.uid,
           hostUid: coop.hostUid,
+          startAt: coop.startAt,
           onError: (error) => console.error('Co-op synchronization failed:', error),
         });
         game.random = mulberry32(coop.seed);
@@ -161,6 +165,7 @@ const router = createScreenRouter({
           hostUid,
           isHost,
           seed: meta.seed ?? room.meta?.seed ?? room.seed,
+          startAt: meta.startAt,
           roomRepository: firebase.roomRepository,
         },
       }),

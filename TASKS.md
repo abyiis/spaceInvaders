@@ -77,7 +77,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 ## Fase 3 — Cooperativo en sincronía (≈ 2 semanas)
 
 - [x] 3.1 `P0 D3` PRNG determinista propio (`src/core/prng.js`, mulberry32) con pruebas `[sync]`
-- [ ] 3.2 `P0 D4` Reloj compartido: `.info/serverTimeOffset` y cuenta atrás hasta `startAt` `[sync]`
+- [x] 3.2 `P0 D4` Reloj compartido: `.info/serverTimeOffset` y cuenta atrás hasta `startAt` `[sync]`
 - [ ] 3.3 `P0 D5` Refactor de `Formation` a movimiento determinista `f(seed, wave, t)` con pruebas de igualdad entre dos instancias `[sync][loop]`
 - [ ] 3.4 `P0 D3` Disparos enemigos deterministas desde la semilla `[sync]`
 - [ ] 3.5 `P0 D3` `syncService.js`: publicar posición propia a 10 Hz solo si cambió `[sync]`
