@@ -1273,7 +1273,7 @@ export class Game {
     ctx.textAlign = 'center';
     ctx.fillText(`Vidas: ${this.lives}`, this.width / 2, 12);
     ctx.textAlign = 'right';
-    ctx.fillText(`Oleada: ${this.wave}`, this.width - 12, 12);
+    ctx.fillText(`Oleada: ${this.wave}`, this.width - VISUALS.HUD_WAVE_RIGHT_MARGIN, 12);
 
     const { lines, bossBarY } = layoutStatusStack(this.#statusLines());
     ctx.textAlign = 'center';

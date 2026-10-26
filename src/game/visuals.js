@@ -3,6 +3,8 @@
 export const VISUALS = Object.freeze({
   BANNER_DURATION: 0.5,
   BANNER_HEIGHT: 56,
+  /** Margen derecho del «Oleada: N» del HUD: deja libre el botón de pausa/salida (48 px + 8 px). */
+  HUD_WAVE_RIGHT_MARGIN: 64,
   /** Pila de textos de estado bajo el HUD: primera `y` y alto de cada renglón. */
   STATUS_TOP: 36,
   STATUS_LINE_HEIGHT: 15,

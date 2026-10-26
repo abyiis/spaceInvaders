@@ -62,3 +62,18 @@ test('la barra del jefe se dibuja debajo del último renglón', () => {
   const title = texts.find((entry) => entry.text.startsWith('JEFE'));
   assert.ok(title.y > lastLineY, `título ${title.y} vs último renglón ${lastLineY}`);
 });
+
+test('«Oleada» queda a la izquierda del botón de pausa y sin pisar «Vidas»', () => {
+  const game = new Game({ random: () => 0.5 });
+  game.wave = 28;
+  const { ctx, texts } = recordingCtx();
+  game.render(ctx);
+  const wave = texts.find((entry) => entry.text.startsWith('Oleada'));
+  const lives = texts.find((entry) => entry.text.startsWith('Vidas'));
+  assert.equal(wave.x, game.width - VISUALS.HUD_WAVE_RIGHT_MARGIN);
+  assert.ok(wave.x <= game.width - 56, 'el botón ocupa x ≥ width − 56');
+  // Anchos aproximados de la fuente de 14 px en negrita (~7,5 px por carácter).
+  const waveLeft = wave.x - wave.text.length * 7.5;
+  const livesRight = lives.x + (lives.text.length * 7.5) / 2;
+  assert.ok(waveLeft > livesRight, `Oleada empieza en ${waveLeft}, Vidas termina en ${livesRight}`);
+});
