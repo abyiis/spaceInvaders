@@ -1,6 +1,16 @@
 {
-  "appId": "com.example.spacecoop",
-  "appName": "Space Coop",
+  "appId": "co.edu.upb.spacecoop",
+  "appName": "Neon Invaders",
   "webDir": "dist",
-  "backgroundColor": "#0B0E1A"
+  "backgroundColor": "#050811",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "launchAutoHide": true,
+      "launchFadeOutDuration": 150,
+      "backgroundColor": "#050811",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    }
+  }
 }

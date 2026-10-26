@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test",
+    "assets": "node scripts/generateAssets.mjs",
     "bench": "node scripts/benchSimulation.mjs",
     "test:rules": "firebase emulators:exec --project demo-space-coop --only database,firestore \"node --test test/firebaseRules.test.js\"",
     "cap:sync": "npm run build && npx cap sync",
@@ -21,6 +22,7 @@
     "@capacitor/haptics": "^7.0.0",
     "@capacitor/ios": "^7.0.0",
     "@capacitor/screen-orientation": "^7.0.4",
+    "@capacitor/splash-screen": "^7.0.5",
     "firebase": "^11.0.0"
   },
   "devDependencies": {

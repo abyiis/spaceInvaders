@@ -265,7 +265,7 @@ Esto es lo que cambia en `game/` y en el arranque (detalle en `game_loop.md` §7
 | `SCREEN_FADE_MS` | 200 | Fundido de entrada de una pantalla |
 | `BEST_SCORE_STORAGE_KEY` | `'spacecoop.bestScore'` | Clave del récord local (§8.5) |
 
-Presupuesto de arranque: el splash nativo (tarea 4.4) debe durar **1 s o menos** y el splash de la app 2,5 s, de modo que el Home aparezca en **3,5 s o menos** desde que se toca el ícono.
+Presupuesto de arranque: el splash nativo (tarea 4.4; `SplashScreen.launchShowDuration = 800` ms en `capacitor.config.json`, con la nave de `assets/splash.png`) debe durar **1 s o menos** y el splash de la app 2,5 s, de modo que el Home aparezca en **3,5 s o menos** desde que se toca el ícono.
 
 ## 12. Botón «Atrás» de Android (tarea 2B.11)
 

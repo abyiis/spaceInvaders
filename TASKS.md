@@ -103,6 +103,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 - [ ] 4.3 `P0 D2` Medir tráfico real en la consola de Firebase y comparar con el presupuesto de `multiplayer_sync.md` §7
   - Parcial: contador estimado en el panel de depuración y procedimiento + tabla en `docs/pruebas-rendimiento.md` §2. Falta medir una partida real contra la consola de Firebase.
 - [ ] 4.4 `P0 D2` Ícono y pantalla de arranque **nativa** (splash de Capacitor, de 1 s o menos); no es el splash de la app, que es la tarea 2B.3 `[ui]`
+  - Parcial: `npm run assets` genera `assets/` (ícono, ícono adaptable y splash con la nave de la app), `@capacitor/splash-screen` configurado a 800 ms y `appId`/`appName` definitivos. Falta `npx cap add android` + `npx @capacitor/assets generate --android` (ver `docs/entrega.md`) y verlo en un dispositivo.
 - [ ] 4.5 `P0 D2` Generar APK de entrega desde Android Studio (Build → Build Bundle(s) / APK(s))
 - [ ] 4.6 `P0 D2` Redactar el informe: arquitectura, decisiones (ADR), limitaciones y pruebas
 - [ ] 4.7 `P1 D2` Preparar la demostración: guion de 5 minutos con 2 teléfonos

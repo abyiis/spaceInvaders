@@ -18,6 +18,7 @@ Juego móvil estilo Space Invaders, arcade infinito por puntuación, con modo co
 | Ciclo de vida de la app | `@capacitor/app` (evento `appStateChange`) | Plugin oficial de Capacitor para saber cuándo la app pasa a segundo plano en Android/iOS. En el navegador se usa además `visibilitychange`. Añadido en v1.2 (tarea 1.11). |
 | Sonido | Web Audio API (sintetizado, sin archivos) | Sin assets ni dependencias; funciona igual en navegador y WebView. Añadido en v1.3 (tarea 1.12). |
 | Vibración | `@capacitor/haptics` (cae a `navigator.vibrate` en navegador) | `navigator.vibrate` no existe en iOS; el plugin cubre Android e iOS y declara por sí mismo el permiso `VIBRATE`. Añadido en v1.3 (tarea 1.12). |
+| Pantalla de arranque nativa | `@capacitor/splash-screen` | Splash del sistema de ≤ 1 s mientras carga el WebView (`capacitor.config.json`); ícono y splash se generan con `npm run assets`. Añadido en v1.7 (tarea 4.4). |
 | Orientación | `@capacitor/screen-orientation` | Bloquea la app en vertical en Android/iOS (`src/orientation.js`); en el navegador no hace falta. Añadido en v1.7 (tarea 4.1). |
 | Build y servidor de desarrollo | Vite | Recarga en vivo y bundle para `dist/`. |
 | Estado de partida en vivo | Firebase Realtime Database (RTDB) | Baja latencia y facturación por ancho de banda, no por operación. |
