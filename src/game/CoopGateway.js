@@ -1,4 +1,5 @@
 import { createGameClock } from '../core/gameClock.js';
+import { createPositionPublisher } from '../core/positionPublisher.js';
 
 export class CoopGateway {
   /**
@@ -21,7 +22,12 @@ export class CoopGateway {
     this.clock.setStartAt(startAt);
     this.handlers = null;
     this.pendingEvents = [];
-    this.lastPublishAt = 0;
+    this.positionPublisher = createPositionPublisher({
+      now,
+      publish: (x) => {
+        this.roomRepository.publishPlayerX(this.code, x).catch(this.onError);
+      },
+    });
     this.currentPlayers = {};
     this.disposed = false;
     this.unsubscribeOffset = roomRepository.watchServerOffset?.(
@@ -83,10 +89,7 @@ export class CoopGateway {
 
   publishPlayerX(x) {
     if (this.disposed) return;
-    const now = Date.now();
-    if (now - this.lastPublishAt < 100) return;
-    this.lastPublishAt = now;
-    this.roomRepository.publishPlayerX(this.code, x).catch(this.onError);
+    this.positionPublisher.update(x);
   }
 
   emitShot(t, x, damage = 1, vx = 0) {
