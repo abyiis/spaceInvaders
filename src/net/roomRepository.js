@@ -16,6 +16,9 @@ import { START_DELAY_MS } from '../core/gameClock.js';
 const ROOM_CODE_CHARACTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ROOM_CODE_LENGTH = 5;
 const ROOM_CREATION_ATTEMPTS = 5;
+/** Posición inicial de cada nave (fracción del ancho): coincide con la de `Game.startNewGame()`. */
+const HOST_START_X = 0.35;
+const GUEST_START_X = 0.65;
 
 function secureRandomBytes(target) {
   const crypto = globalThis.crypto;
@@ -134,7 +137,7 @@ export function createRoomRepository({
         if (result.committed) {
           const player = {
             name: playerName,
-            x: 0,
+            x: HOST_START_X,
             ts: databaseApi.serverTimestamp(),
             ready: false,
             connected: true,
@@ -192,7 +195,7 @@ export function createRoomRepository({
 
       const player = {
         name: playerName,
-        x: 0,
+        x: GUEST_START_X,
         ts: databaseApi.serverTimestamp(),
         ready: false,
         connected: true,
@@ -520,11 +523,17 @@ export function createRoomRepository({
         onError,
       );
 
-      return async () => {
+      /**
+       * Deja de vigilar la conexión. Por defecto marca al jugador como desconectado y cancela el
+       * `onDisconnect`; con `{ markDisconnected: false }` solo deja de escuchar (traspaso del lobby
+       * a la partida: la nueva pasarela sigue siendo la dueña de la presencia).
+       */
+      return async ({ markDisconnected = true } = {}) => {
         if (disposed) return;
         disposed = true;
         unsubscribe();
         await queue;
+        if (!markDisconnected) return;
         await databaseApi.update(playerRef, { connected: false });
         await databaseApi.onDisconnect(playerRef).cancel();
       };

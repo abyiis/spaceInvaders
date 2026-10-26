@@ -109,7 +109,7 @@ test('createRoom authenticates and creates room metadata and the host player', a
     uid: 'host-user',
     player: {
       name: 'Ace',
-      x: 0,
+      x: 0.35,
       ts: dependencies.timestamp,
       ready: false,
       connected: true,
@@ -161,7 +161,7 @@ test('createRoom retries when a generated room code is already taken', async () 
     uid: 'host-user',
     player: {
       name: 'Jugador',
-      x: 0,
+      x: 0.35,
       ts: dependencies.timestamp,
       ready: false,
       connected: true,
@@ -252,7 +252,7 @@ test('joinRoom validates the room, reserves the player node and normalizes its c
   assert.equal(joined.meta.hostUid, 'host-user');
   assert.deepEqual(joined.player, {
     name: 'Pilot',
-    x: 0,
+    x: 0.65,
     ts: dependencies.timestamp,
     ready: false,
     connected: true,
@@ -575,4 +575,20 @@ test('leaveLobby: el host cierra la sala y el invitado solo libera su plaza', as
   dependencies.snapshots.delete('rooms/AAAAA/meta');
   assert.equal(await repository.leaveLobby('AAAAA'), 'left');
   assert.deepEqual(dependencies.removals, ['rooms/AAAAA/players/host-user']);
+});
+
+test('watchPresence puede soltar la vigilancia sin marcar desconectado (traspaso a la partida)', async () => {
+  const dependencies = createDependencies();
+  const repository = createRoomRepository(dependencies);
+  const stop = repository.watchPresence('AAAAA', 'host-user', () => {});
+  dependencies.valueCallback({ val: () => true });
+  await new Promise((resolve) => setImmediate(resolve));
+  dependencies.updates.length = 0;
+  dependencies.disconnectCalls.length = 0;
+
+  await stop({ markDisconnected: false });
+
+  assert.equal(dependencies.subscriptions.has('.info/connected'), false);
+  assert.deepEqual(dependencies.updates, []);
+  assert.deepEqual(dependencies.disconnectCalls, []);
 });

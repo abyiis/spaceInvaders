@@ -9,7 +9,7 @@
  *   isHost?: boolean,
  *   watchPlayers: (code: string, onPlayers: (players: Record<string, object>) => void, onError: (error: Error) => void) => () => void,
  *   watchRoomStatus: (code: string, onStatus: (meta: object | null) => void, onError: (error: Error) => void) => () => void,
- *   watchPresence: (code: string, uid: string, onError: (error: Error) => void) => () => Promise<void>,
+ *   watchPresence: (code: string, uid: string, onError: (error: Error) => void) => (options?: { markDisconnected?: boolean }) => Promise<void>,
  *   setReady: (code: string, ready: boolean) => Promise<void>,
  *   startGame: (code: string) => Promise<object>,
  *   leaveRoom?: (code: string) => Promise<unknown>,
@@ -196,7 +196,8 @@ export function mountLobby(container, {
     unsubscribe();
     unsubscribeStatus();
     try {
-      await stopPresence();
+      // Al empezar la partida la presencia pasa a la pasarela del juego: no se marca desconectado.
+      await stopPresence(startHandled ? { markDisconnected: false } : undefined);
       lobby.remove();
     } catch (error) {
       disposed = false;
