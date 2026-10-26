@@ -19,7 +19,9 @@ Estimación total orientativa: 7-8 semanas a media jornada (incluye la Fase 2B).
 - [x] 0.4 `P0 D1` Ejecutar `npm run build` y confirmar que se genera `dist/`
 - [ ] 0.5 `P0 D1` Inicializar repositorio Git y primer commit
 - [ ] 0.6 `P0 D2` Cambiar `appId` en `capacitor.config.json` (p. ej. `co.edu.tuuniversidad.spacecoop`) y ejecutar `npx cap add android` `[arch]`
+  - Parcial: `appId` ya es `co.edu.upb.spacecoop` (cámbialo si el equipo prefiere otro antes de generar la plataforma); falta `npx cap add android` (ver `docs/entrega.md`).
 - [ ] 0.7 `P0 D2` Ejecutar `npm run android` y probar el juego en un emulador o teléfono real `[arch]`
+  - Pendiente: pasos en `docs/entrega.md` (requiere Android Studio).
 - [ ] 0.8 `P0 D2` Crear proyecto Firebase (plan Spark), registrar una app **Web** y guardar su configuración en `src/net/firebaseConfig.js` (ignorado por Git) `[fb]`
 - [ ] 0.9 `P0 D2` Habilitar Authentication → Anónimo; crear RTDB (región `us-central1`) y Firestore (modo producción) `[fb]`
 - [ ] 0.10 `P1 D1` Desplegar reglas: `firebase deploy --only database,firestore` `[fb]`
@@ -105,6 +107,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 - [ ] 4.4 `P0 D2` Ícono y pantalla de arranque **nativa** (splash de Capacitor, de 1 s o menos); no es el splash de la app, que es la tarea 2B.3 `[ui]`
   - Parcial: `npm run assets` genera `assets/` (ícono, ícono adaptable y splash con la nave de la app), `@capacitor/splash-screen` configurado a 800 ms y `appId`/`appName` definitivos. Falta `npx cap add android` + `npx @capacitor/assets generate --android` (ver `docs/entrega.md`) y verlo en un dispositivo.
 - [ ] 4.5 `P0 D2` Generar APK de entrega desde Android Studio (Build → Build Bundle(s) / APK(s))
+  - Pendiente: guía paso a paso en `docs/entrega.md`; no hay Android SDK en el entorno de desarrollo.
 - [ ] 4.6 `P0 D2` Redactar el informe: arquitectura, decisiones (ADR), limitaciones y pruebas
 - [ ] 4.7 `P1 D2` Preparar la demostración: guion de 5 minutos con 2 teléfonos
 - [ ] 4.8 `P1 D2` Sprites y sonido definitivos (opcional)
