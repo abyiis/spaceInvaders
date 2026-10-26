@@ -91,6 +91,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 - [x] 3.13 `P1 D2` Resultados de partida coop (reutiliza la pantalla de Resultados de 2B.8 con desglose por jugador y «Volver al lobby») y guardado en ranking (solo host) `[fb][ui]`
 - [x] 3.14 `P1 D2` Limpieza de la sala al finalizar `[sync]`
 - [ ] 3.15 `P1 D3` Prueba manual documentada con 2 dispositivos reales y redes distintas `[sync]`
+  - Parcial: guía y tabla de resultados en `docs/pruebas-coop.md`; la lógica está cubierta con una prueba de integración de dos clientes. Falta ejecutarla con dos teléfonos reales (no hay dispositivos ni Android SDK en el entorno de desarrollo).
 - [x] 3.16 `P1 D2` Salir de una partida coop a mitad de partida: botón «Salir» con confirmación «¿Salir de la partida?», abandono de la sala y limpieza `[sync][ui]`
 
 ## Fase 4 — Pulido & Entrega universitaria (≈ 1 semana)
