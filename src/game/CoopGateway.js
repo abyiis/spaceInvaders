@@ -1,3 +1,4 @@
+import { createConnectionMonitor } from '../core/connectionMonitor.js';
 import { createGameClock } from '../core/gameClock.js';
 import { createInterpolationBuffer } from '../core/interpolationBuffer.js';
 import { HOST_TAKEOVER_GRACE_MS, shouldTakeOverHost } from '../core/hostElection.js';
@@ -40,6 +41,8 @@ export class CoopGateway {
     this.takeoverTimer = null;
     this.roomStatus = null;
     this.clock = createGameClock({ now });
+    this.monitor = createConnectionMonitor({ now });
+    this.lastPeerTs = null;
     this.clock.setStartAt(startAt);
     this.handlers = null;
     this.pendingEvents = [];
@@ -62,6 +65,7 @@ export class CoopGateway {
       (players) => {
         this.currentPlayers = players;
         this.#bufferRemotePosition();
+        this.#trackPeerConnection();
         this.#evaluateTakeover();
       },
       onError,
@@ -75,6 +79,10 @@ export class CoopGateway {
       },
       onError,
     );
+    this.unsubscribeConnection = roomRepository.watchConnection?.(
+      (online) => this.monitor.setLocalOnline(online),
+      onError,
+    ) ?? (() => {});
     this.unsubscribeMeta = roomRepository.watchRoomStatus?.(
       code,
       (meta) => this.#applyRoomMeta(meta),
@@ -98,6 +106,11 @@ export class CoopGateway {
   /** Segundos de juego según el reloj del servidor; `null` mientras no se conoce el desfase. */
   gameTime() {
     return this.clock.gameTime();
+  }
+
+  /** Estado de la conexión (propia y del compañero) para avisar al jugador. */
+  get connectionStatus() {
+    return this.monitor.status();
   }
 
   get remoteUid() {
@@ -202,11 +215,22 @@ export class CoopGateway {
     if (this.disposed) return;
     this.disposed = true;
     this.#cancelTakeover();
+    this.unsubscribeConnection();
     this.unsubscribeMeta();
     this.unsubscribeOffset();
     this.unsubscribePlayers();
     this.unsubscribeEvents();
     this.stopPresence().catch(this.onError);
+  }
+
+  /** Alimenta el monitor con la presencia del compañero y con cada señal nueva suya. */
+  #trackPeerConnection() {
+    const peer = this.currentPlayers[this.remoteUid];
+    this.monitor.setPeerConnected(peer?.connected);
+    if (peer && peer.ts !== this.lastPeerTs) {
+      this.lastPeerTs = peer.ts ?? null;
+      this.monitor.notePeerSignal();
+    }
   }
 
   /** Sigue `meta`: el host puede cambiar durante la partida (relevo) y la sala puede cerrarse. */

@@ -37,7 +37,7 @@ Aleatoriedad: **todo lo sincronizado usa el PRNG propio** `mulberry32` de `src/c
 ### 4.1 Estado continuo — posición del jugador
 - Ruta: `rooms/{code}/players/{uid}`.
 - Campos: `x` (normalizado 0..1), `ts` (ms del servidor, `ServerValue.TIMESTAMP`), `connected`.
-- Frecuencia: **10 Hz** y **solo si `x` cambió** más de 0,002 desde el último valor publicado (`createPositionPublisher`, pura). Se usa `update()` parcial, nunca reescribir el nodo.
+- Frecuencia: **10 Hz** y **solo si `x` cambió** más de 0,002 desde el último valor publicado (`createPositionPublisher`, pura), más un **latido cada 2 s** aunque no cambie (permite detectar caídas silenciosas, §5). Se usa `update()` parcial, nunca reescribir el nodo.
 - Receptor: guarda las muestras `(ts, x)` en un buffer y dibuja la nave del compañero **100 ms atrás** del reloj del servidor, interpolando entre las dos muestras que la rodean (`createInterpolationBuffer`, puro). Si el buffer se queda sin futuro mantiene la última posición (no extrapola).
 
 ### 4.2 Eventos discretos
@@ -70,7 +70,7 @@ No hay nodo `state`: el estado oficial viaja en los eventos del host, que hereda
 
 - Al unirse: `onDisconnect().update({connected:false})` sobre `players/{uid}`; al reconectar se vuelve a `true`.
 - Cada cliente sigue `meta` (`hostUid`, `status`), `players` y `.info/connected` mediante un `ConnectionMonitor` puro que produce un aviso en pantalla:
-  - propia conexión caída → «Conexión inestable»;
+  - propia conexión caída (`.info/connected`) o más de 5 s sin ninguna señal del compañero conectado → «Conexión inestable»;
   - compañero con `connected:false` → «Compañero desconectado»;
   - si no vuelve en **10 s** su nave se desactiva («Compañero fuera de la partida») y el que queda sigue jugando.
 - **Desconexión del host:** el otro jugador (el de menor `uid` entre los conectados) lo releva escribiendo `meta/hostUid = su uid`. Las reglas solo lo permiten si el host actual figura con `connected:false`. Desde ese instante es el host: decide fases y fin de partida a partir de su estado local y emite los eventos del host.

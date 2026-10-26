@@ -360,6 +360,18 @@ export function createRoomRepository({
       );
     },
 
+    /** Estado de la conexión propia (`.info/connected`). Devuelve la función de cancelación. */
+    watchConnection(onChange, onError) {
+      if (typeof onChange !== 'function' || typeof onError !== 'function') {
+        throw new TypeError('Connection callbacks must be functions.');
+      }
+      return databaseApi.onValue(
+        databaseApi.ref(rtdb, '.info/connected'),
+        (snapshot) => onChange(snapshot.val() === true),
+        onError,
+      );
+    },
+
     /** Desfase servidor − local en ms (`.info/serverTimeOffset`). Devuelve la función de cancelación. */
     watchServerOffset(onOffset, onError) {
       if (typeof onOffset !== 'function' || typeof onError !== 'function') {

@@ -136,6 +136,8 @@ export class Game {
     this.paused = false;
     /** @type {{ text: string, remaining: number } | null} */
     this.notice = null;
+    /** Aviso de conexión del coop (`null` si todo va bien). */
+    this.connection = null;
     this.#assignSeed();
     /** Bajas y puntos por jugador; el del host es el oficial (`multiplayer_sync.md` §4.3). */
     this.ledger = createHostLedger();
@@ -301,6 +303,7 @@ export class Game {
       this.notice.remaining -= dt;
       if (this.notice.remaining <= 0) this.notice = null;
     }
+    this.#updateConnection();
     if (this.isGameOver) return;
 
     this.elapsed += dt;
@@ -402,6 +405,22 @@ export class Game {
     if (!this.sync.isCoop || !this.isAuthority) return;
     this.showNotice('Ahora eres el host de la partida', 4);
     this.#checkCoopGameOver();
+  }
+
+  /**
+   * Refleja el estado de la conexión: un compañero que no vuelve en 10 s deja de formar parte
+   * de la partida (su nave se desactiva), pero el que queda puede seguir jugando.
+   */
+  #updateConnection() {
+    if (!this.sync.isCoop || this.isGameOver) return;
+    const status = this.sync.connectionStatus;
+    this.connection = status && status.kind !== 'ok' ? status : null;
+    if (status?.kind === 'peer-gone' && this.remotePlayer && !this.remotePlayer.eliminated) {
+      this.remotePlayer.eliminated = true;
+      this.remotePlayer.downedTimer = 0;
+      this.remotePlayer.revivePending = false;
+      this.#checkCoopGameOver();
+    }
   }
 
   /** Mensaje temporal al pie de la pantalla. */
@@ -1267,6 +1286,13 @@ export class Game {
   }
 
   #renderNotice(ctx) {
+    if (this.connection && !this.isGameOver) {
+      ctx.fillStyle = this.connection.kind === 'unstable' ? '#ffb36c' : '#ff8a8a';
+      ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(this.connection.message, this.width / 2, this.height - (this.notice ? 34 : 14));
+    }
     if (!this.notice) return;
     ctx.fillStyle = '#ffd274';
     ctx.font = 'bold 12px system-ui, sans-serif';

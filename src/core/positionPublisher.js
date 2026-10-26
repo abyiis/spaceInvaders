@@ -3,6 +3,8 @@
 
 export const POSITION_PUBLISH_INTERVAL_MS = 100;
 export const POSITION_MIN_DELTA = 0.002;
+/** Aunque no se mueva, se repite la última posición cada tanto para que el compañero sepa que sigue ahí. */
+export const POSITION_HEARTBEAT_MS = 2000;
 
 /**
  * @param {{
@@ -10,6 +12,7 @@ export const POSITION_MIN_DELTA = 0.002;
  *   now?: () => number,
  *   intervalMs?: number,
  *   minDelta?: number,
+ *   heartbeatMs?: number,
  * }} options
  * @returns {{ update(x: number): boolean, reset(): void }}
  *   `update` se llama en cada frame con `x` normalizada y devuelve `true` si publicó.
@@ -19,6 +22,7 @@ export function createPositionPublisher({
   now = Date.now,
   intervalMs = POSITION_PUBLISH_INTERVAL_MS,
   minDelta = POSITION_MIN_DELTA,
+  heartbeatMs = POSITION_HEARTBEAT_MS,
 }) {
   let lastX = null;
   let lastAt = -Infinity;
@@ -28,7 +32,8 @@ export function createPositionPublisher({
       if (!Number.isFinite(x)) return false;
       const time = now();
       if (time - lastAt < intervalMs) return false;
-      if (lastX !== null && Math.abs(x - lastX) <= minDelta) return false;
+      const unchanged = lastX !== null && Math.abs(x - lastX) <= minDelta;
+      if (unchanged && time - lastAt < heartbeatMs) return false;
       lastX = x;
       lastAt = time;
       publish(x);

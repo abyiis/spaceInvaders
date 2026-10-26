@@ -492,6 +492,22 @@ test('claimHost transfiere meta/hostUid solo desde el host anterior y avisa si n
   await assert.rejects(repository.claimHost('AAAAA', ''), /previous host uid/);
 });
 
+test('watchConnection traduce .info/connected a un booleano y se cancela', () => {
+  const dependencies = createDependencies();
+  const repository = createRoomRepository(dependencies);
+  const states = [];
+  const stop = repository.watchConnection((online) => states.push(online), () => {});
+
+  assert.ok(dependencies.subscriptions.has('.info/connected'));
+  dependencies.valueCallback({ val: () => true });
+  dependencies.valueCallback({ val: () => false });
+  dependencies.valueCallback({ val: () => null });
+  assert.deepEqual(states, [true, false, false]);
+  stop();
+  assert.equal(dependencies.subscriptions.has('.info/connected'), false);
+  assert.throws(() => repository.watchConnection(null, () => {}), TypeError);
+});
+
 test('watchServerOffset entrega el desfase del servidor y se cancela', () => {
   const dependencies = createDependencies();
   const repository = createRoomRepository(dependencies);
