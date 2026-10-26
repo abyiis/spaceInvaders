@@ -99,6 +99,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 - [x] 4.1 `P0 D2` Bloquear orientación vertical en la app (plugin `@capacitor/screen-orientation` o configuración de Android) `[arch]`
   - Implementado con el plugin (`src/orientation.js`) y probado con el plugin inyectado; confirmar el bloqueo en un teléfono o emulador junto con 2B.13 y 4.2.
 - [ ] 4.2 `P0 D2` Probar rendimiento en un teléfono real dentro del WebView (60 FPS en solo, sin tirones en coop)
+  - Parcial: panel de FPS (`?debug=1` o 5 toques en Créditos), `npm run bench` y procedimiento en `docs/pruebas-rendimiento.md`. Falta medir en un teléfono real (no hay dispositivo en el entorno de desarrollo).
 - [ ] 4.3 `P0 D2` Medir tráfico real en la consola de Firebase y comparar con el presupuesto de `multiplayer_sync.md` §7
 - [ ] 4.4 `P0 D2` Ícono y pantalla de arranque **nativa** (splash de Capacitor, de 1 s o menos); no es el splash de la app, que es la tarea 2B.3 `[ui]`
 - [ ] 4.5 `P0 D2` Generar APK de entrega desde Android Studio (Build → Build Bundle(s) / APK(s))

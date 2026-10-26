@@ -4,6 +4,8 @@ import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { Haptics } from '@capacitor/haptics';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
+import { createFrameStats } from './core/frameStats.js';
+import { DEBUG_TOGGLE_EVENT, isDebugRequested, mountDebugOverlay } from './debug/debugOverlay.js';
 import { createEffects } from './effects.js';
 import { Game } from './game/Game.js';
 import { CoopGateway } from './game/CoopGateway.js';
@@ -240,9 +242,36 @@ attachBackButton(router, {
   onPlayingBack: () => openPauseMenu(),
 });
 
+const frameStats = createFrameStats();
+let unmountDebugOverlay = null;
+
+function setDebugOverlay(visible) {
+  if (visible && !unmountDebugOverlay) {
+    unmountDebugOverlay = mountDebugOverlay(document.body, {
+      getStats: () => ({ frames: frameStats.snapshot() }),
+    });
+  } else if (!visible && unmountDebugOverlay) {
+    unmountDebugOverlay();
+    unmountDebugOverlay = null;
+  }
+}
+
+function readStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+// Panel de FPS para medir en el teléfono: ?debug=1, marca en localStorage o 5 toques en Créditos.
+setDebugOverlay(isDebugRequested({ search: window.location.search, storage: readStorage() }));
+window.addEventListener(DEBUG_TOGGLE_EVENT, () => setDebugOverlay(!unmountDebugOverlay));
+
 let last = performance.now();
 
 function frame(now) {
+  frameStats.frame(now);
   // Limita dt para que una pestaña en segundo plano no provoque saltos enormes.
   const dt = Math.min((now - last) / 1000, 0.05);
   last = now;

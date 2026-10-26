@@ -1165,6 +1165,21 @@ body {
   }
 }
 
+.debug-overlay {
+  position: fixed;
+  top: max(4px, env(safe-area-inset-top));
+  left: 4px;
+  z-index: 100;
+  margin: 0;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: rgba(5, 8, 17, 0.72);
+  color: #8bf0c7;
+  font: 10px/1.35 ui-monospace, monospace;
+  pointer-events: none;
+  white-space: pre;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .main-menu__button {
     scroll-behavior: auto;
