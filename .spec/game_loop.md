@@ -33,10 +33,10 @@ El juego encadena **oleadas** (waves) indefinidamente. Cada oleada normal es má
 4. `Hazards`: temporizadores y colisiones de asteroides; el campo magnético curva los disparos del jugador.
 5. Si hay jefe activo, `Boss` mueve, ataca y recibe curación de su nave soporte; durante el bonus, las formaciones normales quedan detenidas.
 6. Colisiones: resuelve sinergia entre disparos cooperativos, bala↔enemigo/jefe/jugador, asteroide↔nave/enemigo y recogida de potenciadores.
-7. Si no quedan enemigos normales, se concede el bonus de oleada; cada ronda múltiplo de 3 inicia jefe y cada múltiplo de 5 programa una fase bonus.
+7. Si no quedan enemigos normales, se concede el bonus de oleada; cada ronda múltiplo de 3 inicia jefe y cada múltiplo de 5 programa una fase bonus. En coop solo el host decide estas transiciones y las anuncia con un evento `phase`; el compañero las sigue (`multiplayer_sync.md` §4.3).
 8. En rondas que son múltiplos de 15, se derrota primero al jefe y luego se juega la fase bonus. En las rondas 5, 10, 20… la fase bonus comienza directamente.
 9. Al derrotar al jefe se concede una vida y dos potenciadores aleatorios distintos.
-10. Fin de partida: vidas ≤ 0 en solo, ambos jugadores eliminados en coop o enemigo normal con `y ≥ playerLineY`.
+10. Fin de partida: vidas ≤ 0 en solo, ambos jugadores eliminados en coop o enemigo normal con `y ≥ playerLineY`. En coop lo decide el host y lo anuncia con `game-over` (puntaje y oleada oficiales).
 
 ### 3.1 Jefes
 

@@ -85,7 +85,7 @@ Spec: `.spec/ui_screens.md`. Pueden hacerse en paralelo a las Fases 2 y 3 porque
 - [x] 3.7 `P0 D3` Eventos `shot` (cosméticos) para mostrar los disparos del compañero `[sync]`
 - [x] 3.8 `P0 D4` Eventos `kill`: reclamo por el jugador, adjudicación por el host (primero gana) con pruebas de la lógica pura `[sync]`
 - [x] 3.9 `P0 D4` Eventos `hit` y vidas por jugador escritas por el host `[sync]`
-- [ ] 3.10 `P0 D3` Fin de oleada y de partida decididos por el host (`state`) `[sync][loop]`
+- [x] 3.10 `P0 D3` Fin de oleada y de partida decididos por el host (`state`) `[sync][loop]`
 - [ ] 3.11 `P1 D4` Reasignación del rol de host si el host se desconecta `[sync]`
 - [ ] 3.12 `P1 D3` Avisos de "conexión inestable" y compañero desconectado `[sync]`
 - [ ] 3.13 `P1 D2` Resultados de partida coop (reutiliza la pantalla de Resultados de 2B.8 con desglose por jugador y «Volver al lobby») y guardado en ranking (solo host) `[fb][ui]`
@@ -129,6 +129,7 @@ Matchmaking aleatorio, chat, compras, anti-trampas, más de 4 jugadores, reconex
 | 2026-10-22 | ui_screens | v1.1: créditos solo con nombres (sin roles, curso ni institución); récord local y botón «Atrás» dejan de ser opcionales; nuevo §9 menú de pausa y salida al Home (botón ⏸, `pauseController`); secciones 9-14 pasan a 10-15 | Supuestos confirmados por el equipo |
 | 2026-10-22 | architecture | v1.6: `pauseController.js` en el árbol de `ui/`; `playing` ya no es una pantalla sin interfaz (lleva el botón de pausa); input fuera mientras el menú de pausa está abierto; salir a mitad de partida es un abandono | Supuestos confirmados por el equipo |
 | 2026-10-22 | game_loop | v1.4: `PAUSED → HOME` por «Salir al inicio» (partida abandonada, sin `onGameOver`); `PAUSED` se alcanza también con el botón ⏸ | Supuestos confirmados por el equipo |
+| 2026-10-26 | game_loop | v1.5: en coop el host decide las transiciones de fase y el fin de partida (§3) | Tarea 3.10 |
 | 2026-10-26 | firebase_schema | v1.1: tipos de evento `enemy-shot`, `bonus-kill`, `revive`, `life-loss`, `state`, `phase`, `game-over`; los del host solo los firma `hostUid`; nodo `state/` reservado sin uso | Tarea 3.9 |
 | 2026-10-26 | game_loop | v1.5: §4.1 movimiento de la formación como función pura del tiempo de oleada, con los límites de la rejilla completa | Tarea 3.3 |
 | 2026-10-25 | multiplayer_sync | v1.1: modelo coop realmente implementado (reloj bloqueado al servidor con cuenta atrás, PRNG por flujo, formación y disparos deterministas, host autoritativo mediante eventos `phase`/`state`/`game-over`, relevo de host, avisos de conexión); ADR-13 | Tareas 3.1 – 3.16 |

@@ -145,6 +145,22 @@ export class CoopGateway {
     this.#publish({ type: 'state', t, score, lives, wave });
   }
 
+  emitPhase({ kind, wave, t, score, lives, bossDefeated = false }) {
+    this.#publish({
+      type: 'phase',
+      kind,
+      wave,
+      t,
+      score,
+      lives,
+      ...(bossDefeated ? { bossDefeated: true } : {}),
+    });
+  }
+
+  emitGameOver(t, score, wave, kills = {}) {
+    this.#publish({ type: 'game-over', t, score, wave, kills });
+  }
+
   emitBonusKill(wave, shipId, multiplier, t, powerUpType = null) {
     this.#publish({
       type: 'bonus-kill',

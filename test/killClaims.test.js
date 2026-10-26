@@ -12,6 +12,8 @@ class FakeCoopSync extends NoopSyncGateway {
 
   get isCoop() { return true; }
 
+  get isHost() { return true; }
+
   get uid() { return 'a'; }
 
   get remoteUid() { return 'b'; }

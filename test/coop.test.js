@@ -47,6 +47,14 @@ class RecordingCoopSync {
     this.emitted.push(['state', ...args]);
   }
 
+  emitPhase(...args) {
+    this.emitted.push(['phase', ...args]);
+  }
+
+  emitGameOver(...args) {
+    this.emitted.push(['game-over', ...args]);
+  }
+
   dispose() {}
 }
 

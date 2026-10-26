@@ -187,6 +187,35 @@ describe('Firebase security rules', { skip: !emulatorAvailable }, () => {
       rtdbRef(guestDatabase, 'rooms/ABCDE/events/hit-1'),
       { type: 'hit', uid: 'guest', t: 3 },
     ));
+
+    await assertSucceeds(setRtdb(
+      rtdbRef(hostDatabase, 'rooms/ABCDE/events/phase-1'),
+      { type: 'phase', uid: 'host', kind: 'boss', wave: 3, t: 40.2, score: 840, lives: 3 },
+    ));
+    await assertSucceeds(setRtdb(
+      rtdbRef(hostDatabase, 'rooms/ABCDE/events/phase-2'),
+      { type: 'phase', uid: 'host', kind: 'wave', wave: 4, t: 70, score: 1500, lives: 4, bossDefeated: true },
+    ));
+    await assertFails(setRtdb(
+      rtdbRef(guestDatabase, 'rooms/ABCDE/events/phase-3'),
+      { type: 'phase', uid: 'guest', kind: 'wave', wave: 9, t: 70, score: 1500, lives: 3 },
+    ));
+    await assertFails(setRtdb(
+      rtdbRef(hostDatabase, 'rooms/ABCDE/events/phase-4'),
+      { type: 'phase', uid: 'host', kind: 'invasion', wave: 4, t: 70, score: 1, lives: 3 },
+    ));
+    await assertSucceeds(setRtdb(
+      rtdbRef(hostDatabase, 'rooms/ABCDE/events/over-1'),
+      { type: 'game-over', uid: 'host', t: 120, score: 4200, wave: 7, kills: { host: 20, guest: 18 } },
+    ));
+    await assertFails(setRtdb(
+      rtdbRef(guestDatabase, 'rooms/ABCDE/events/over-2'),
+      { type: 'game-over', uid: 'guest', t: 120, score: 1, wave: 1, kills: { guest: 1 } },
+    ));
+    await assertFails(setRtdb(
+      rtdbRef(hostDatabase, 'rooms/ABCDE/events/over-3'),
+      { type: 'game-over', uid: 'host', t: 120, score: 1, wave: 1, kills: { host: -5 } },
+    ));
   });
 
   it('Firestore profiles are private to their owner', async () => {

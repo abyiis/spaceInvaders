@@ -27,6 +27,11 @@
  * @property {string | null} hostUid Identificador del host actual.
  * @property {(t: number, score: number, lives: number, wave: number) => void} emitState
  *   Solo el host: publica las vidas oficiales (y el puntaje) tras un rescate o una eliminación.
+ * @property {(phase: { kind: 'wave' | 'boss' | 'bonus', wave: number, t: number, score: number,
+ *   lives: number, bossDefeated?: boolean }) => void} emitPhase
+ *   Solo el host: anuncia el inicio de una fase con el puntaje y las vidas oficiales.
+ * @property {(t: number, score: number, wave: number, kills?: Record<string, number>) => void} emitGameOver
+ *   Solo el host: anuncia el fin de la partida con el puntaje oficial.
  * @property {() => number | null} [gameTime]
  *   Solo coop: segundos de juego según el reloj del servidor (negativos hasta `startAt`),
  *   o `null` mientras el reloj no está sincronizado. Ver `.spec/multiplayer_sync.md` §2.
@@ -80,6 +85,10 @@ export class NoopSyncGateway {
   emitLifeLoss() {}
 
   emitState() {}
+
+  emitPhase() {}
+
+  emitGameOver() {}
 
   emitBonusKill() {}
 

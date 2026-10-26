@@ -144,6 +144,7 @@ export class Game {
     this.boss = null;
     this.bonusStage = null;
     this.pendingBonusStage = false;
+    this.bossDefeatedPending = false;
     this.bossRewardTimer = 0;
     /** @type {import('./Bullet.js').Bullet[]} */
     this.bullets = [];
@@ -196,10 +197,11 @@ export class Game {
     });
   }
 
-  #nextWave() {
+  /** @param {{ startElapsed?: number }} [options] Tiempo de juego en que arranca la oleada. */
+  #nextWave({ startElapsed = this.elapsed } = {}) {
     this.wave += 1;
     this.ledger.startWave(this.wave);
-    this.formation = new Formation(this, this.wave);
+    this.formation = new Formation(this, this.wave, { startElapsed });
   }
 
   /** Llamado por `Player` al perder una vida. */
@@ -212,8 +214,21 @@ export class Game {
   }
 
   triggerGameOver() {
+    this.#finishGame({ announce: true });
+  }
+
+  /**
+   * @param {{ announce: boolean, official?: { score?: number, wave?: number } | null }} options
+   *   `announce`: el host avisa al compañero. `official`: valores del host que adopta el compañero.
+   */
+  #finishGame({ announce, official = null }) {
     if (this.isGameOver) return;
+    if (Number.isFinite(official?.score)) this.score = Math.max(0, Math.floor(official.score));
+    if (Number.isFinite(official?.wave)) this.wave = Math.max(this.wave, Math.floor(official.wave));
     this.isGameOver = true;
+    if (announce && this.sync.isCoop && this.isAuthority) {
+      this.sync.emitGameOver(this.elapsed, this.score, this.wave, this.ledger.killsBy());
+    }
     this.effects.gameOver();
     this.onGameOver({
       mode: this.sync.isCoop ? 'coop' : 'solo',
@@ -310,7 +325,8 @@ export class Game {
     this.#updatePowerUps(dt);
     this.bullets = this.bullets.filter((b) => !b.dead);
 
-    if (this.isGameOver) return;
+    // En coop el compañero no decide fases ni el final: espera los eventos del host.
+    if (this.isGameOver || !this.isAuthority) return;
     if (this.boss?.health <= 0) {
       this.#defeatBoss();
       return;
@@ -319,18 +335,14 @@ export class Game {
     if (this.bonusStage) {
       if (this.bonusStage.remaining <= 0) {
         this.bonusStage = null;
-        this.#nextWave();
+        this.#enterWave();
       }
       return;
     }
 
     const alive = this.formation.alive;
     if (alive.length === 0) {
-      this.score += C.WAVE_BONUS_MULTIPLIER * this.wave;
-      this.pendingBonusStage = this.wave % 5 === 0;
-      if (this.wave % 3 === 0) this.boss = new Boss(this, this.wave);
-      else if (this.pendingBonusStage) this.#startBonusStage();
-      else this.#nextWave();
+      this.#completeWave();
       return;
     }
 
@@ -405,7 +417,87 @@ export class Game {
   }
 
   #checkCoopGameOver() {
+    if (!this.isAuthority) return;
     if (this.player.eliminated && this.remotePlayer?.eliminated) this.triggerGameOver();
+  }
+
+  /** Formación vencida: bonus de oleada y elección de la fase siguiente (solo la autoridad). */
+  #completeWave() {
+    this.score += C.WAVE_BONUS_MULTIPLIER * this.wave;
+    this.pendingBonusStage = this.wave % 5 === 0;
+    if (this.wave % 3 === 0) this.#enterBoss();
+    else if (this.pendingBonusStage) this.#enterBonus();
+    else this.#enterWave();
+  }
+
+  #enterBoss() {
+    this.boss = new Boss(this, this.wave);
+    this.#announcePhase('boss');
+  }
+
+  #enterBonus() {
+    this.#startBonusStage();
+    this.#announcePhase('bonus');
+  }
+
+  #enterWave() {
+    this.#nextWave();
+    this.#announcePhase('wave');
+  }
+
+  /** El host avisa de la transición con el puntaje y las vidas oficiales. */
+  #announcePhase(kind) {
+    const bossDefeated = this.bossDefeatedPending;
+    this.bossDefeatedPending = false;
+    if (!this.sync.isCoop || !this.isAuthority) return;
+    this.sync.emitPhase({
+      kind,
+      wave: this.wave,
+      t: this.elapsed,
+      score: this.score,
+      lives: this.lives,
+      bossDefeated,
+    });
+  }
+
+  /** El compañero sigue la transición anunciada por el host (`multiplayer_sync.md` §4.3). */
+  #applyPhase(event) {
+    if (this.isAuthority || this.isGameOver || !this.#fromHost(event)) return;
+    if (!Number.isFinite(event.wave) || !Number.isFinite(event.t)) return;
+    const wave = Math.floor(event.wave);
+    const lag = this.#eventLag(event);
+
+    if (event.kind === 'boss') {
+      if (this.boss || wave < this.wave) return;
+      this.#adoptOfficial(event);
+      this.wave = wave;
+      this.pendingBonusStage = wave % 5 === 0;
+      this.boss = new Boss(this, wave);
+      return;
+    }
+    if (event.kind === 'bonus') {
+      if (this.bonusStage || wave < this.wave) return;
+      this.#adoptOfficial(event);
+      if (this.boss && event.bossDefeated) this.#celebrateBossDefeat();
+      this.wave = wave;
+      this.#startBonusStage();
+      this.bonusStage.remaining = Math.max(0, this.bonusStage.remaining - lag);
+      return;
+    }
+    if (event.kind === 'wave') {
+      if (wave <= this.wave) return;
+      this.#adoptOfficial(event);
+      if (this.boss && event.bossDefeated) this.#celebrateBossDefeat();
+      this.boss = null;
+      this.bonusStage = null;
+      this.wave = wave - 1;
+      this.#nextWave({ startElapsed: event.t });
+    }
+  }
+
+  #adoptOfficial(event) {
+    if (Number.isFinite(event.score)) this.score = Math.max(0, Math.floor(event.score));
+    if (Number.isFinite(event.lives)) this.lives = Math.max(0, Math.floor(event.lives));
   }
 
   #applyRemoteEvent(event) {
@@ -482,6 +574,18 @@ export class Game {
         (multiplier - 1) * 3 + 1,
       );
       this.bonusStage.comboTimer = 1.8;
+      return;
+    }
+
+    if (event.type === 'phase') {
+      this.#applyPhase(event);
+      return;
+    }
+
+    if (event.type === 'game-over') {
+      if (!this.isAuthority && this.#fromHost(event)) {
+        this.#finishGame({ announce: false, official: event });
+      }
       return;
     }
 
@@ -745,12 +849,22 @@ export class Game {
     }
   }
 
+  /** Puntaje y vida del jefe (los decide la autoridad) más sus efectos y recompensas locales. */
   #defeatBoss() {
-    const { x, y, color, level } = this.boss;
-    this.boss = null;
-    this.killEffects.push({ x, y, color, age: 0 });
+    const { level } = this.boss;
     this.lives += 1;
     this.score += BOSS_SCORE_REWARD * level;
+    this.#celebrateBossDefeat();
+    this.bossDefeatedPending = true;
+    if (this.pendingBonusStage) this.#enterBonus();
+    else this.#enterWave();
+  }
+
+  /** Lo que vive cada cliente al caer el jefe: estallido, aviso, balas fuera y dos potenciadores. */
+  #celebrateBossDefeat() {
+    const { x, y, color } = this.boss;
+    this.boss = null;
+    this.killEffects.push({ x, y, color, age: 0 });
     this.bossRewardTimer = 3.5;
     this.bullets = this.bullets.filter((bullet) => bullet.fromPlayer);
 
@@ -760,8 +874,6 @@ export class Game {
     const secondIndex = Math.floor(this.random() * powerUpTypes.length);
     this.player.activatePowerUp(first);
     this.player.activatePowerUp(powerUpTypes[secondIndex]);
-    if (this.pendingBonusStage) this.#startBonusStage();
-    else this.#nextWave();
   }
 
   #updatePowerUps(dt) {
